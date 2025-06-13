@@ -7,20 +7,8 @@ import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
 import { HandHelping, LifeBuoy } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
+import { mainNavItems } from '@/constants/nav';
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Bill of Material',
-        href: 'bom.index',
-        icon: LifeBuoy,
-    },
-    {
-        title: 'Request for Service',
-        href: 'rfs.index',
-        icon: HandHelping,
-    },
-
-];
 
 // const footerNavItems: NavItem[] = [
 //     {

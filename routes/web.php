@@ -6,9 +6,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RequestForServiceController;
 use Inertia\Inertia;
 
-#==========================
-#====== Route Utama =======
-#==========================
+#===========================
+#======  Main Route  =======
+#===========================
 Route::get('/', function (Request $request) {
     // Jika user sudah login, arahkan ke dashboard
     if (Auth::check()) {
@@ -27,10 +27,16 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 
+#==========================
+#======= RFS Route ========
+#==========================
 
-#Route Request For Services
 Route::get('/rfs', [RequestForServiceController::class, 'index'])->name('rfs.index');
 
+
+#==========================
+#======= BOM Route ========
+#==========================
 
 
 require __DIR__ . '/settings.php';

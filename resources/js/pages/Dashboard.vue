@@ -3,18 +3,23 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
 import PlaceholderPattern from '../components/PlaceholderPattern.vue';
+import { usePage } from '@inertiajs/vue3'
+import { mainNavItems } from '@/constants/nav'; // ✅ Ambil dari constants
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Dashboard',
-        href: '/dashboard',
-    },
-];
+const page = usePage();
+const currentPath = new URL(page.props.ziggy.location).pathname;
+
+const breadcrumbs: BreadcrumbItem[] = mainNavItems
+    .filter(item => route().current(item.href)) // filter route aktif
+    .map(item => ({
+        title: item.title,
+        href: item.href,
+    }));
 </script>
 
 <template>
 
-    <Head title="Dashboard" />
+    <Head title="Test" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
