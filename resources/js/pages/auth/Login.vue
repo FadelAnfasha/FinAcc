@@ -2,7 +2,6 @@
 import InputError from '@/components/InputError.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthBase from '@/layouts/AuthLayout.vue';
@@ -29,7 +28,6 @@ const submit = () => {
 
 <template>
     <AuthBase title="Log in to your account" description="Enter your email and password below to log in">
-
         <Head title="Log in" />
 
         <div v-if="status" class="mb-4 text-center text-sm font-medium text-green-600">
@@ -40,8 +38,17 @@ const submit = () => {
             <div class="grid gap-6">
                 <div class="grid gap-2">
                     <Label for="npk">NPK</Label>
-                    <Input id="npk" type="npk" class="bg-white" required autofocus :tabindex="1" autocomplete="npk"
-                        v-model="form.npk" placeholder="Example : 240473" />
+                    <Input
+                        id="npk"
+                        type="npk"
+                        required
+                        autofocus
+                        :tabindex="1"
+                        autocomplete="npk"
+                        v-model="form.npk"
+                        placeholder="Example : 240473"
+                        class="bg-white"
+                    />
                     <InputError :message="form.errors.npk" />
                 </div>
 
@@ -49,8 +56,16 @@ const submit = () => {
                     <div class="flex items-center justify-between">
                         <Label for="password">Password</Label>
                     </div>
-                    <Input id="password" type="password" class="bg-white" required :tabindex="2"
-                        autocomplete="current-password" v-model="form.password" placeholder="Password" />
+                    <Input
+                        id="password"
+                        type="password"
+                        required
+                        :tabindex="2"
+                        autocomplete="current-password"
+                        v-model="form.password"
+                        placeholder="Password"
+                        class="bg-white"
+                    />
                     <InputError :message="form.errors.password" />
                 </div>
 

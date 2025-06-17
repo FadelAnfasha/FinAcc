@@ -24,37 +24,68 @@ const submit = () => {
 
 <template>
     <AuthBase title="Create an account" description="Enter your details below to create your account">
-
         <Head title="Register" />
 
         <form @submit.prevent="submit" class="flex flex-col gap-6">
             <div class="grid gap-6">
                 <div class="grid gap-2">
                     <Label for="name">Name</Label>
-                    <Input id="name" type="text" required autofocus :tabindex="1" autocomplete="name" class="bg-white"
-                        v-model="form.name" placeholder="Full name" />
+                    <Input
+                        id="name"
+                        type="text"
+                        required
+                        autofocus
+                        :tabindex="1"
+                        autocomplete="name"
+                        class="bg-white"
+                        v-model="form.name"
+                        placeholder="Full name"
+                    />
                     <InputError :message="form.errors.name" />
                 </div>
 
                 <div class="grid gap-2">
                     <Label for="npk">NPK</Label>
-                    <Input id="npk" type="npk" class="bg-white" required :tabindex="2" autocomplete="npk"
-                        v-model="form.npk" placeholder="Example : 240473" />
+                    <Input
+                        id="npk"
+                        type="npk"
+                        class="bg-white"
+                        required
+                        :tabindex="2"
+                        autocomplete="npk"
+                        v-model="form.npk"
+                        placeholder="Example : 240473"
+                    />
                     <InputError :message="form.errors.npk" />
                 </div>
 
                 <div class="grid gap-2">
                     <Label for="password">Password</Label>
-                    <Input id="password" type="password" class="bg-white" required :tabindex="3"
-                        autocomplete="new-password" v-model="form.password" placeholder="Password" />
+                    <Input
+                        id="password"
+                        type="password"
+                        class="bg-white"
+                        required
+                        :tabindex="3"
+                        autocomplete="new-password"
+                        v-model="form.password"
+                        placeholder="Password"
+                    />
                     <InputError :message="form.errors.password" />
                 </div>
 
                 <div class="grid gap-2">
                     <Label for="password_confirmation">Confirm password</Label>
-                    <Input id="password_confirmation" class="bg-white" type="password" required :tabindex="4"
-                        autocomplete="new-password" v-model="form.password_confirmation"
-                        placeholder="Confirm password" />
+                    <Input
+                        id="password_confirmation"
+                        class="bg-white"
+                        type="password"
+                        required
+                        :tabindex="4"
+                        autocomplete="new-password"
+                        v-model="form.password_confirmation"
+                        placeholder="Confirm password"
+                    />
                     <InputError :message="form.errors.password_confirmation" />
                 </div>
 

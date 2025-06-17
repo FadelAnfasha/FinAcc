@@ -1,18 +1,25 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/app/AppSidebarLayout.vue';
+import { mainNavItems } from '@/constants/nav';
+import AppSidebarLayout from '@/layouts/app/AppSidebarLayout.vue';
 import type { BreadcrumbItemType } from '@/types';
+import { usePage } from '@inertiajs/vue3';
+import Toast from 'primevue/toast';
 
-interface Props {
-    breadcrumbs?: BreadcrumbItemType[];
-}
+const page = usePage();
+const currentPath = new URL(page.props.ziggy.location).pathname;
 
-withDefaults(defineProps<Props>(), {
-    breadcrumbs: () => [],
-});
+// Otomatis generate breadcrumbs
+const breadcrumbs: BreadcrumbItemType[] = mainNavItems
+    .filter((item) => route().current(item.href))
+    .map((item) => ({
+        title: item.title,
+        href: item.href,
+    }));
 </script>
 
 <template>
-    <AppLayout :breadcrumbs="breadcrumbs">
+    <AppSidebarLayout :breadcrumbs="breadcrumbs">
+        <Toast />
         <slot />
-    </AppLayout>
+    </AppSidebarLayout>
 </template>

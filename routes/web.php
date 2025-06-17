@@ -31,12 +31,32 @@ Route::get('/dashboard', function () {
 #======= RFS Route ========
 #==========================
 
-Route::get('/rfs', [RequestForServiceController::class, 'index'])->name('rfs.index');
+// routes/web.php
+
+
+Route::middleware(['auth', 'verified'])->group(function () {
+
+    // RFS Routes
+    Route::resource('rfs', RequestForServiceController::class);
+
+    // Additional RFS routes
+    Route::patch('rfs/{rfs}/status', [RequestForServiceController::class, 'updateStatus'])
+        ->name('rfs.update-status');
+
+    Route::get('rfs/{rfs}/download', [RequestForServiceController::class, 'downloadAttachment'])
+        ->name('rfs.download');
+
+    Route::get('rfs-statistics', [RequestForServiceController::class, 'statistics'])
+        ->name('rfs.statistics');
+
+});
 
 
 #==========================
 #======= BOM Route ========
 #==========================
+Route::get('/bom', [RequestForServiceController::class, 'index'])->name('bom.index');
+
 
 
 require __DIR__ . '/settings.php';

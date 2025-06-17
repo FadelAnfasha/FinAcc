@@ -11,6 +11,7 @@ withDefaults(
         breadcrumbs: () => [],
     },
 );
+
 </script>
 
 <template>
