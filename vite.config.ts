@@ -5,6 +5,12 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+    base: '/finacc/',
+    server: {
+        cors: true,
+        host: 'localhost',
+        port: 5173
+    },
     plugins: [
         laravel({
             input: ['resources/js/app.ts'],
