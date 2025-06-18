@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, useForm, usePage } from '@inertiajs/vue3';
+import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
@@ -38,6 +38,27 @@ interface RequestItem {
     attachment: File;
 }
 
+const acceptRequest = (id: number) => {
+    router.post(`/rfs/${id}/accept`);
+};
+
+const rejectRequest = (id: number) => {
+    router.post(`/rfs/${id}/reject`);
+};
+
+const executeRequest = (id: number) => {
+    router.post(`/rfs/${id}/execute`);
+};
+
+const finishRequest = (id: number) => {
+    router.post(`/rfs/${id}/finish`);
+};
+
+const props = defineProps({
+    services: Array,
+    auth: Object,
+});
+
 const filters = ref({
     name: { value: null, matchMode: 'contains' },
     priority: { value: null, matchMode: 'equals' },
@@ -57,9 +78,9 @@ function getPriorityClass(priority: string): string | undefined {
         case 'All':
             return 'secondary';
         case 'low':
-            return 'bg-blue-400 text-blue-800';
+            return 'bg-purple-400 text-purple-800';
         case 'medium':
-            return 'bg-yellow-300 text-yellow-800';
+            return 'bg-blue-300 text-blue-800';
         case 'high':
             return 'bg-orange-400 text-orange-800';
         case 'urgent':
@@ -195,7 +216,15 @@ const resetForm = () => {
         <section ref="dataSection" class="mx-24 my-4">
             <div class="mb-8 flex items-center justify-between">
                 <h2 class="text-3xl font-semibold">Request Data</h2>
-                <Button label="Create" severity="info" icon="pi pi-plus" variant="outlined" rounded @click="scrollToCreateForm" />
+                <Button
+                    label="Create"
+                    severity="info"
+                    v-if="auth?.user?.role === 'User'"
+                    icon="pi pi-plus"
+                    variant="outlined"
+                    rounded
+                    @click="scrollToCreateForm"
+                />
             </div>
 
             <DataTable
@@ -211,6 +240,8 @@ const resetForm = () => {
                 :globalFilterFields="['name', 'priority', 'input_date', 'description', 'status']"
                 tableStyle="min-width: 50rem"
                 class="text-sm"
+                sortField="input_date"
+                :sortOrder="-1"
             >
                 <Column field="name" header="Name" :showFilterMenu="false" sortable style="width: 20%">
                     <template #filter="{ filterModel, filterCallback }">
@@ -391,11 +422,59 @@ const resetForm = () => {
                         <span v-else class="text-xs text-gray-400">No Attachment</span>
                     </template>
                 </Column>
+
+                <Column header="Action" v-if="auth?.user?.role === 'Reviewer' || auth?.user?.role === 'Admin'" style="width: 20%">
+                    <template #body="{ data }">
+                        <div class="flex gap-2">
+                            <!-- Reviewer actions -->
+                            <template v-if="auth?.user?.role === 'Reviewer'">
+                                <button
+                                    v-if="data.status === 'wait_for_review'"
+                                    class="inline-flex cursor-pointer items-center gap-1 rounded bg-green-400 px-3 py-1 text-xs font-semibold text-black hover:bg-green-600 hover:text-white"
+                                    @click="acceptRequest(data.id)"
+                                >
+                                    <i class="pi pi-check" /> Accept
+                                </button>
+
+                                <button
+                                    v-if="data.status === 'wait_for_review'"
+                                    class="inline-flex cursor-pointer items-center gap-1 rounded bg-red-400 px-3 py-1 text-xs font-semibold text-black hover:bg-red-600 hover:text-white"
+                                    @click="rejectRequest(data.id)"
+                                >
+                                    <i class="pi pi-times" /> Reject
+                                </button>
+                                <i class="pi pi-spin pi-cog" style="color: orange" v-if="data.status === 'in_progress'"></i>
+                            </template>
+
+                            <!-- Admin actions -->
+                            <template v-if="auth?.user?.role === 'Admin'">
+                                <button
+                                    v-if="data.status === 'accepted'"
+                                    class="inline-flex cursor-pointer items-center gap-1 rounded bg-orange-400 px-3 py-1 text-xs font-semibold text-black hover:bg-orange-600 hover:text-white"
+                                    @click="executeRequest(data.id)"
+                                >
+                                    <i class="pi pi-cog pi-spin" /> Execute
+                                </button>
+                                <button
+                                    v-if="data.status === 'in_progress'"
+                                    class="inline-flex cursor-pointer items-center gap-1 rounded bg-orange-400 px-3 py-1 text-xs font-semibold text-black hover:bg-orange-600 hover:text-white"
+                                    @click="finishRequest(data.id)"
+                                >
+                                    <i class="pi pi-check-square" /> Finish
+                                </button>
+                            </template>
+
+                            <!-- Status icons -->
+                            <i class="pi pi-check-circle" style="color: green" v-if="data.status === 'finish'"></i>
+                            <i class="pi pi-times-circle" style="color: red" v-if="data.status === 'rejected'"></i>
+                        </div>
+                    </template>
+                </Column>
             </DataTable>
         </section>
 
         <!-- Create Form Section -->
-        <section ref="createFormSection" class="mx-24 my-8 scroll-mt-8">
+        <section ref="createFormSection" v-if="auth?.user?.role === 'User'" class="mx-24 my-8 scroll-mt-8">
             <div class="mb-8 flex items-center justify-between">
                 <h2 class="text-3xl font-semibold">Create Form</h2>
                 <Button label="See Data" severity="warn" icon="pi pi-eye" variant="outlined" rounded @click="scrollTodataSection" />

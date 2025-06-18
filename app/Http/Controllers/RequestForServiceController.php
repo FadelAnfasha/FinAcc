@@ -48,4 +48,41 @@ class RequestForServiceController extends Controller
 
         return redirect()->route('rfs.index')->with('success', 'Request submitted successfully.');
     }
+
+    public function accept($id)
+    {   
+        $rfs = RequestForService::findOrFail($id);
+        $rfs->status = 'accepted';
+        $rfs->save();
+
+        return redirect()->back()->with('success', 'Request accepted.');
+    }
+
+    public function reject($id)
+    {
+        $rfs = RequestForService::findOrFail($id);
+        $rfs->status = 'rejected';
+        $rfs->save();
+
+        return redirect()->back()->with('danger', 'Request rejected.');
+    }
+
+    public function execute($id)
+    {
+        $rfs = RequestForService::findOrFail($id);
+        $rfs->status = 'in_progress';
+        $rfs->save();
+
+        return redirect()->back()->with('success', 'Request executed.');
+    }
+
+    public function finish($id)
+    {
+        $rfs = RequestForService::findOrFail($id);
+        $rfs->status = 'finish';
+        $rfs->save();
+
+        return redirect()->back()->with('success', 'Request finish.');
+    }
+
 }

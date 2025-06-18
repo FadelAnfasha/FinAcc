@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RequestForServiceController;
 use Inertia\Inertia;
+use App\Http\Controllers\BOMController;
+
 
 #===========================
 #======  Main Route  =======
@@ -39,6 +41,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // RFS Routes
     Route::resource('rfs', RequestForServiceController::class);
 
+
+    Route::post('/rfs/{id}/accept', [RequestForServiceController::class, 'accept'])
+    ->middleware('role:Reviewer');
+
+    Route::post('/rfs/{id}/reject', [RequestForServiceController::class, 'reject'])
+    ->middleware('role:Reviewer');  
+
+    Route::post('/rfs/{id}/execute', [RequestForServiceController::class, 'execute'])
+    ->middleware('role:Admin'); 
+    Route::post('/rfs/{id}/finish', [RequestForServiceController::class, 'finish'])
+    ->middleware('role:Admin'); 
+
     // Additional RFS routes
     Route::patch('rfs/{rfs}/status', [RequestForServiceController::class, 'updateStatus'])
         ->name('rfs.update-status');
@@ -55,7 +69,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 #==========================
 #======= BOM Route ========
 #==========================
-Route::get('/bom', [RequestForServiceController::class, 'index'])->name('bom.index');
+Route::get('/bom', [BOMController::class, 'index'])->name('bom.index');
 
 
 

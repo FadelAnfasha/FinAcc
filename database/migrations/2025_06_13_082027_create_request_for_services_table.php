@@ -17,7 +17,7 @@ return new class extends Migration {
             $table->enum('priority', ['low', 'medium', 'high', 'urgent'])->default('medium');
             $table->date('input_date');
             $table->text('description');
-            $table->enum('status', ['wait_for_review', 'in_progress','accepted','finished','rejected'])->default('wait_for_review');
+            $table->enum('status', ['wait_for_review', 'in_progress','accepted','finish','rejected'])->default('wait_for_review');
             $table->string('attachment')->nullable();
             $table->timestamps();
         });

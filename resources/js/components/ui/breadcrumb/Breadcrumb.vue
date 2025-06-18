@@ -11,8 +11,7 @@ const props = defineProps<{
   <nav
     aria-label="breadcrumb"
     data-slot="breadcrumb"
-    :class="props.class"
-  >
+    :class="['animate-in slide-in-from-right zoom-in duration-700', props.class]"  >
     <slot />
   </nav>
 </template>
