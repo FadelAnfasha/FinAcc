@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
+import { Head, router, useForm, usePage } from '@inertiajs/vue3';
+
 </script>
 
 <template>
+
     <Head title="BOM" />
     <AppLayout>
         <div class="flex h-full items-center justify-center">

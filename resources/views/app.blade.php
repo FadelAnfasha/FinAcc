@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => ($appearance ?? 'system') == 'dark'])>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark'=> ($appearance ?? 'system') == 'dark'])>
 
 <head>
     <meta charset="utf-8">
@@ -7,7 +7,7 @@
 
     {{-- Inline script to detect system dark mode preference and apply it immediately --}}
     <script>
-        (function () {
+        (function() {
             const appearance = '{{ $appearance ?? "system" }}';
 
             if (appearance === 'system') {
@@ -33,8 +33,8 @@
 
     <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
-    <link rel="icon" href="/storage/images/home.png" sizes="any">
-    <link rel="icon" href="/storage/images/home.png" type="image/svg+xml">
+    <link rel="icon" href="public/storage/images/home.png" sizes="any">
+    <link rel="icon" href="public/storage/images/home.png" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
     <link rel="preconnect" href="https://fonts.bunny.net">
