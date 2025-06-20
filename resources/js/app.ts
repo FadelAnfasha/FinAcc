@@ -3,6 +3,8 @@ import Nora from '@primeuix/themes/nora';
 import 'primeicons/primeicons.css';
 import PrimeVue from 'primevue/config';
 import ToastService from 'primevue/toastservice';
+import Tooltip from 'primevue/tooltip';
+
 import '../css/app.css';
 
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
@@ -22,6 +24,7 @@ createInertiaApp({
         vueApp.use(plugin);
         vueApp.use(ZiggyVue);
         vueApp.use(ToastService);
+        vueApp.directive('tooltip', Tooltip);
         vueApp.use(PrimeVue, {
             theme: {
                 preset: Nora,

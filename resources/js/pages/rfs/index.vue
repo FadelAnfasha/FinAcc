@@ -328,7 +328,6 @@ const resetForm = () => {
                                         filterModel.value = null;
                                     }
                                     filterCallback();
-                                    console.log('modelValue bound to DatePicker:', filterModel.value, typeof filterModel.value);
                                 }
                             "
                             dateFormat="yy-mm-dd"
@@ -444,6 +443,7 @@ const resetForm = () => {
                                     <i class="pi pi-times" /> Reject
                                 </button>
                                 <i class="pi pi-spin pi-cog" style="color: orange" v-if="data.status === 'in_progress'"></i>
+                                <i class="pi pi-spin pi-hourglass" style="color: cyan" v-if="data.status === 'accepted'"></i>
                             </template>
 
                             <!-- Admin actions -->
@@ -466,6 +466,7 @@ const resetForm = () => {
 
                             <!-- Status icons -->
                             <i class="pi pi-check-circle" style="color: green" v-if="data.status === 'finish'"></i>
+
                             <i class="pi pi-times-circle" style="color: red" v-if="data.status === 'rejected'"></i>
                         </div>
                     </template>

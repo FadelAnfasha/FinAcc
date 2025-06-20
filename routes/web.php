@@ -6,7 +6,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RequestForServiceController;
 use Inertia\Inertia;
 use App\Http\Controllers\BOMController;
-
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ProcessCostController;
 
 #===========================
 #======  Main Route  =======
@@ -43,26 +44,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
     Route::post('/rfs/{id}/accept', [RequestForServiceController::class, 'accept'])
-    ->middleware('role:Reviewer');
+        ->middleware('role:Reviewer');
 
     Route::post('/rfs/{id}/reject', [RequestForServiceController::class, 'reject'])
-    ->middleware('role:Reviewer');  
+        ->middleware('role:Reviewer');
 
     Route::post('/rfs/{id}/execute', [RequestForServiceController::class, 'execute'])
-    ->middleware('role:Admin'); 
+        ->middleware('role:Admin');
+
     Route::post('/rfs/{id}/finish', [RequestForServiceController::class, 'finish'])
-    ->middleware('role:Admin'); 
-
-    // Additional RFS routes
-    Route::patch('rfs/{rfs}/status', [RequestForServiceController::class, 'updateStatus'])
-        ->name('rfs.update-status');
-
-    Route::get('rfs/{rfs}/download', [RequestForServiceController::class, 'downloadAttachment'])
-        ->name('rfs.download');
-
-    Route::get('rfs-statistics', [RequestForServiceController::class, 'statistics'])
-        ->name('rfs.statistics');
-
+        ->middleware('role:Admin');
 });
 
 
@@ -72,6 +63,44 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::get('/bom', [BOMController::class, 'index'])->name('bom.index');
 
 
+#==========================
+#====== Admin Route =======
+#==========================
+Route::get('/pc', [ProcessCostController::class, 'index'])->name('pc.index');
+
+
+#==========================
+#====== Admin Route =======
+#==========================
+Route::middleware(['auth', 'verified', 'role:Admin'])->group(function () {
+
+    // Admin Panel Main Route
+    Route::get('/admin', [AdminController::class, 'index'])
+        ->name('admin.index');
+
+    // Role Management Routes
+    Route::prefix('admin/roles')->name('admin.roles.')->group(function () {
+        Route::post('/', [AdminController::class, 'storeRole'])->name('store');
+        Route::put('/{role}', [AdminController::class, 'updateRole'])->name('update');
+        Route::delete('/{role}', [AdminController::class, 'destroyRole'])->name('destroy');
+        Route::get('/list', [AdminController::class, 'getRoles'])->name('list');
+    });
+
+    // Permission Management Routes
+    Route::prefix('admin/permissions')->name('admin.permissions.')->middleware('permission:CreateUser')->group(function () {
+        Route::post('/', [AdminController::class, 'storePermission'])->name('store');
+        Route::put('/{permission}', [AdminController::class, 'updatePermission'])->name('update');
+        Route::delete('/{permission}', [AdminController::class, 'destroyPermission'])->name('destroy');
+        Route::get('/list', [AdminController::class, 'getPermissions'])->name('list');
+    });
+
+    // User Role Assignment Routes
+    Route::prefix('admin/users')->name('admin.users.')->middleware('permission:CreateUser')->group(function () {
+        Route::post('/assign-role', [AdminController::class, 'assignRole'])->name('assign-role');
+        Route::post('/remove-role', [AdminController::class, 'removeRole'])->name('remove-role');
+        Route::get('/list', [AdminController::class, 'getUsers'])->name('list');
+    });
+});
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';

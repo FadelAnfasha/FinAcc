@@ -15,6 +15,9 @@ export interface NavItem {
     href: string;
     icon?: LucideIcon;
     isActive?: boolean;
+
+    // Tambahan opsional:
+    onlyFor?: string[]; // array of roles yang boleh lihat menu ini
 }
 
 export type AppPageProps<T extends Record<string, unknown> = Record<string, unknown>> = T & {
@@ -28,11 +31,23 @@ export type AppPageProps<T extends Record<string, unknown> = Record<string, unkn
 export interface User {
     id: number;
     name: string;
-    email: string;
+    npk: string;
     avatar?: string;
-    email_verified_at: string | null;
     created_at: string;
     updated_at: string;
+
+    role?: string;
+}
+
+export interface Role {
+    id: number | null;
+    name: string;
+    permissions: string[];
+}
+
+export interface Permission {
+    id: number | null;
+    name: string;
 }
 
 export type BreadcrumbItemType = BreadcrumbItem;
