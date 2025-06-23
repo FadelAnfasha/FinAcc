@@ -8,6 +8,8 @@ use Inertia\Inertia;
 use App\Http\Controllers\BOMController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ProcessCostController;
+use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\BusinessPartnerController;
 
 #===========================
 #======  Main Route  =======
@@ -33,10 +35,6 @@ Route::get('/dashboard', function () {
 #==========================
 #======= RFS Route ========
 #==========================
-
-// routes/web.php
-
-
 Route::middleware(['auth', 'verified'])->group(function () {
 
     // RFS Routes
@@ -44,10 +42,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
     Route::post('/rfs/{id}/accept', [RequestForServiceController::class, 'accept'])
-        ->middleware('role:Reviewer');
+        ->middleware('role:Superior');
 
     Route::post('/rfs/{id}/reject', [RequestForServiceController::class, 'reject'])
-        ->middleware('role:Reviewer');
+        ->middleware('role:Superior');
 
     Route::post('/rfs/{id}/execute', [RequestForServiceController::class, 'execute'])
         ->middleware('role:Admin');
@@ -64,9 +62,31 @@ Route::get('/bom', [BOMController::class, 'index'])->name('bom.index');
 
 
 #==========================
-#====== Admin Route =======
+#======== PC Route ========
 #==========================
-Route::get('/pc', [ProcessCostController::class, 'index'])->name('pc.index');
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Main Process Cost page
+    // Route::get('/pc', [ProcessCostController::class, 'index'])
+    //     ->name('pc.index');
+
+    // Master Data page
+    Route::get('/pc/master', [ProcessCostController::class, 'master'])
+        ->name('pc.master');
+
+
+    // Report page
+    Route::get('/pc/report', [ProcessCostController::class, 'report'])
+        ->name('pc.report');
+});
+
+#=============================
+#====> Business Partner <=====
+#=============================
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/bps/import', [BusinessPartnerController::class, 'import'])->name('bps.import');
+});
 
 
 #==========================
@@ -87,7 +107,7 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->group(function () {
     });
 
     // Permission Management Routes
-    Route::prefix('admin/permissions')->name('admin.permissions.')->middleware('permission:CreateUser')->group(function () {
+    Route::prefix('admin/permissions')->name('admin.permissions.')->group(function () {
         Route::post('/', [AdminController::class, 'storePermission'])->name('store');
         Route::put('/{permission}', [AdminController::class, 'updatePermission'])->name('update');
         Route::delete('/{permission}', [AdminController::class, 'destroyPermission'])->name('destroy');
@@ -95,10 +115,15 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->group(function () {
     });
 
     // User Role Assignment Routes
-    Route::prefix('admin/users')->name('admin.users.')->middleware('permission:CreateUser')->group(function () {
-        Route::post('/assign-role', [AdminController::class, 'assignRole'])->name('assign-role');
+    Route::prefix('admin/users')->name('admin.users.')->group(function () {
+        Route::post('{selected_user}/assign-role', [AdminController::class, 'assignRole'])->name('assign-role');
         Route::post('/remove-role', [AdminController::class, 'removeRole'])->name('remove-role');
         Route::get('/list', [AdminController::class, 'getUsers'])->name('list');
+    });
+
+    // Register new user by Admin
+    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::post('register', [RegisteredUserController::class, 'store'])->name('register');
     });
 });
 

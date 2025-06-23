@@ -213,8 +213,8 @@ const resetForm = () => {
     <Head title="RFS" />
     <AppLayout>
         <!-- Data Table Section -->
-        <section ref="dataSection" class="mx-24 my-4">
-            <div class="mb-8 flex items-center justify-between">
+        <section ref="dataSection" class="p-6">
+            <div class="mb-4 flex items-center justify-between">
                 <h2 class="text-3xl font-semibold">Request Data</h2>
                 <Button
                     label="Create"
@@ -422,11 +422,11 @@ const resetForm = () => {
                     </template>
                 </Column>
 
-                <Column header="Action" v-if="auth?.user?.role === 'Reviewer' || auth?.user?.role === 'Admin'" style="width: 20%">
+                <Column header="Action" v-if="auth?.user?.role === 'Superior' || auth?.user?.role === 'Admin'" style="width: 20%">
                     <template #body="{ data }">
                         <div class="flex gap-2">
-                            <!-- Reviewer actions -->
-                            <template v-if="auth?.user?.role === 'Reviewer'">
+                            <!-- Superior actions -->
+                            <template v-if="auth?.user?.role === 'Superior'">
                                 <button
                                     v-if="data.status === 'wait_for_review'"
                                     class="inline-flex cursor-pointer items-center gap-1 rounded bg-green-400 px-3 py-1 text-xs font-semibold text-black hover:bg-green-600 hover:text-white"

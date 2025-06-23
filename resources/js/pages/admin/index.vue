@@ -8,9 +8,9 @@ import Chip from 'primevue/chip';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
 import Dialog from 'primevue/dialog';
-import Dropdown from 'primevue/dropdown';
 import InputText from 'primevue/inputtext';
 import MultiSelect from 'primevue/multiselect';
+import Select from 'primevue/select';
 import Tab from 'primevue/tab';
 import TabList from 'primevue/tablist';
 import TabPanel from 'primevue/tabpanel';
@@ -59,34 +59,6 @@ const openRoleDialog = (role: Role | null = null) => {
     roleDialog.value = true;
 };
 
-// Hanya Front End
-const deleteRole = (role: Role) => {
-    if (!confirm(`Are you sure you want to delete role "${role.name}"?`)) return;
-
-    router.visit(`/admin/roles/${role.id}`, {
-        method: 'delete',
-        onSuccess: () => {
-            // Hapus dari UI
-            roles.value = roles.value.filter((r) => r.id !== role.id);
-            toast.add({
-                severity: 'success',
-                summary: 'Deleted',
-                detail: 'Role deleted successfully',
-                life: 3000,
-            });
-        },
-        onError: (errors) => {
-            toast.add({
-                severity: 'error',
-                summary: 'Error',
-                detail: 'Failed to delete role',
-                life: 4000,
-            });
-            console.error(errors);
-        },
-    });
-};
-
 const saveRole = () => {
     const roleName = roleForm.value.name.trim();
 
@@ -131,6 +103,33 @@ const saveRole = () => {
     });
 };
 
+const deleteRole = (role: Role) => {
+    if (!confirm(`Are you sure you want to delete role "${role.name}"?`)) return;
+
+    router.visit(`/admin/roles/${role.id}`, {
+        method: 'delete',
+        onSuccess: () => {
+            // Hapus dari UI
+            roles.value = roles.value.filter((r) => r.id !== role.id);
+            toast.add({
+                severity: 'success',
+                summary: 'Deleted',
+                detail: 'Role deleted successfully',
+                life: 3000,
+            });
+        },
+        onError: (errors) => {
+            toast.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Failed to delete role',
+                life: 4000,
+            });
+            console.error(errors);
+        },
+    });
+};
+
 // =================================
 // ==== Methods for Permissions ====
 // =================================
@@ -159,43 +158,72 @@ const openPermissionDialog = (permission: Permission | null = null) => {
     permissionDialog.value = true;
 };
 
-// Hanya Front End
-const deletePermission = (permission: Permission) => {
-    if (confirm(`Are you sure you want to delete permission "${permission.name}"?`)) {
-        permissions.value = permissions.value.filter((p) => p.id !== permission.id);
-        toast.add({ severity: 'success', summary: 'Success', detail: 'Permission deleted successfully', life: 3000 });
-    }
-};
-
-// Hanya Front End
 const savePermission = () => {
-    if (permissionForm.value.name.trim() === '') {
+    const permissionName = permissionForm.value.name.trim();
+
+    if (!permissionName) {
         toast.add({ severity: 'error', summary: 'Error', detail: 'Permission name is required', life: 3000 });
         return;
     }
 
-    if (permissionForm.value.id) {
-        // Update existing permission
-        const index = permissions.value.findIndex((p) => p.id === permissionForm.value.id);
-        if (index !== -1) {
-            permissions.value[index] = { ...permissionForm.value };
-        }
-        toast.add({ severity: 'success', summary: 'Success', detail: 'Permission updated successfully', life: 3000 });
-    } else {
-        // Create new permission
-        const newPermission = {
-            id: Math.max(...permissions.value.map((r) => r.id).filter((id) => id !== null)) + 1,
-            name: permissionForm.value.name,
-        };
-        permissions.value.push(newPermission);
-        toast.add({ severity: 'success', summary: 'Success', detail: 'Permission created successfully', life: 3000 });
-    }
+    const isUpdate = !!permissionForm.value.id;
+    const routeUrl = isUpdate ? `/admin/permissions/${permissionForm.value.id}` : '/admin/permissions';
 
-    permissionDialog.value = false;
+    const method = isUpdate ? 'put' : 'post';
+
+    router.visit(routeUrl, {
+        method: method,
+        data: {
+            name: permissionForm.value.name,
+        },
+        onSuccess: () => {
+            toast.add({
+                severity: 'success',
+                summary: isUpdate ? 'Updated' : 'Created',
+                detail: `Permission ${isUpdate ? 'updated' : 'created'} successfully`,
+                life: 3000,
+            });
+            roleDialog.value = false;
+        },
+        onError: (errors) => {
+            toast.add({
+                severity: 'error',
+                summary: 'error',
+                detail: Object.values(errors).join(', '),
+                life: 4000,
+            });
+        },
+    });
+};
+
+const deletePermission = (permission: Permission) => {
+    if (!confirm(`Are you sure you want to delete permission "${permission.name}"?`)) return;
+
+    router.visit(`/admin/permissions/${permission.id}`, {
+        method: 'delete',
+        onSuccess: () => {
+            // Hapus dari UI
+            permissions.value = permissions.value.filter((p) => p.id !== permission.id);
+            toast.add({
+                severity: 'success',
+                summary: 'Deleted',
+                detail: 'Permission deleted successfully',
+                life: 3000,
+            });
+        },
+        onError: (errors) => {
+            toast.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Failed to delete permission',
+                life: 4000,
+            });
+        },
+    });
 };
 
 // =================================
-// ==== Methods for Permissions ====
+// ==== Methods for Assign Role ====
 // =================================
 const users = ref<User[]>([...(page.props.users as User[])]);
 const userRoleDialog = ref(false);
@@ -216,24 +244,40 @@ const openUserRoleDialog = (user: User | null = null) => {
 };
 
 const assignRole = () => {
-    if (!selectedRole.value) {
-        toast.add({ severity: 'error', summary: 'Error', detail: 'Please select a role', life: 3000 });
+    if (!selectedRole.value || !selectedUser.value) {
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'User and Role must be selected',
+            life: 3000,
+        });
         return;
     }
 
-    if (!selectedUser.value) {
-        toast.add({ severity: 'error', summary: 'Error', detail: 'No user selected', life: 3000 });
-        return;
-    }
-    if (selectedUser.value) {
-        const userIndex = users.value.findIndex((u) => u.id === selectedUser.value!.id);
-        if (userIndex !== -1) {
-            users.value[userIndex].role = selectedRole.value.name;
-        }
-    }
-
-    toast.add({ severity: 'success', summary: 'Success', detail: 'Role assigned successfully', life: 3000 });
-    userRoleDialog.value = false;
+    router.visit(`/admin/users/${selectedUser.value.id}/assign-role`, {
+        method: 'post',
+        data: {
+            user_id: selectedUser.value.id,
+            role_id: selectedRole.value.id,
+        },
+        onSuccess: () => {
+            toast.add({
+                severity: 'success',
+                summary: 'Success',
+                detail: 'Role assigned successfully',
+                life: 3000,
+            });
+            userRoleDialog.value = false;
+        },
+        onError: (errors) => {
+            toast.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: Object.values(errors).join(', '),
+                life: 4000,
+            });
+        },
+    });
 };
 
 const getRoleTagClass = (roleName: string) => {
@@ -242,13 +286,70 @@ const getRoleTagClass = (roleName: string) => {
     switch (roleName) {
         case 'Admin':
             return `${base} bg-red-500 hover:bg-red-700`;
-        case 'Reviewer':
+        case 'Superior':
             return `${base} bg-rose-500 hover:bg-rose-700`;
         case 'User':
             return `${base} bg-emerald-500 hover:bg-emerald-700`;
         default:
             return `${base} bg-gray-500 hover:bg-gray-700`;
     }
+};
+
+// =================================
+// ==== Methods for Regist User ====
+// =================================
+
+const registUser = () => {
+    const name = (document.getElementById('name') as HTMLInputElement)?.value.trim();
+    const npk = (document.getElementById('npk') as HTMLInputElement)?.value.trim();
+    const password = (document.getElementById('password') as HTMLInputElement)?.value;
+    const confirmPassword = (document.getElementById('confirm_password') as HTMLInputElement)?.value;
+
+    if (!name || !npk || !password || !confirmPassword) {
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Please fill out all fields',
+            life: 3000,
+        });
+        return;
+    }
+
+    if (password !== confirmPassword) {
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Passwords do not match',
+            life: 3000,
+        });
+        return;
+    }
+
+    router.visit('/admin/register', {
+        method: 'post',
+        data: {
+            name: name,
+            npk: npk,
+            password: password,
+            password_confirmation: confirmPassword,
+        },
+        onSuccess: () => {
+            toast.add({
+                severity: 'success',
+                summary: 'Success',
+                detail: 'User registered successfully',
+                life: 3000,
+            });
+        },
+        onError: (errors) => {
+            toast.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: Object.values(errors).join(', '),
+                life: 4000,
+            });
+        },
+    });
 };
 </script>
 
@@ -258,7 +359,7 @@ const getRoleTagClass = (roleName: string) => {
         <div class="p-6">
             <div class="mb-4">
                 <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Administrator Panel</h1>
-                <p class="text-gray-600 dark:text-gray-400">Manage roles, permissions, and user assignments</p>
+                <p class="text-gray-600 dark:text-gray-400">Manage roles, permissions, user registration & role assignments</p>
             </div>
 
             <Tabs value="0">
@@ -266,6 +367,7 @@ const getRoleTagClass = (roleName: string) => {
                     <Tab value="0">Roles Management</Tab>
                     <Tab value="1">Permission Management</Tab>
                     <Tab value="2">User Role Assignment</Tab>
+                    <Tab value="3">Create User</Tab>
                 </TabList>
                 <TabPanels>
                     <!-- Roles Tab -->
@@ -382,6 +484,49 @@ const getRoleTagClass = (roleName: string) => {
                             </template>
                         </Card>
                     </TabPanel>
+
+                    <!-- Register new user Tab -->
+                    <TabPanel header="Create User" value="3">
+                        <Card>
+                            <template #header>
+                                <div class="p-4">
+                                    <h2 class="text-xl font-semibold">Register User</h2>
+                                    <p class="text-gray-600 dark:text-gray-400">Add new user account</p>
+                                </div>
+                            </template>
+                            <template #content>
+                                <form>
+                                    <div class="mb-5 flex w-full flex-row gap-4">
+                                        <!-- Input kiri -->
+                                        <div class="flex w-1/2 flex-col gap-1">
+                                            <label for="name">Name :</label>
+                                            <InputText id="name" name="name" type="text" placeholder="Type here..." />
+                                        </div>
+
+                                        <!-- Input kanan -->
+                                        <div class="flex w-1/2 flex-col gap-1">
+                                            <label for="npk">NPK:</label>
+                                            <InputText id="npk" name="npk" type="text" placeholder="Type here..." />
+                                        </div>
+                                    </div>
+                                    <div class="mb-5 flex w-full flex-row gap-4">
+                                        <!-- Input kiri -->
+                                        <div class="flex w-1/2 flex-col gap-1">
+                                            <label for="password">Password :</label>
+                                            <InputText id="password" name="password" type="password" placeholder="Type here..." />
+                                        </div>
+
+                                        <!-- Input kanan -->
+                                        <div class="flex w-1/2 flex-col gap-1">
+                                            <label for="confirm_password">Confirm Password :</label>
+                                            <InputText id="confirm_password" name="confirm_password" type="password" placeholder="Type here..." />
+                                        </div>
+                                    </div>
+                                    <Button label="Save" icon="pi pi-check" severity="success" @click="registUser" />
+                                </form>
+                            </template>
+                        </Card>
+                    </TabPanel>
                 </TabPanels>
             </Tabs>
 
@@ -433,7 +578,7 @@ const getRoleTagClass = (roleName: string) => {
                     </div>
                     <div>
                         <label for="userRole" class="mb-2 block text-sm font-medium">Select Role</label>
-                        <Dropdown v-model="selectedRole" :options="roles" optionLabel="name" placeholder="Select a role" class="w-full" />
+                        <Select v-model="selectedRole" :options="roles" optionLabel="name" placeholder="Select a role" class="w-full" />
                     </div>
                 </div>
                 <template #footer>

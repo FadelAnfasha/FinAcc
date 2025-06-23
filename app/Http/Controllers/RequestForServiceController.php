@@ -13,7 +13,7 @@ class RequestForServiceController extends Controller
      * Display a listing of the resource.
      */
     public function index()
-    {   
+    {
         $services = RequestForService::all();
         return Inertia::render('rfs/index', [
             'services' => $services,
@@ -28,7 +28,7 @@ class RequestForServiceController extends Controller
     }
 
     public function store(Request $request)
-    {   
+    {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'npk' => 'required|string|max:50',
@@ -50,7 +50,7 @@ class RequestForServiceController extends Controller
     }
 
     public function accept($id)
-    {   
+    {
         $rfs = RequestForService::findOrFail($id);
         $rfs->status = 'accepted';
         $rfs->save();
@@ -84,5 +84,4 @@ class RequestForServiceController extends Controller
 
         return redirect()->back()->with('success', 'Request finish.');
     }
-
 }

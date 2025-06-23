@@ -130,20 +130,6 @@ class AdminController extends Controller
     }
 
     /**
-     * Update an existing permission
-     */
-    public function updatePermission(Request $request, Permission $permission)
-    {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255', Rule::unique('permissions')->ignore($permission->id)]
-        ]);
-
-        $permission->update(['name' => $request->name]);
-
-        return redirect()->back()->with('success', 'Permission updated successfully');
-    }
-
-    /**
      * Delete a permission
      */
     public function destroyPermission(Permission $permission)
@@ -177,21 +163,6 @@ class AdminController extends Controller
         $user->syncRoles([$role->name]);
 
         return redirect()->back()->with('success', 'Role assigned successfully');
-    }
-
-    /**
-     * Remove role from user
-     */
-    public function removeRole(Request $request)
-    {
-        $request->validate([
-            'user_id' => 'required|exists:users,id'
-        ]);
-
-        $user = User::findOrFail($request->user_id);
-        $user->syncRoles([]);
-
-        return redirect()->back()->with('success', 'Role removed successfully');
     }
 
     /**

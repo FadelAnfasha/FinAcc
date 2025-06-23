@@ -10,14 +10,16 @@ export interface BreadcrumbItem {
     href: string;
 }
 
+// index.d.ts
+
 export interface NavItem {
+    key?: string; // 👈 ditambahkan agar bisa dipakai PrimeVue Tree
     title: string;
     href: string;
     icon?: LucideIcon;
     isActive?: boolean;
-
-    // Tambahan opsional:
-    onlyFor?: string[]; // array of roles yang boleh lihat menu ini
+    onlyFor?: string[]; // 👈 role access
+    children?: NavItem[]; // 👈 submenu
 }
 
 export type AppPageProps<T extends Record<string, unknown> = Record<string, unknown>> = T & {

@@ -32,7 +32,7 @@ class RegisteredUserController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'npk' => ['required', 'digits:6'],
+            'npk' => 'required|string|max:50|unique:users,npk',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
@@ -42,10 +42,9 @@ class RegisteredUserController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        event(new Registered($user));
+        // Assign role default (optional)
+        $user->assignRole('User');
 
-        Auth::login($user);
-
-        return to_route('dashboard');
+        return redirect()->back()->with('success', 'User registered successfully.');
     }
 }
