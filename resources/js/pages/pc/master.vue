@@ -4,7 +4,6 @@ import { Head, router, usePage } from '@inertiajs/vue3';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
-import Dialog from 'primevue/dialog';
 import FileUpload, { FileUploadUploaderEvent } from 'primevue/fileupload';
 import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref } from 'vue';
@@ -20,14 +19,20 @@ interface FlashMessage {
 }
 const page = usePage();
 const flash = page.props.flash as FlashMessage;
-console.log(flash.success, flash.addedItems, flash.updatedItems, flash.invalidItems);
 
 const showImportResult = ref(false);
 const addedItems = ref<string[]>([]);
 const updatedItems = ref<string[]>([]);
 const invalidItems = ref<string[]>([]);
 
-const businessPartners = computed<any[]>(() => page.props.businessPartners as any[]);
+const businessPartners = computed(() =>
+    (page.props.businessPartners as any[]).map((bp, index) => ({
+        ...bp,
+        no: index + 1,
+        created_at_formatted: formatDate(bp.created_at),
+        updated_at_formatted: formatDate(bp.updated_at),
+    })),
+);
 
 const headerStyle = { backgroundColor: '#758596', color: 'white' };
 
@@ -71,20 +76,40 @@ function handleCSVImport(event: FileUploadUploaderEvent) {
 }
 
 function exportCSV() {
-    dt.value.exportCSV({ selectionOnly: false }); // Export semua data
+    const table = dt.value;
+    if (!table) return;
+
+    const exportFilename = `business-partners-${new Date().toISOString().slice(0, 10)}.csv`;
+
+    table.exportCSV({
+        selectionOnly: false,
+        filename: exportFilename,
+    });
 }
 
 const showResultDialog = ref(false);
 
-const importResults = computed(() => ({
-    success: flash.success,
-    added: flash.addedItems || [],
-    updated: flash.updatedItems || [],
-    invalid: flash.invalidItems || [],
-}));
+function formatDate(dateStr: string): string {
+    const date = new Date(dateStr);
+    const yy = String(date.getFullYear());
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yy}-${mm}-${dd}`;
+}
 
-if (importResults.value.added.length > 0 || importResults.value.updated.length > 0 || importResults.value.invalid.length > 0) {
-    showResultDialog.value = true;
+function editBP(bp: any) {
+    console.log('Edit', bp);
+    // buka dialog edit atau redirect, tergantung desain kamu
+}
+
+function deleteBP(bp: any) {
+    if (confirm(`Hapus ${bp.bp_code}?`)) {
+        router.delete(route('bps.destroy', bp.id), {
+            onSuccess: () => {
+                toast.add({ severity: 'success', summary: 'Deleted', detail: 'Data berhasil dihapus' });
+            },
+        });
+    }
 }
 </script>
 
@@ -93,7 +118,7 @@ if (importResults.value.added.length > 0 || importResults.value.updated.length >
 
     <AppLayout>
         <template>
-            <Dialog v-model:visible="showResultDialog" header="Import Result" modal class="w-[40rem]">
+            <!-- <Dialog v-model:visible="showResultDialog" header="Import Result" modal class="w-[40rem]">
                 <div v-if="importResults.success" class="mb-4 text-green-600">
                     {{ importResults.success }}
                 </div>
@@ -122,7 +147,7 @@ if (importResults.value.added.length > 0 || importResults.value.updated.length >
                 <template #footer>
                     <Button label="Tutup" icon="pi pi-times" @click="showResultDialog = false" />
                 </template>
-            </Dialog>
+            </Dialog> -->
         </template>
         <div class="p-6">
             <div class="flex flex-col gap-1">
@@ -130,7 +155,7 @@ if (importResults.value.added.length > 0 || importResults.value.updated.length >
                 <p class="text-start text-gray-600 dark:text-gray-400">Calculation for each process for all product</p>
             </div>
             <!-- Header Section -->
-            <div class="mb-8">
+            <div class="mt-4 mb-8">
                 <div class="relative mb-6 text-center">
                     <h1 class="relative z-10 inline-block bg-white px-4 text-2xl font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
                         Master Data Section
@@ -168,12 +193,27 @@ if (importResults.value.added.length > 0 || importResults.value.updated.length >
                             <Button icon="pi pi-download" class="text-end" label="Export" @click="exportCSV()" />
                         </div>
                     </template>
-                    <Column field="no" sortable header="No" :headerStyle="headerStyle"></Column>
                     <Column field="bp_code" sortable header="BP Code" :headerStyle="headerStyle"></Column>
                     <Column field="bp_name" sortable header="BP Name" :headerStyle="headerStyle"></Column>
-                    <Column field="created_at" sortable header="Added at" :headerStyle="headerStyle"></Column>
-                    <Column field="updated_at" sortable header="Updated at" :headerStyle="headerStyle"></Column>
-                    <Column field="action" header="Action" :headerStyle="headerStyle"></Column>
+                    <Column field="created_at_formatted" sortable header="Added at" :headerStyle="headerStyle">
+                        <template #body="slotProps">
+                            {{ formatDate(slotProps.data.created_at) }}
+                        </template>
+                    </Column>
+
+                    <Column field="updated_at_formatted" sortable header="Updated at" :headerStyle="headerStyle">
+                        <template #body="slotProps">
+                            {{ formatDate(slotProps.data.updated_at) }}
+                        </template>
+                    </Column>
+
+                    <Column field="action" header="Action" :exportable="false" :headerStyle="headerStyle"
+                        ><template #body="slotProps">
+                            <div class="flex gap-2">
+                                <Button icon="pi pi-pencil" severity="warning" rounded text @click="editBP(slotProps.data)" />
+                                <Button icon="pi pi-trash" severity="danger" rounded text @click="deleteBP(slotProps.data)" />
+                            </div> </template
+                    ></Column>
                 </DataTable>
             </section>
 

@@ -6,21 +6,13 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 // import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
 // import { HandHelping, LifeBuoy } from 'lucide-vue-next';
+import { useSidebar } from '@/components/ui/sidebar/utils';
 import { mainNavItems } from '@/constants/nav';
+import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
 
-// const footerNavItems: NavItem[] = [
-//     {
-//         title: 'Github Repo',
-//         href: 'https://github.com/laravel/vue-starter-kit',
-//         icon: Folder,
-//     },
-//     {
-//         title: 'Documentation',
-//         href: 'https://laravel.com/docs/starter-kits#vue',
-//         icon: BookOpen,
-//     },
-// ];
+const { state } = useSidebar();
+const isCollapsed = computed(() => state.value === 'collapsed');
 </script>
 
 <template>
@@ -38,7 +30,7 @@ import AppLogo from './AppLogo.vue';
         </SidebarHeader>
 
         <SidebarContent>
-            <NavMain :items="mainNavItems" />
+            <NavMain :items="mainNavItems" :isCollapsed="isCollapsed" />
         </SidebarContent>
 
         <SidebarFooter>

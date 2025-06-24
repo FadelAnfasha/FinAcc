@@ -16,7 +16,7 @@ class ProcessCostController extends Controller
         return Inertia::render("pc/master", [
             'businessPartners' => $bPartner,
             // opsional, jika kamu ingin akses session manual
-            'flash' => session()->only(['success', 'addedItems', 'updatedItems', 'invalidItems']),
+            // 'flash' => session()->only(['success', 'addedItems', 'updatedItems', 'invalidItems']),
         ]);
     }
 

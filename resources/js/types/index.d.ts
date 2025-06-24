@@ -1,13 +1,7 @@
-import type { LucideIcon } from 'lucide-vue-next';
 import type { Config } from 'ziggy-js';
 
 export interface Auth {
     user: User;
-}
-
-export interface BreadcrumbItem {
-    title: string;
-    href: string;
 }
 
 // index.d.ts
@@ -15,8 +9,8 @@ export interface BreadcrumbItem {
 export interface NavItem {
     key?: string; // 👈 ditambahkan agar bisa dipakai PrimeVue Tree
     title: string;
-    href: string;
-    icon?: LucideIcon;
+    href: string | null;
+    icon: string;
     isActive?: boolean;
     onlyFor?: string[]; // 👈 role access
     children?: NavItem[]; // 👈 submenu
@@ -52,4 +46,8 @@ export interface Permission {
     name: string;
 }
 
+export interface BreadcrumbItem {
+    title: string;
+    href: string | null;
+}
 export type BreadcrumbItemType = BreadcrumbItem;

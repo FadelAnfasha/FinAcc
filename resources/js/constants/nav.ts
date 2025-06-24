@@ -1,37 +1,36 @@
 // nav.ts
 import type { NavItem } from '@/types';
-import { CircleDollarSign, ClipboardList, Database, HandHelping, LifeBuoy, UsersRound } from 'lucide-vue-next';
 
 export const mainNavItems: NavItem[] = [
     {
         key: 'rfs',
         title: 'Request for Service',
         href: 'rfs.index',
-        icon: HandHelping,
+        icon: 'pi-question-circle',
     },
     {
         key: 'admin',
         title: 'Administrator',
         href: 'admin.index',
-        icon: UsersRound,
+        icon: 'pi-prime',
         onlyFor: ['Admin'],
     },
     {
         key: 'pc',
         title: 'Process Cost',
-        href: '#',
-        icon: CircleDollarSign,
+        href: 'admin.index',
+        icon: 'pi-dollar',
         children: [
             {
                 key: 'pcMaster',
                 title: 'Master Data',
-                icon: Database,
+                icon: 'pi-database',
                 href: 'pc.master',
             },
             {
                 key: 'pcReport',
                 title: 'Report',
-                icon: ClipboardList,
+                icon: 'pi-clipboard',
                 href: 'pc.report',
             },
         ],
@@ -40,18 +39,18 @@ export const mainNavItems: NavItem[] = [
         key: 'bom',
         title: 'Bill of Material',
         href: 'rfs.index',
-        icon: LifeBuoy,
+        icon: 'pi-wrench',
         children: [
             {
                 key: 'bomMaster',
                 title: 'Master Data',
-                icon: Database,
+                icon: 'pi-database',
                 href: 'rfs.index',
             },
             {
                 key: 'bomReport',
                 title: 'Report',
-                icon: ClipboardList,
+                icon: 'pi-clipboard',
                 href: 'rfs.index',
             },
         ],

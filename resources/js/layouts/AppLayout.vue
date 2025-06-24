@@ -9,12 +9,23 @@ const page = usePage();
 const currentPath = new URL(page.props.ziggy.location).pathname;
 
 // Otomatis generate breadcrumbs
-const breadcrumbs: BreadcrumbItemType[] = mainNavItems
-    .filter((item) => route().current(item.href))
-    .map((item) => ({
-        title: item.title,
-        href: item.href,
-    }));
+const breadcrumbs: BreadcrumbItemType[] = [];
+
+for (const item of mainNavItems) {
+    if (item.href && route().current(item.href)) {
+        breadcrumbs.push({ title: item.title, href: item.href });
+        break;
+    }
+
+    if (item.children) {
+        const matchedChild = item.children.find((child) => route().current(child.href));
+        if (matchedChild) {
+            breadcrumbs.push({ title: item.title, href: item.href }); // parent
+            breadcrumbs.push({ title: matchedChild.title, href: matchedChild.href }); // child
+            break;
+        }
+    }
+}
 </script>
 
 <template>
