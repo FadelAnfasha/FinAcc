@@ -10,6 +10,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ProcessCostController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\BusinessPartnerController;
+use App\Http\Controllers\CycleTimeController;
 
 #===========================
 #======  Main Route  =======
@@ -58,7 +59,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
 #==========================
 #======= BOM Route ========
 #==========================
-Route::get('/bom', [BOMController::class, 'index'])->name('bom.index');
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Main Process Cost page
+    // Route::get('/pc', [ProcessCostController::class, 'index'])
+    //     ->name('pc.index');
+
+    // Master Data page
+    Route::get('/bom/master', [ProcessCostController::class, 'master'])
+        ->name('bom.master');
+
+
+    // Report page
+    Route::get('/bom/report', [ProcessCostController::class, 'report'])
+        ->name('bom.report');
+});
 
 
 #==========================
@@ -66,10 +80,6 @@ Route::get('/bom', [BOMController::class, 'index'])->name('bom.index');
 #==========================
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    // Main Process Cost page
-    // Route::get('/pc', [ProcessCostController::class, 'index'])
-    //     ->name('pc.index');
-
     // Master Data page
     Route::get('/pc/master', [ProcessCostController::class, 'master'])
         ->name('pc.master');
@@ -86,6 +96,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/bps/import', [BusinessPartnerController::class, 'import'])->name('bps.import');
+});
+
+
+#=============================
+#=======> Cycle Time <========
+#=============================
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/import', [CycleTimeController::class, 'import'])->name('ct.import');
 });
 
 

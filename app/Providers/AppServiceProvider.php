@@ -20,15 +20,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Inertia::share([
-            'flash' => function () {
-                return [
-                    'success' => session('success'),
-                    'addedItems' => session('addedItems'),
-                    'updatedItems' => session('updatedItems'),
-                    'invalidItems' => session('invalidItems'),
-                ];
-            },
-        ]);
+        Inertia::share('flash', function () {
+            return [
+                'success' => session('success'),
+                'addedItems' => session('addedItems'),
+                'updatedItems' => session('updatedItems'),
+                'invalidItems' => session('invalidItems'),
+            ];
+        });
     }
 }

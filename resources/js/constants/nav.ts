@@ -18,7 +18,7 @@ export const mainNavItems: NavItem[] = [
     {
         key: 'pc',
         title: 'Process Cost',
-        href: 'admin.index',
+        href: '#',
         icon: 'pi-dollar',
         children: [
             {
@@ -38,20 +38,20 @@ export const mainNavItems: NavItem[] = [
     {
         key: 'bom',
         title: 'Bill of Material',
-        href: 'rfs.index',
+        href: '#',
         icon: 'pi-wrench',
         children: [
             {
                 key: 'bomMaster',
                 title: 'Master Data',
                 icon: 'pi-database',
-                href: 'rfs.index',
+                href: 'bom.master',
             },
             {
                 key: 'bomReport',
                 title: 'Report',
                 icon: 'pi-clipboard',
-                href: 'rfs.index',
+                href: 'bom.report',
             },
         ],
     },

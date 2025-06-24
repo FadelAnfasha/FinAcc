@@ -214,8 +214,11 @@ const resetForm = () => {
     <AppLayout>
         <!-- Data Table Section -->
         <section ref="dataSection" class="p-6">
+            <div class="flex flex-col gap-1">
+                <h2 class="mb-2 text-start text-3xl font-bold text-gray-900 dark:text-white">Request Data</h2>
+                <p class="text-start text-gray-600 dark:text-gray-400">Display all request, create request, and approving request.</p>
+            </div>
             <div class="mb-4 flex items-center justify-between">
-                <h2 class="text-3xl font-semibold">Request Data</h2>
                 <Button
                     label="Create"
                     severity="info"
