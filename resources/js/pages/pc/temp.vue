@@ -1,19 +1,301 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
+import Button from 'primevue/button';
+import Card from 'primevue/card';
+import Chart from 'primevue/chart';
+import Column from 'primevue/column';
+import DataTable from 'primevue/datatable';
+import FileUpload, { FileUploadUploaderEvent } from 'primevue/fileupload';
+import Panel from 'primevue/panel';
+import { useToast } from 'primevue/usetoast';
+import { computed, onMounted, ref } from 'vue';
+
+const dtBP = ref();
+const dtCT = ref();
+const dtSQ = ref();
+const dtWD = ref();
+const toast = useToast();
+const page = usePage();
+
+const businessPartners = computed(() =>
+    (page.props.businessPartners as any[]).map((bp, index) => ({
+        ...bp,
+        no: index + 1,
+        created_at_formatted: formatDate(bp.created_at),
+        updated_at_formatted: formatDate(bp.updated_at),
+    })),
+);
+
+const cycleTimes = computed(() =>
+    (page.props.cycleTimes as any[]).map((ct, index) => ({
+        ...ct,
+        no: index + 1,
+        created_at_formatted: formatDate(ct.created_at),
+        updated_at_formatted: formatDate(ct.updated_at),
+    })),
+);
+
+const salesQuantity = computed(() =>
+    (page.props.salesQuantities as any[]).map((sq, index) => ({
+        ...sq,
+        no: index + 1,
+        created_at_formatted: formatDate(sq.created_at),
+        updated_at_formatted: formatDate(sq.updated_at),
+    })),
+);
+
+const wagesDistribution = page.props.wagesDistribution as Record<string, string>;
+
+// Ref untuk Chart Data dan Options
+const chartOptions = ref({});
+const chartDataDisc = ref({});
+const chartDataRim = ref({});
+const chartDataSidering = ref({});
+const chartDataAssy = ref({});
+const chartDataPainting = ref({});
+const chartDataPacking = ref({});
+const chartDataTotal = ref({});
+
+onMounted(() => {
+    chartDataDisc.value = getChartData('Line Disc', ['blanking', 'spinDisc', 'autoDisc', 'manualDisc', 'discLathe'], '--p-cyan-500');
+    chartDataRim.value = getChartData('Line Rim', ['rim1', 'rim2', 'rim3'], '--p-orange-500');
+    chartDataSidering.value = getChartData('Line Sidering', ['coiler', 'forming'], '--p-green-500');
+    chartDataAssy.value = getChartData('Line Assy', ['assy1', 'assy2', 'machining', 'shotPeening'], '--p-purple-500');
+    chartDataPainting.value = getChartData('Line Painting', ['ced', 'topcoat'], '--p-red-500');
+    chartDataPacking.value = getChartData('Line Packing', ['packing_dom', 'packing_exp'], '--p-blue-500');
+
+    chartOptions.value = getChartOptions();
+});
+
+const lineDiscTotal = computed(() => calculateTotal(['blanking', 'spinDisc', 'autoDisc', 'manualDisc', 'discLathe']));
+const lineRimTotal = computed(() => calculateTotal(['rim1', 'rim2', 'rim3']));
+const lineSideringTotal = computed(() => calculateTotal(['coiler', 'forming']));
+const lineAssyTotal = computed(() => calculateTotal(['assy1', 'assy2', 'machining', 'shotPeening']));
+const linePaintingTotal = computed(() => calculateTotal(['ced', 'topcoat', 'machining', 'shotPeening']));
+const linePackingTotal = computed(() => calculateTotal(['packing_dom', 'packing_exp']));
+const lineTotals = computed(
+    () => lineDiscTotal.value + lineRimTotal.value + lineSideringTotal.value + lineAssyTotal.value + linePaintingTotal.value + linePackingTotal.value,
+);
+
+const getChartData = (label: string, keys: string[], color: string) => {
+    const documentStyle = getComputedStyle(document.documentElement);
+    const wd = (page.props.wagesDistribution || {}) as Record<string, string>;
+
+    return {
+        labels: keys,
+        datasets: [
+            {
+                label,
+                backgroundColor: documentStyle.getPropertyValue(color),
+                data: keys.map((key) => parseFloat(wd[key] || '0')),
+            },
+        ],
+    };
+};
+
+const getChartOptions = () => {
+    const documentStyle = getComputedStyle(document.documentElement);
+    const textColor = documentStyle.getPropertyValue('--p-text-color');
+    const textColorSecondary = documentStyle.getPropertyValue('--p-text-muted-color');
+    const surfaceBorder = documentStyle.getPropertyValue('--p-content-border-color');
+
+    return {
+        indexAxis: 'y',
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                labels: {
+                    color: textColor,
+                },
+            },
+        },
+        scales: {
+            x: {
+                ticks: {
+                    color: textColorSecondary,
+                },
+                grid: {
+                    color: surfaceBorder,
+                },
+            },
+            y: {
+                ticks: {
+                    color: textColorSecondary,
+                },
+                grid: {
+                    color: surfaceBorder,
+                },
+            },
+        },
+    };
+};
+
+const calculateTotal = (keys: string[]) => {
+    const wd = (page.props.wagesDistribution || {}) as Record<string, string>;
+    return keys.reduce((sum, key) => sum + parseFloat(wd[key] || '0'), 0);
+};
+
+chartDataTotal.value = {
+    labels: ['Line Disc', 'Line Rim', 'Line Sidering', 'Line Assy', 'Line Painting', 'Line Packing'],
+    datasets: [
+        {
+            label: 'Total Wages Distribution',
+            backgroundColor: [
+                getComputedStyle(document.documentElement).getPropertyValue('--p-cyan-500'),
+                getComputedStyle(document.documentElement).getPropertyValue('--p-orange-500'),
+                getComputedStyle(document.documentElement).getPropertyValue('--p-green-500'),
+                getComputedStyle(document.documentElement).getPropertyValue('--p-purple-500'),
+                getComputedStyle(document.documentElement).getPropertyValue('--p-red-500'),
+                getComputedStyle(document.documentElement).getPropertyValue('--p-blue-500'),
+            ],
+            data: [
+                lineDiscTotal.value,
+                lineRimTotal.value,
+                lineSideringTotal.value,
+                lineAssyTotal.value,
+                linePaintingTotal.value,
+                linePackingTotal.value,
+            ],
+        },
+    ],
+};
+
+const headerStyle = { backgroundColor: '#758596', color: 'white' };
+const bodyStyle = { backgroundColor: '#c8cccc', color: 'black' };
+
+function handleCSVImport(event: FileUploadUploaderEvent, type: 'bp' | 'ct' | 'sq' | 'wd') {
+    let file: File | undefined;
+    if (Array.isArray(event.files)) {
+        file = event.files[0];
+    } else if (event.files instanceof File) {
+        file = event.files;
+    }
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    if (!csrfToken) {
+        console.error('CSRF token not found in meta tag!');
+        return;
+    }
+
+    let $route = null;
+
+    if (type === 'bp') {
+        $route = 'bps.import';
+    } else if (type === 'ct') {
+        $route = 'ct.import';
+    } else if (type === 'sq') {
+        $route = 'sq.import';
+    } else if (type === 'wd') {
+        $route = 'wd.import';
+    }
+
+    router.post(route($route), formData, {
+        preserveScroll: true,
+        preserveState: false,
+        only: ['wagesDistribution'], // nama prop yang harus di-refresh
+        onSuccess: () => {
+            toast.add({ severity: 'success', summary: 'Success', detail: 'CSV imported', life: 3000 });
+        },
+    });
+}
+
+function exportCSV(type: 'bp' | 'ct' | 'sq' | 'wd') {
+    let $type = null;
+    let $filename = null;
+    if (type === 'bp') {
+        $type = dtBP.value;
+        $filename = 'business-partners';
+    } else if (type === 'ct') {
+        $type = dtCT.value;
+        $filename = 'cycle-times';
+    } else if (type === 'sq') {
+        $type = dtSQ.value;
+        $filename = 'sales-quantity';
+    } else if (type === 'wd') {
+        $type = dtWD.value;
+        $filename = 'wages-distribution';
+    }
+
+    if (!$type) return;
+
+    const exportFilename = `business-partners-${new Date().toISOString().slice(0, 10)}.csv`;
+
+    $type.exportCSV({
+        selectionOnly: false,
+        filename: exportFilename,
+    });
+}
+
+function formatDate(dateStr: string): string {
+    const date = new Date(dateStr);
+    const yy = String(date.getFullYear());
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yy}-${mm}-${dd}`;
+}
+
+function editBP(bp: any) {
+    console.log('Edit', bp);
+    // buka dialog edit atau redirect, tergantung desain kamu
+}
+
+function deleteBP(bp: any) {
+    if (confirm(`Hapus ${bp.bp_code}?`)) {
+        router.delete(route('bps.destroy', bp.id), {
+            onSuccess: () => {
+                toast.add({ severity: 'success', summary: 'Deleted', detail: 'Data berhasil dihapus' });
+            },
+        });
+    }
+}
 </script>
 
 <template>
     <Head title="Process Cost" />
-
     <AppLayout>
-        <div class="p-6">
+        <!-- <template>
+            <Dialog v-model:visible="showResultDialog" header="Import Result" modal class="w-[40rem]">
+                <div v-if="importResults.success" class="mb-4 text-green-600">
+                    {{ importResults.success }}
+                </div>
+
+                <div class="mb-2" v-if="importResults.added.length">
+                    <strong class="text-green-700">Ditambahkan:</strong>
+                    <ul class="list-disc pl-4">
+                        <li v-for="item in importResults.added" :key="'added-' + item">{{ item }}</li>
+                    </ul>
+                </div>
+
+                <div class="mb-2" v-if="importResults.updated.length">
+                    <strong class="text-yellow-700">Diperbarui:</strong>
+                    <ul class="list-disc pl-4">
+                        <li v-for="item in importResults.updated" :key="'updated-' + item">{{ item }}</li>
+                    </ul>
+                </div>
+
+                <div class="mb-2" v-if="importResults.invalid.length">
+                    <strong class="text-red-700">Gagal:</strong>
+                    <ul class="list-disc pl-4">
+                        <li v-for="item in importResults.invalid" :key="'invalid-' + item">{{ item }}</li>
+                    </ul>
+                </div>
+
+                <template #footer>
+                    <Button label="Tutup" icon="pi pi-times" @click="showResultDialog = false" />
+                </template>
+            </Dialog>
+        </template> -->
+        <div class="m-6">
             <div class="flex flex-col gap-1">
                 <h2 class="mb-2 text-start text-3xl font-bold text-gray-900 dark:text-white">Process Cost Calculation</h2>
                 <p class="text-start text-gray-600 dark:text-gray-400">Calculation for each process for all product</p>
             </div>
             <!-- Header Section -->
-            <div class="mb-8">
+            <div class="mt-4 mb-8">
                 <div class="relative mb-6 text-center">
                     <h1 class="relative z-10 inline-block bg-white px-4 text-2xl font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
                         Master Data Section
@@ -21,247 +303,327 @@ import { Head } from '@inertiajs/vue3';
                     <hr class="absolute top-1/2 left-0 z-0 w-full -translate-y-1/2 border-gray-300 dark:border-gray-600" />
                 </div>
             </div>
+            <div class="mx-26 mb-26">
+                <!-- Process Items Grid -->
+                <section ref="bpSection" class="p-2">
+                    <h2 class="mb-4 text-3xl font-semibold hover:text-indigo-500">Business Partner</h2>
 
-            <!-- Process Items Grid -->
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <!-- Business Partner -->
-                <a
-                    href="/bps"
-                    class="group relative flex h-full items-center justify-start overflow-hidden rounded-lg border-2 border-green-200 bg-white p-4 transition-all duration-300 hover:border-green-400 hover:bg-green-50 dark:border-green-700 dark:bg-gray-800 dark:hover:border-green-500 dark:hover:bg-green-900/20"
-                    title="Manage Business Partners data (CA0002, CA0003, etc)"
-                >
-                    <div class="mr-4 flex-shrink-0">
-                        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600">
-                            <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                                />
-                            </svg>
-                        </div>
-                    </div>
-                    <span
-                        class="font-medium text-gray-800 transition-colors group-hover:text-green-700 dark:text-gray-200 dark:group-hover:text-green-300"
+                    <DataTable
+                        :value="businessPartners"
+                        tableStyle="min-width: 50rem"
+                        paginator
+                        :rows="10"
+                        removableSort
+                        class="text-md"
+                        filterDisplay="header"
+                        ref="dtBP"
                     >
-                        1. Business Partner
-                    </span>
-                    <div
-                        class="absolute inset-0 bg-gradient-to-r from-green-500/0 to-green-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                    ></div>
-                </a>
-
-                <!-- Cycle Time -->
-                <a
-                    href="/cycletimes"
-                    class="group relative flex h-full items-center justify-start overflow-hidden rounded-lg border-2 border-green-200 bg-white p-4 transition-all duration-300 hover:border-green-400 hover:bg-green-50 dark:border-green-700 dark:bg-gray-800 dark:hover:border-green-500 dark:hover:bg-green-900/20"
-                    title="Store Cycle Time data of each product (F15W01, F15W02, etc)"
-                >
-                    <div class="mr-4 flex-shrink-0">
-                        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-purple-600">
-                            <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        <template #header>
+                            <div class="flex items-center justify-between">
+                                <FileUpload
+                                    mode="basic"
+                                    name="file"
+                                    :auto="true"
+                                    :customUpload="true"
+                                    accept=".csv"
+                                    chooseLabel="Import CSV"
+                                    @uploader="(event) => handleCSVImport(event, 'bp')"
                                 />
-                            </svg>
-                        </div>
-                    </div>
-                    <span
-                        class="font-medium text-gray-800 transition-colors group-hover:text-green-700 dark:text-gray-200 dark:group-hover:text-green-300"
-                    >
-                        2. Cycle Time
-                    </span>
-                    <div
-                        class="absolute inset-0 bg-gradient-to-r from-green-500/0 to-green-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                    ></div>
-                </a>
 
-                <!-- Sales Quantity -->
-                <a
-                    href="/salesqtys"
-                    class="group relative flex h-full items-center justify-start overflow-hidden rounded-lg border-2 border-green-200 bg-white p-4 transition-all duration-300 hover:border-green-400 hover:bg-green-50 dark:border-green-700 dark:bg-gray-800 dark:hover:border-green-500 dark:hover:bg-green-900/20"
-                    title="Store Sales Quantity data of each product and business partner that order the product"
-                >
-                    <div class="mr-4 flex-shrink-0">
-                        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-orange-600">
-                            <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                                <Button icon="pi pi-download" class="text-end" label="Export" @click="exportCSV('bp')" />
+                            </div>
+                        </template>
+                        <Column field="bp_code" sortable header="BP Code" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
+                        <Column field="bp_name" sortable header="BP Name" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
+                        <Column field="created_at_formatted" sortable header="Added at" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                            <template #body="slotProps">
+                                {{ formatDate(slotProps.data.created_at) }}
+                            </template>
+                        </Column>
+
+                        <Column field="updated_at_formatted" sortable header="Updated at" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                            <template #body="slotProps">
+                                {{ formatDate(slotProps.data.updated_at) }}
+                            </template>
+                        </Column>
+
+                        <Column field="action" header="Action" :exportable="false" :headerStyle="headerStyle" :bodyStyle="bodyStyle"
+                            ><template #body="slotProps">
+                                <div class="flex gap-2">
+                                    <Button icon="pi pi-pencil" severity="warning" rounded text @click="editBP(slotProps.data)" />
+                                    <Button icon="pi pi-trash" severity="danger" rounded text @click="deleteBP(slotProps.data)" />
+                                </div> </template
+                        ></Column>
+                    </DataTable>
+                </section>
+
+                <section ref="ctSection" class="mt-16 p-2">
+                    <h2 class="mb-4 text-3xl font-semibold hover:text-indigo-500">Cycle Time</h2>
+                    <DataTable
+                        :value="cycleTimes"
+                        tableStyle="500px"
+                        :rows="10"
+                        paginator
+                        removableSort
+                        class="text-md"
+                        filterDisplay="header"
+                        ref="dtCT"
+                    >
+                        <template #header>
+                            <div class="flex items-center justify-between">
+                                <FileUpload
+                                    mode="basic"
+                                    name="file"
+                                    :auto="true"
+                                    :customUpload="true"
+                                    accept=".csv"
+                                    chooseLabel="Import CSV"
+                                    @uploader="(event) => handleCSVImport(event, 'ct')"
                                 />
-                            </svg>
-                        </div>
-                    </div>
-                    <span
-                        class="font-medium text-gray-800 transition-colors group-hover:text-green-700 dark:text-gray-200 dark:group-hover:text-green-300"
-                    >
-                        3. Sales Quantity
-                    </span>
-                    <div
-                        class="absolute inset-0 bg-gradient-to-r from-green-500/0 to-green-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                    ></div>
-                </a>
+                                <Button icon="pi pi-download" class="text-end" label="Export" @click="exportCSV('ct')" />
+                            </div>
+                        </template>
 
-                <!-- Wages Distribution -->
-                <a
-                    href="/wds"
-                    class="group relative flex h-full items-center justify-start overflow-hidden rounded-lg border-2 border-green-200 bg-white p-4 transition-all duration-300 hover:border-green-400 hover:bg-green-50 dark:border-green-700 dark:bg-gray-800 dark:hover:border-green-500 dark:hover:bg-green-900/20"
-                    title="Manage wage distribution"
-                >
-                    <div class="mr-4 flex-shrink-0">
-                        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-green-500 to-green-600">
-                            <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        <Column field="item_code" header="Item Code" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="size" header="Size" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="type" header="Type" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+
+                        <Column field="blanking" header="Blanking" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="blanking_eff" header="Blanking Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+
+                        <Column field="spinDisc" header="Spin Disc" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="spinDisc_eff" header="Spin Disc Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+
+                        <Column field="autoDisc" header="Auto Disc" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="autoDisc_eff" header="Auto Disc Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+
+                        <Column field="manualDisc" header="Manual Disc" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="manualDisc_eff" header="Manual Disc Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+
+                        <Column field="c3_sn" header="C3/SN" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="c3_sn_eff" header="C3/SN Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+
+                        <Column field="repairC3" header="Repair C3" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="repairC3_eff" header="Repair C3 Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+
+                        <Column field="discLathe" header="Disc Lathe" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="discLathe_eff" header="Disc Lathe Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+
+                        <Column field="rim1" header="Rim 1" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="rim1_eff" header="Rim 1 Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+
+                        <Column field="rim2" header="Rim 2" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="rim2_eff" header="Rim 2 Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+
+                        <Column field="rim2insp" header="Rim 2 Insp." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="rim2insp_eff" header="Rim 2 Insp. Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+
+                        <Column field="rim3" header="Rim 3" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="rim3_eff" header="Rim 3 Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+
+                        <Column field="coiler" header="Coiler" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="coiler_eff" header="Coiler Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+
+                        <Column field="forming" header="Forming" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="forming_eff" header="Forming Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+
+                        <Column field="assy1" header="Assy 1" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="assy1_eff" header="Assy 1 Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+
+                        <Column field="assy2" header="Assy 2" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="assy2_eff" header="Assy 2 Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+
+                        <Column field="machining" header="Machining" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="machining_eff" header="Machining Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+
+                        <Column field="shotPeening" header="Shotpeening" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="shotPeening_eff" header="Shotpeening Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+
+                        <Column field="ced" header="CED" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="ced_eff" header="CED Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+
+                        <Column field="topcoat" header="Topcoat" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="topcoat_eff" header="Topcoat Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+
+                        <Column field="packing_dom" header="Packing DOM" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="packing_exp" header="Packing EXP" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+
+                        <Column field="created_at_formatted" sortable header="Added at" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                            <template #body="slotProps">
+                                {{ formatDate(slotProps.data.created_at) }}
+                            </template>
+                        </Column>
+
+                        <Column field="updated_at_formatted" sortable header="Updated at" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                            <template #body="slotProps">
+                                {{ formatDate(slotProps.data.updated_at) }}
+                            </template>
+                        </Column>
+                        <Column field="action" header="Action" :exportable="false" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                            <template #body="slotProps">
+                                <div class="flex gap-2">
+                                    <Button icon="pi pi-pencil" severity="warning" rounded text @click="editBP(slotProps.data)" />
+                                    <Button icon="pi pi-trash" severity="danger" rounded text @click="deleteBP(slotProps.data)" />
+                                </div>
+                            </template>
+                        </Column>
+                    </DataTable>
+                </section>
+
+                <section ref="sqSection" class="mt-16 p-2">
+                    <h2 class="mb-4 text-3xl font-semibold hover:text-indigo-500">Sales Quantity</h2>
+                    <DataTable
+                        :value="salesQuantity"
+                        tableStyle="500px"
+                        :rows="10"
+                        paginator
+                        removableSort
+                        class="text-md"
+                        filterDisplay="header"
+                        ref="dtSQ"
+                    >
+                        <template #header>
+                            <div class="flex items-center justify-between">
+                                <FileUpload
+                                    mode="basic"
+                                    name="file"
+                                    :auto="true"
+                                    :customUpload="true"
+                                    accept=".csv"
+                                    chooseLabel="Import CSV"
+                                    @uploader="(event) => handleCSVImport(event, 'sq')"
                                 />
-                            </svg>
-                        </div>
-                    </div>
-                    <span
-                        class="font-medium text-gray-800 transition-colors group-hover:text-green-700 dark:text-gray-200 dark:group-hover:text-green-300"
-                    >
-                        4. Wages Distribution
-                    </span>
-                    <div
-                        class="absolute inset-0 bg-gradient-to-r from-green-500/0 to-green-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                    ></div>
-                </a>
-            </div>
-        </div>
+                                <Button icon="pi pi-download" class="text-end" label="Export" @click="exportCSV('ct')" />
+                            </div>
+                        </template>
+                        <Column field="no" sortable header="No" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
+                        <Column field="bp_code" sortable header="Business Partner Code" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
+                        <Column field="bp.bp_name" sortable header="Business Partner Name" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
 
-        <div class="p-6">
-            <!-- Header Section -->
-            <div class="mb-8">
-                <div class="relative mb-6 text-center">
-                    <h1 class="relative z-10 inline-block bg-white px-4 text-2xl font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-                        Report Section
-                    </h1>
-                    <hr class="absolute top-1/2 left-0 z-0 w-full -translate-y-1/2 border-gray-300 dark:border-gray-600" />
-                </div>
-            </div>
+                        <Column field="item_code" sortable header="Item Code" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
+                        <Column field="item.type" sortable header="Type" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
 
-            <!-- Process Items Grid -->
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <!-- Cycle Time x Sales Quantity -->
-                <a
-                    href="/bps"
-                    class="group relative flex h-full items-center justify-start overflow-hidden rounded-lg border-2 border-green-200 bg-white p-4 transition-all duration-300 hover:border-green-400 hover:bg-green-50 dark:border-green-700 dark:bg-gray-800 dark:hover:border-green-500 dark:hover:bg-green-900/20"
-                    title="Calculate cycle time x sales quantity"
-                >
-                    <div class="mr-4 flex-shrink-0">
-                        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600">
-                            <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                                />
-                            </svg>
-                        </div>
-                    </div>
-                    <span
-                        class="font-medium text-gray-800 transition-colors group-hover:text-green-700 dark:text-gray-200 dark:group-hover:text-green-300"
-                    >
-                        1. Cycle Time x Sales Quantity
-                    </span>
-                    <div
-                        class="absolute inset-0 bg-gradient-to-r from-green-500/0 to-green-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                    ></div>
-                </a>
+                        <Column field="quantity" sortable header="Quantity" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
+                        <Column field="created_at_formatted" sortable header="Added at" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                            <template #body="slotProps">
+                                {{ formatDate(slotProps.data.created_at) }}
+                            </template>
+                        </Column>
 
-                <!-- Base Cost -->
-                <a
-                    href="/bps"
-                    class="group relative flex h-full items-center justify-start overflow-hidden rounded-lg border-2 border-green-200 bg-white p-4 transition-all duration-300 hover:border-green-400 hover:bg-green-50 dark:border-green-700 dark:bg-gray-800 dark:hover:border-green-500 dark:hover:bg-green-900/20"
-                    title="Review base cost analysis"
-                >
-                    <div class="mr-4 flex-shrink-0">
-                        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-orange-600">
-                            <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-                                />
-                            </svg>
-                        </div>
-                    </div>
-                    <span
-                        class="font-medium text-gray-800 transition-colors group-hover:text-green-700 dark:text-gray-200 dark:group-hover:text-green-300"
-                    >
-                        2. Base Cost
-                    </span>
-                    <div
-                        class="absolute inset-0 bg-gradient-to-r from-green-500/0 to-green-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                    ></div>
-                </a>
+                        <Column field="updated_at_formatted" sortable header="Updated at" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                            <template #body="slotProps">
+                                {{ formatDate(slotProps.data.updated_at) }}
+                            </template>
+                        </Column>
+                        <Column field="action" header="Action" :exportable="false" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                            <template #body="slotProps">
+                                <div class="flex gap-2">
+                                    <Button icon="pi pi-pencil" severity="warning" rounded text @click="editBP(slotProps.data)" />
+                                    <Button icon="pi pi-trash" severity="danger" rounded text @click="deleteBP(slotProps.data)" />
+                                </div>
+                            </template>
+                        </Column>
+                    </DataTable>
+                </section>
 
-                <!-- Cost per Process -->
-                <a
-                    href="/bps"
-                    class="group relative flex h-full items-center justify-start overflow-hidden rounded-lg border-2 border-green-200 bg-white p-4 transition-all duration-300 hover:border-green-400 hover:bg-green-50 dark:border-green-700 dark:bg-gray-800 dark:hover:border-green-500 dark:hover:bg-green-900/20"
-                    title="Calculate cost per process"
-                >
-                    <div class="mr-4 flex-shrink-0">
-                        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-purple-600">
-                            <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                                />
-                            </svg>
-                        </div>
-                    </div>
-                    <span
-                        class="font-medium text-gray-800 transition-colors group-hover:text-green-700 dark:text-gray-200 dark:group-hover:text-green-300"
-                    >
-                        3. Cost per Process
-                    </span>
-                    <div
-                        class="absolute inset-0 bg-gradient-to-r from-green-500/0 to-green-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                    ></div>
-                </a>
+                <section ref="wdSection" class="mt-16 p-2">
+                    <h2 class="mb-4 text-3xl font-semibold hover:text-indigo-500">Wages Distribution</h2>
 
-                <!-- Process Cost -->
-                <a
-                    href="/bps"
-                    class="group relative flex h-full items-center justify-start overflow-hidden rounded-lg border-2 border-green-200 bg-white p-4 transition-all duration-300 hover:border-green-400 hover:bg-green-50 dark:border-green-700 dark:bg-gray-800 dark:hover:border-green-500 dark:hover:bg-green-900/20"
-                    title="Generate process cost reports"
-                >
-                    <div class="mr-4 flex-shrink-0">
-                        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-green-500 to-green-600">
-                            <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M9 17v-2m3 2v-4m3 4v-6m2 10H4a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                />
-                            </svg>
+                    <Panel header="Header">
+                        <div class="flex items-start">
+                            <FileUpload
+                                mode="basic"
+                                name="file"
+                                accept=".csv"
+                                :customUpload="true"
+                                :maxFileSize="1000000"
+                                @uploader="(event) => handleCSVImport(event, 'wd')"
+                                :auto="true"
+                                chooseLabel="Import CSV"
+                            />
                         </div>
-                    </div>
-                    <span
-                        class="font-medium text-gray-800 transition-colors group-hover:text-green-700 dark:text-gray-200 dark:group-hover:text-green-300"
-                    >
-                        4. Process Cost
-                    </span>
-                    <div
-                        class="absolute inset-0 bg-gradient-to-r from-green-500/0 to-green-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                    ></div>
-                </a>
+                        <div>
+                            <Card class="w-full">
+                                <template #title class="text-centre text-lg font-bold text-white">Total</template>
+                                <template #subtitle> {{ lineTotals.toLocaleString('id-ID') }}</template>
+                                <template #content>
+                                    <Chart type="bar" :data="chartDataTotal" :options="chartOptions" class="h-[20rem]" />
+                                </template>
+                                <template #footer>
+                                    <Button label="Edit" class="w-full" severity="info" />
+                                </template>
+                            </Card>
+                        </div>
+                        <div class="mt-8 flex items-center justify-between">
+                            <Card style="width: 25rem">
+                                <template #title>Line Disc</template>
+                                <template #subtitle> {{ lineDiscTotal.toLocaleString('id-ID') }}</template>
+                                <template #content>
+                                    <Chart type="bar" :data="chartDataDisc" :options="chartOptions" class="h-[20rem]" />
+                                </template>
+                                <template #footer>
+                                    <Button label="Edit" class="w-full" severity="info" />
+                                </template>
+                            </Card>
+
+                            <Card style="width: 25rem">
+                                <template #title>Line Rim</template>
+                                <template #subtitle> {{ lineRimTotal.toLocaleString('id-ID') }}</template>
+                                <template #content>
+                                    <Chart type="bar" :data="chartDataRim" :options="chartOptions" class="h-[20rem]" />
+                                </template>
+                                <template #footer>
+                                    <Button label="Edit" class="w-full" severity="info" />
+                                </template>
+                            </Card>
+
+                            <Card style="width: 25rem">
+                                <template #title>Line Sidering</template>
+                                <template #subtitle> {{ lineSideringTotal.toLocaleString('id-ID') }}</template>
+                                <template #content>
+                                    <Chart type="bar" :data="chartDataSidering" :options="chartOptions" class="h-[20rem]" />
+                                </template>
+                                <template #footer>
+                                    <Button label="Edit" class="w-full" severity="info" />
+                                </template>
+                            </Card>
+                        </div>
+                        <div class="mt-8 flex items-center justify-between">
+                            <Card style="width: 25rem">
+                                <template #title>Line Assy</template>
+                                <template #subtitle> {{ lineAssyTotal.toLocaleString('id-ID') }}</template>
+                                <template #content>
+                                    <Chart type="bar" :data="chartDataAssy" :options="chartOptions" class="h-[20rem]" />
+                                </template>
+                                <template #footer>
+                                    <Button label="Edit" class="w-full" severity="info" />
+                                </template>
+                            </Card>
+
+                            <Card style="width: 25rem">
+                                <template #title>Line Painting</template>
+                                <template #subtitle> {{ linePaintingTotal.toLocaleString('id-ID') }}</template>
+                                <template #content>
+                                    <Chart type="bar" :data="chartDataPainting" :options="chartOptions" class="h-[20rem]" />
+                                </template>
+                                <template #footer>
+                                    <Button label="Edit" class="w-full" severity="info" />
+                                </template>
+                            </Card>
+
+                            <Card style="width: 25rem">
+                                <template #title>Line Packaging</template>
+                                <template #subtitle> {{ linePackingTotal.toLocaleString('id-ID') }}</template>
+                                <template #content>
+                                    <Chart type="bar" :data="chartDataPacking" :options="chartOptions" class="h-[20rem]" />
+                                </template>
+                                <template #footer>
+                                    <Button label="Edit" class="w-full" severity="info" />
+                                </template>
+                            </Card>
+                        </div>
+                    </Panel>
+                </section>
             </div>
         </div>
     </AppLayout>

@@ -27,8 +27,8 @@ class CycleTime extends Model
         'autoDisc_eff',
         'manualDisc',
         'manualDisc_eff',
-        'C3/SN',
-        'C3/SN_eff',
+        'c3_sn',
+        'c3_sn_eff',
         'repairC3',
         'repairC3_eff',
         'discLathe',
@@ -61,21 +61,21 @@ class CycleTime extends Model
         'packing_exp',
     ];
 
-    // public static function validateEfficiencies($data)
-    // {
-    //     $efficiencyFields = array_filter(array_keys($data), fn($key) => str_ends_with($key, '_eff'));
+    public static function validateEfficiencies($data)
+    {
+        $efficiencyFields = array_filter(array_keys($data), fn($key) => str_ends_with($key, '_eff'));
 
-    //     foreach ($efficiencyFields as $field) {
-    //         if (!is_numeric($data[$field]) || $data[$field] < 0 || $data[$field] > 1) {
-    //             return false;
-    //         }
-    //     }
+        foreach ($efficiencyFields as $field) {
+            if (!is_numeric($data[$field]) || $data[$field] < 0 || $data[$field] > 1) {
+                return false;
+            }
+        }
 
-    //     return true;
-    // }
+        return true;
+    }
 
-    // public function salesQty()
-    // {
-    //     return $this->hasMany(RawSalesQty::class, 'item_code', 'item_code');
-    // }
+    public function salesQty()
+    {
+        return $this->hasMany(SalesQuantity::class, 'item_code', 'item_code');
+    }
 }

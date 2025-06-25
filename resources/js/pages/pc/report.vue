@@ -1,20 +1,29 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, usePage } from '@inertiajs/vue3';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
-import { ref } from 'vue';
+import Tab from 'primevue/tab';
+import TabList from 'primevue/tablist';
+import TabPanel from 'primevue/tabpanel';
+import TabPanels from 'primevue/tabpanels';
+import Tabs from 'primevue/tabs';
+import { useToast } from 'primevue/usetoast';
+import { computed, ref } from 'vue';
 
-const createFormSection = ref<HTMLElement | null>(null);
-// Auto scroll to create form
-const scrollToCreateForm = () => {
-    if (createFormSection.value) {
-        createFormSection.value.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start',
-        });
-    }
-};
+const headerStyle = { backgroundColor: '#758596', color: 'white' };
+const bodyStyle = { backgroundColor: '#c8cccc', color: 'black' };
+const toast = useToast();
+const page = usePage();
+const dtCTXSQ = ref();
+
+const ctxsq = computed(() =>
+    (page.props.ctxsq as any[]).map((ctXsq, index) => ({
+        ...ctXsq,
+        no: index + 1,
+    })),
+);
+const processes = computed(() => page.props.processes as any[]);
 </script>
 
 <template>
@@ -38,51 +47,153 @@ const scrollToCreateForm = () => {
 
             <!-- Process Items Grid -->
             <section ref="ctXsqSection" class="p-2">
-                <h2 class="mb-4 text-3xl font-semibold hover:text-indigo-500">Cycle Time x Sales Quantity</h2>
-                <DataTable tableStyle="min-width: 50rem">
-                    <Column field="no" header="No" :headerStyle="{ backgroundColor: '#1588fa', color: 'black' }"></Column>
-                    <Column field="bp_code" header="BP Code" :headerStyle="{ backgroundColor: '#1588fa', color: 'black' }"></Column>
-                    <Column field="bp_name" header="BP Name" :headerStyle="{ backgroundColor: '#1588fa', color: 'black' }"></Column>
-                    <Column field="type" header="Added at" :headerStyle="{ backgroundColor: '#1588fa', color: 'black' }"></Column>
-                    <Column field="updated_at" header="Updated at" :headerStyle="{ backgroundColor: '#1588fa', color: 'black' }"></Column>
-                    <Column field="action" header="Action" :headerStyle="{ backgroundColor: '#1588fa', color: 'black' }"></Column>
-                </DataTable>
-            </section>
+                <div class="mx-26 mb-26">
+                    <Tabs value="0">
+                        <TabList>
+                            <Tab value="0">Cycle Time x Sales Quantity</Tab>
+                            <!-- <Tab value="1">Cycle Time</Tab>
+                        <Tab value="2">Sales Quantity</Tab>
+                        <Tab value="3">Wages Distribution</Tab> -->
+                        </TabList>
+                        <!-- Process Items Grid -->
+                        <TabPanels>
+                            <TabPanel value="0">
+                                <section ref="ctXsqSection" class="p-2">
+                                    <h2 class="mb-4 text-3xl font-semibold hover:text-indigo-500">Cycle Time x Sales Quantity</h2>
 
-            <section ref="baseCostSection" class="p-2">
-                <h2 class="mb-4 text-3xl font-semibold hover:text-indigo-500">Base Cost</h2>
-                <DataTable tableStyle="min-width: 50rem">
-                    <Column field="no" header="No" :headerStyle="{ backgroundColor: '#f58453', color: 'black' }"></Column>
-                    <Column field="item_code" header="Item Code" :headerStyle="{ backgroundColor: '#f58453', color: 'black' }"></Column>
-                    <Column field="size" header="Size" :headerStyle="{ backgroundColor: '#f58453', color: 'black' }"></Column>
-                    <Column field="type" header="Type" :headerStyle="{ backgroundColor: '#f58453', color: 'black' }"></Column>
-                    <Column field="updated_at" header="Updated at" :headerStyle="{ backgroundColor: '#f58453', color: 'black' }"></Column>
-                    <Column field="action" header="Action" :headerStyle="{ backgroundColor: '#f58453', color: 'black' }"></Column>
-                </DataTable>
-            </section>
+                                    <DataTable
+                                        :value="ctxsq"
+                                        tableStyle="min-width: 50rem"
+                                        paginator
+                                        :rows="10"
+                                        removableSort
+                                        class="text-md"
+                                        filterDisplay="header"
+                                        ref="dtBP"
+                                    >
+                                        <Column field="no" sortable header="No" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
 
-            <section ref="cppSection" class="p-2">
-                <h2 class="mb-4 text-3xl font-semibold hover:text-indigo-500">Cost per Process</h2>
-                <DataTable tableStyle="min-width: 50rem">
-                    <Column field="no" header="No" :headerStyle="{ backgroundColor: '#53f586', color: 'black' }"></Column>
-                    <Column field="item_code" header="Item Code" :headerStyle="{ backgroundColor: '#53f586', color: 'black' }"></Column>
-                    <Column field="size" header="Size" :headerStyle="{ backgroundColor: '#53f586', color: 'black' }"></Column>
-                    <Column field="type" header="Type" :headerStyle="{ backgroundColor: '#53f586', color: 'black' }"></Column>
-                    <Column field="updated_at" header="Updated at" :headerStyle="{ backgroundColor: '#53f586', color: 'black' }"></Column>
-                    <Column field="action" header="Action" :headerStyle="{ backgroundColor: '#53f586', color: 'black' }"></Column>
-                </DataTable>
-            </section>
+                                        <Column field="bp_code" sortable header="BP Code" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                        <Column field="bp_name" sortable header="BP Name" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
 
-            <section ref="pcSection" class="p-2">
-                <h2 class="mb-4 text-3xl font-semibold hover:text-indigo-500">Process Cost</h2>
-                <DataTable tableStyle="min-width: 50rem">
-                    <Column field="no" header="No" :headerStyle="{ backgroundColor: '#b66eff', color: 'black' }"></Column>
-                    <Column field="item_code" header="Item Code" :headerStyle="{ backgroundColor: '#b66eff', color: 'black' }"></Column>
-                    <Column field="size" header="Size" :headerStyle="{ backgroundColor: '#b66eff', color: 'black' }"></Column>
-                    <Column field="type" header="Type" :headerStyle="{ backgroundColor: '#b66eff', color: 'black' }"></Column>
-                    <Column field="updated_at" header="Updated at" :headerStyle="{ backgroundColor: '#b66eff', color: 'black' }"></Column>
-                    <Column field="action" header="Action" :headerStyle="{ backgroundColor: '#b66eff', color: 'black' }"></Column>
-                </DataTable>
+                                        <Column field="item_code" sortable header="Item Code" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                        <Column field="type" sortable header="Type" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+
+                                        <Column field="quantity" sortable header="Quantity" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+
+                                        <Column field="ctxsq.blanking" sortable header="Blanking" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                        <Column
+                                            field="ctxsq.spinDisc"
+                                            sortable
+                                            header="Spin Disc"
+                                            :headerStyle="headerStyle"
+                                            :bodyStyle="bodyStyle"
+                                        />
+                                        <Column
+                                            field="ctxsq.autoDisc"
+                                            sortable
+                                            header="Auto Disc"
+                                            :headerStyle="headerStyle"
+                                            :bodyStyle="bodyStyle"
+                                        />
+                                        <Column
+                                            field="ctxsq.manualDisc"
+                                            sortable
+                                            header="Manual Disc"
+                                            :headerStyle="headerStyle"
+                                            :bodyStyle="bodyStyle"
+                                        />
+                                        <Column
+                                            field="ctxsq.discLathe"
+                                            sortable
+                                            header="Disc Lathe"
+                                            :headerStyle="headerStyle"
+                                            :bodyStyle="bodyStyle"
+                                        />
+                                        <Column
+                                            field="ctxsq.Total Disc"
+                                            sortable
+                                            header="Total Disc"
+                                            :headerStyle="headerStyle"
+                                            :bodyStyle="bodyStyle"
+                                        />
+
+                                        <Column field="ctxsq.rim1" sortable header="Rim 1" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                        <Column field="ctxsq.rim2" sortable header="Rim 2" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                        <Column field="ctxsq.rim3" sortable header="Rim 3" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                        <Column
+                                            field="ctxsq.Total Rim"
+                                            sortable
+                                            header="Total Rim"
+                                            :headerStyle="headerStyle"
+                                            :bodyStyle="bodyStyle"
+                                        />
+
+                                        <Column field="ctxsq.coiler" sortable header="Coiler" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                        <Column field="ctxsq.forming" sortable header="Forming" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                        <Column
+                                            field="ctxsq.Total Sidering"
+                                            sortable
+                                            header="Total Sidering"
+                                            :headerStyle="headerStyle"
+                                            :bodyStyle="bodyStyle"
+                                        />
+
+                                        <Column field="ctxsq.assy1" sortable header="Assy 1" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                        <Column field="ctxsq.assy2" sortable header="Assy 2" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                        <Column
+                                            field="ctxsq.machining"
+                                            sortable
+                                            header="Machining"
+                                            :headerStyle="headerStyle"
+                                            :bodyStyle="bodyStyle"
+                                        />
+                                        <Column
+                                            field="ctxsq.shotPeening"
+                                            sortable
+                                            header="Shotpeening"
+                                            :headerStyle="headerStyle"
+                                            :bodyStyle="bodyStyle"
+                                        />
+                                        <Column
+                                            field="ctxsq.Total Assy"
+                                            sortable
+                                            header="Total Assy"
+                                            :headerStyle="headerStyle"
+                                            :bodyStyle="bodyStyle"
+                                        />
+
+                                        <Column field="ctxsq.ced" sortable header="CED" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                        <Column field="ctxsq.topcoat" sortable header="Topcoat" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                        <Column
+                                            field="ctxsq.Total Painting"
+                                            sortable
+                                            header="Total Painting"
+                                            :headerStyle="headerStyle"
+                                            :bodyStyle="bodyStyle"
+                                        />
+
+                                        <Column
+                                            field="ctxsq.packing_dom"
+                                            sortable
+                                            header="Packing DOM"
+                                            :headerStyle="headerStyle"
+                                            :bodyStyle="bodyStyle"
+                                        />
+                                        <Column
+                                            field="ctxsq.packing_exp"
+                                            sortable
+                                            header="Packing EXP"
+                                            :headerStyle="headerStyle"
+                                            :bodyStyle="bodyStyle"
+                                        />
+                                    </DataTable>
+                                </section>
+                            </TabPanel>
+                        </TabPanels>
+                        <
+                    </Tabs>
+                </div>
             </section>
         </div>
     </AppLayout>

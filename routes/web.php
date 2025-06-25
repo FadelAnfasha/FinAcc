@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\SalesQuantityController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -11,6 +12,9 @@ use App\Http\Controllers\ProcessCostController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\BusinessPartnerController;
 use App\Http\Controllers\CycleTimeController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\WagesDistributionController;
+use App\Models\SalesQuantity;
 
 #===========================
 #======  Main Route  =======
@@ -104,7 +108,31 @@ Route::middleware(['auth', 'verified'])->group(function () {
 #=============================
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::post('/import', [CycleTimeController::class, 'import'])->name('ct.import');
+    Route::post('/ct/import', [CycleTimeController::class, 'import'])->name('ct.import');
+});
+
+#=============================
+#=====> Sales Quantity <======
+#=============================
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/sq/import', [SalesQuantityController::class, 'import'])->name('sq.import');
+});
+
+#=============================
+#===> Wages Distribution <====
+#=============================
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/wd/import', [WagesDistributionController::class, 'import'])->name('wd.import');
+});
+
+#=============================
+#====> ReportController <=====
+#=============================
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/rp/ctxsq', [ReportController::class, 'indexCTxSQ'])->name('rp.CTxSQ');
 });
 
 

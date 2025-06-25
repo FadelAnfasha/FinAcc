@@ -23,8 +23,8 @@ return new class extends Migration
             $table->float('autoDisc_eff');
             $table->float('manualDisc');
             $table->float('manualDisc_eff');
-            $table->float('C3/SN');
-            $table->float('C3/SN_eff');
+            $table->float('c3_sn');
+            $table->float('c3_sn_eff');
             $table->float('repairC3');
             $table->float('repairC3_eff');
             $table->float('discLathe');
