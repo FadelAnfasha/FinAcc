@@ -93,4 +93,57 @@ class BusinessPartnerController extends Controller
             'invalidItems' => $invalidItems
         ]);
     }
+
+    public function destroy($bp_code)
+    {
+        $bp = BusinessPartner::findOrFail($bp_code);
+        $bp->delete();
+
+        return redirect()->route('pc.master')->with('deleted', 'Business Partner ' . $bp_code . ' deleted successfully');
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'company_name' => 'required',
+            'company_type' => 'required',
+        ]);
+
+        $companyName = strtoupper(trim($request->input('company_name')));
+        $companyType = strtoupper(trim($request->input('company_type')));
+        $bp_name = $companyName . ', ' . $companyType;
+
+        // Cek apakah nama BP sudah ada di database
+        $nameExists = BusinessPartner::where('bp_name', $bp_name)->exists();
+        if ($nameExists) {
+            return back()->with('deleted', 'Business Partner name already exists.')->withInput();
+        }
+
+        // Generate item_no (BP Code)
+        $prefix = 'C' . strtoupper(substr($companyName, 0, 1));
+        $bps = BusinessPartner::where('bp_code', 'like', $prefix . '%')->orderBy('bp_code', 'asc')->get();
+
+        $existingNumbers = $bps->map(function ($bp) use ($prefix) {
+            return intval(substr($bp->bp_code, strlen($prefix)));
+        })->toArray();
+
+        $newNumber = '001';
+        for ($i = 1; $i <= count($existingNumbers) + 1; $i++) {
+            if (!in_array($i, $existingNumbers)) {
+                $newNumber = str_pad($i, 4, '0', STR_PAD_LEFT);
+                break;
+            }
+        }
+
+        $item_no = $prefix . $newNumber;
+
+        // Simpan data baru
+        BusinessPartner::create([
+            'bp_code' => $item_no,
+            'bp_name' => $bp_name,
+        ]);
+
+        return redirect()->route('bps.index')
+            ->with('success', 'Business Partner added successfully with code: ' . $item_no);
+    }
 }

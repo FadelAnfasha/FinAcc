@@ -413,7 +413,22 @@ function deleteBP(bp: any) {
                     <TabPanels>
                         <TabPanel value="0">
                             <section ref="bpSection" class="p-2">
-                                <h2 class="mb-4 text-3xl font-semibold hover:text-indigo-500">Business Partner</h2>
+                                <div class="mb-4 flex items-center justify-between">
+                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Business Partner</h2>
+                                    <div class="flex gap-4">
+                                        <FileUpload
+                                            mode="basic"
+                                            name="file"
+                                            :auto="true"
+                                            :customUpload="true"
+                                            accept=".csv"
+                                            chooseLabel="Import CSV"
+                                            @uploader="(event) => handleCSVImport(event, 'bp')"
+                                        />
+
+                                        <Button icon="pi pi-download" class="text-end" label="Export" @click="exportCSV('bp')" />
+                                    </div>
+                                </div>
 
                                 <DataTable
                                     :value="businessPartners"
@@ -425,21 +440,6 @@ function deleteBP(bp: any) {
                                     filterDisplay="header"
                                     ref="dtBP"
                                 >
-                                    <template #header>
-                                        <div class="flex items-center justify-between">
-                                            <FileUpload
-                                                mode="basic"
-                                                name="file"
-                                                :auto="true"
-                                                :customUpload="true"
-                                                accept=".csv"
-                                                chooseLabel="Import CSV"
-                                                @uploader="(event) => handleCSVImport(event, 'bp')"
-                                            />
-
-                                            <Button icon="pi pi-download" class="text-end" label="Export" @click="exportCSV('bp')" />
-                                        </div>
-                                    </template>
                                     <Column field="bp_code" sortable header="BP Code" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
                                     <Column field="bp_name" sortable header="BP Name" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
                                     <Column field="created_at_formatted" sortable header="Added at" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
@@ -473,7 +473,21 @@ function deleteBP(bp: any) {
 
                         <TabPanel value="1">
                             <section ref="ctSection" class="p-2">
-                                <h2 class="mb-4 text-3xl font-semibold hover:text-indigo-500">Cycle Time</h2>
+                                <div class="mb-4 flex items-center justify-between">
+                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Cycle Time</h2>
+                                    <div class="flex gap-4">
+                                        <FileUpload
+                                            mode="basic"
+                                            name="file"
+                                            :auto="true"
+                                            :customUpload="true"
+                                            accept=".csv"
+                                            chooseLabel="Import CSV"
+                                            @uploader="(event) => handleCSVImport(event, 'ct')"
+                                        />
+                                        <Button icon="pi pi-download" class="text-end" label="Export" @click="exportCSV('ct')" />
+                                    </div>
+                                </div>
                                 <DataTable
                                     :value="cycleTimes"
                                     tableStyle="min-width: 50rem"
@@ -484,21 +498,6 @@ function deleteBP(bp: any) {
                                     filterDisplay="header"
                                     ref="dtCT"
                                 >
-                                    <template #header>
-                                        <div class="flex items-center justify-between">
-                                            <FileUpload
-                                                mode="basic"
-                                                name="file"
-                                                :auto="true"
-                                                :customUpload="true"
-                                                accept=".csv"
-                                                chooseLabel="Import CSV"
-                                                @uploader="(event) => handleCSVImport(event, 'ct')"
-                                            />
-                                            <Button icon="pi pi-download" class="text-end" label="Export" @click="exportCSV('ct')" />
-                                        </div>
-                                    </template>
-
                                     <Column field="item_code" header="Item Code" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
                                     <Column field="size" header="Size" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
                                     <Column field="type" header="Type" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
@@ -594,7 +593,21 @@ function deleteBP(bp: any) {
 
                         <TabPanel value="2">
                             <section ref="sqSection" class="p-2">
-                                <h2 class="mb-4 text-3xl font-semibold hover:text-indigo-500">Sales Quantity</h2>
+                                <div class="mb-4 flex items-center justify-between">
+                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Sales Quantity</h2>
+                                    <div class="flex gap-4">
+                                        <FileUpload
+                                            mode="basic"
+                                            name="file"
+                                            :auto="true"
+                                            :customUpload="true"
+                                            accept=".csv"
+                                            chooseLabel="Import CSV"
+                                            @uploader="(event) => handleCSVImport(event, 'sq')"
+                                        />
+                                        <Button icon="pi pi-download" class="text-end" label="Export" @click="exportCSV('ct')" />
+                                    </div>
+                                </div>
                                 <DataTable
                                     :value="salesQuantity"
                                     tableStyle="500px"
@@ -605,20 +618,6 @@ function deleteBP(bp: any) {
                                     filterDisplay="header"
                                     ref="dtSQ"
                                 >
-                                    <template #header>
-                                        <div class="flex items-center justify-between">
-                                            <FileUpload
-                                                mode="basic"
-                                                name="file"
-                                                :auto="true"
-                                                :customUpload="true"
-                                                accept=".csv"
-                                                chooseLabel="Import CSV"
-                                                @uploader="(event) => handleCSVImport(event, 'sq')"
-                                            />
-                                            <Button icon="pi pi-download" class="text-end" label="Export" @click="exportCSV('ct')" />
-                                        </div>
-                                    </template>
                                     <Column field="no" sortable header="No" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
                                     <Column
                                         field="bp_code"
@@ -670,10 +669,9 @@ function deleteBP(bp: any) {
 
                         <TabPanel value="3">
                             <section ref="wdSection" class="p-2">
-                                <h2 class="mb-4 text-3xl font-semibold hover:text-indigo-500">Wages Distribution</h2>
-
-                                <Panel>
-                                    <div class="flex items-start">
+                                <div class="mb-4 flex items-center justify-between">
+                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Wages Distribution</h2>
+                                    <div>
                                         <FileUpload
                                             mode="basic"
                                             name="file"
@@ -685,22 +683,33 @@ function deleteBP(bp: any) {
                                             chooseLabel="Import CSV"
                                         />
                                     </div>
+                                </div>
+                                <Panel>
                                     <div>
                                         <Card class="w-full">
-                                            <template #title class="text-centre text-lg font-bold text-white">Total</template>
-                                            <template #subtitle> {{ lineTotals.toLocaleString('id-ID') }}</template>
+                                            <template #title>
+                                                <div class="rounded bg-slate-200 py-2 text-center text-lg font-bold text-gray-900">
+                                                    Total : {{ lineTotals.toLocaleString('id-ID') }}
+                                                </div>
+                                            </template>
+
                                             <template #content>
                                                 <Chart type="bar" :data="chartDataTotal" :options="chartOptions" class="h-[20rem]" />
                                             </template>
+
                                             <template #footer>
                                                 <Button label="Edit" class="w-full" severity="info" />
                                             </template>
                                         </Card>
                                     </div>
+
                                     <div class="mt-8 flex items-center justify-between">
                                         <Card style="width: 25rem">
-                                            <template #title>Line Disc</template>
-                                            <template #subtitle> {{ lineDiscTotal.toLocaleString('id-ID') }}</template>
+                                            <template #title>
+                                                <div class="rounded bg-cyan-500 py-2 text-center text-lg font-bold text-gray-900 text-white">
+                                                    Line Disc : {{ lineDiscTotal.toLocaleString('id-ID') }}
+                                                </div>
+                                            </template>
                                             <template #content>
                                                 <Chart type="bar" :data="chartDataDisc" :options="chartOptions" class="h-[20rem]" />
                                             </template>
@@ -710,8 +719,11 @@ function deleteBP(bp: any) {
                                         </Card>
 
                                         <Card style="width: 25rem">
-                                            <template #title>Line Rim</template>
-                                            <template #subtitle> {{ lineRimTotal.toLocaleString('id-ID') }}</template>
+                                            <template #title>
+                                                <div class="rounded bg-orange-500 py-2 text-center text-lg font-bold text-gray-900 text-white">
+                                                    Line Rim : {{ lineRimTotal.toLocaleString('id-ID') }}
+                                                </div>
+                                            </template>
                                             <template #content>
                                                 <Chart type="bar" :data="chartDataRim" :options="chartOptions" class="h-[20rem]" />
                                             </template>
@@ -721,8 +733,11 @@ function deleteBP(bp: any) {
                                         </Card>
 
                                         <Card style="width: 25rem">
-                                            <template #title>Line Sidering</template>
-                                            <template #subtitle> {{ lineSideringTotal.toLocaleString('id-ID') }}</template>
+                                            <template #title>
+                                                <div class="rounded bg-green-500 py-2 text-center text-lg font-bold text-gray-900 text-white">
+                                                    Line Sidering : {{ lineSideringTotal.toLocaleString('id-ID') }}
+                                                </div>
+                                            </template>
                                             <template #content>
                                                 <Chart type="bar" :data="chartDataSidering" :options="chartOptions" class="h-[20rem]" />
                                             </template>
@@ -731,10 +746,14 @@ function deleteBP(bp: any) {
                                             </template>
                                         </Card>
                                     </div>
+
                                     <div class="mt-8 flex items-center justify-between">
                                         <Card style="width: 25rem">
-                                            <template #title>Line Assy</template>
-                                            <template #subtitle> {{ lineAssyTotal.toLocaleString('id-ID') }}</template>
+                                            <template #title>
+                                                <div class="rounded bg-purple-500 py-2 text-center text-lg font-bold text-gray-900 text-white">
+                                                    Line Assy : {{ lineAssyTotal.toLocaleString('id-ID') }}
+                                                </div>
+                                            </template>
                                             <template #content>
                                                 <Chart type="bar" :data="chartDataAssy" :options="chartOptions" class="h-[20rem]" />
                                             </template>
@@ -744,8 +763,11 @@ function deleteBP(bp: any) {
                                         </Card>
 
                                         <Card style="width: 25rem">
-                                            <template #title>Line Painting</template>
-                                            <template #subtitle> {{ linePaintingTotal.toLocaleString('id-ID') }}</template>
+                                            <template #title>
+                                                <div class="rounded bg-red-500 py-2 text-center text-lg font-bold text-gray-900 text-white">
+                                                    Line Painting : {{ linePaintingTotal.toLocaleString('id-ID') }}
+                                                </div>
+                                            </template>
                                             <template #content>
                                                 <Chart type="bar" :data="chartDataPainting" :options="chartOptions" class="h-[20rem]" />
                                             </template>
@@ -755,8 +777,11 @@ function deleteBP(bp: any) {
                                         </Card>
 
                                         <Card style="width: 25rem">
-                                            <template #title>Line Packaging</template>
-                                            <template #subtitle> {{ linePackingTotal.toLocaleString('id-ID') }}</template>
+                                            <template #title>
+                                                <div class="rounded bg-blue-500 py-2 text-center text-lg font-bold text-gray-900 text-white">
+                                                    Line Packaging : {{ linePackingTotal.toLocaleString('id-ID') }}
+                                                </div>
+                                            </template>
                                             <template #content>
                                                 <Chart type="bar" :data="chartDataPacking" :options="chartOptions" class="h-[20rem]" />
                                             </template>

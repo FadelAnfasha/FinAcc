@@ -41,7 +41,6 @@ class ProcessCostController extends Controller
         $total_base = [];
         $total_cpp = [];
 
-        // dd($ctxsq);
         foreach ($processes as $proc) {
             $total_ctxsq[$proc] = $ctxsq->sum(fn($d) => $d->ctxsq[$proc] ?? 0);
         }
@@ -110,7 +109,7 @@ class ProcessCostController extends Controller
             $footerMaxValues[$group] = $maxProcessCost->max(fn($item) => $item->process_cost[$group] ?? 0);
         }
 
-        // dd($ctxsq);
+        // dd($maxProcessCost);
         return Inertia::render("pc/report", [
             'ctxsq' => $ctxsq,
             'processes' => $processes,
@@ -119,7 +118,7 @@ class ProcessCostController extends Controller
             'total_base' => $total_base,
             'cpp' => $cpp,
             'total_cpp' => $total_cpp,
-            'datas' => $maxProcessCost,
+            'processCost' => $maxProcessCost,
             'groupings' => $service->getLine(),
             'footerMaxValues' => $footerMaxValues,
         ]);

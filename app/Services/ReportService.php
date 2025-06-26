@@ -135,19 +135,21 @@ class ReportService
             $cpp = [];
 
             foreach (array_keys($item->basecost) as $proc) {
-                $cpp[$proc] = $item->quantity > 0 ? ($item->basecost[$proc] ?? 0) / $item->quantity : 0;
+                $value = $item->quantity > 0 ? ($item->basecost[$proc] ?? 0) / $item->quantity : 0;
+                $cpp[$proc] = ceil($value * 100) / 100; // Bulatkan ke atas 2 desimal
             }
 
             return (object)[
-                'bp_code' => $item->bp_code,
-                'bp_name' => $item->bp_name,
-                'item_code' => $item->item_code,
-                'type' => $item->type,
-                'quantity' => $item->quantity,
-                'cpp' => $cpp,
+                'bp_code'    => $item->bp_code,
+                'bp_name'    => $item->bp_name,
+                'item_code'  => $item->item_code,
+                'type'       => $item->type,
+                'quantity'   => $item->quantity,
+                'cpp'        => $cpp,
             ];
         });
     }
+
 
     public function calculateProcessCost($cppData)
     {
