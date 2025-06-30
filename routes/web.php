@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\SalesQuantityController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -10,8 +11,11 @@ use App\Http\Controllers\BOMController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ProcessCostController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\BillOfMaterialController;
 use App\Http\Controllers\BusinessPartnerController;
 use App\Http\Controllers\CycleTimeController;
+use App\Http\Controllers\PackingController;
+use App\Http\Controllers\ProcessController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\WagesDistributionController;
 use App\Models\SalesQuantity;
@@ -69,15 +73,49 @@ Route::middleware(['auth', 'verified'])->group(function () {
     //     ->name('pc.index');
 
     // Master Data page
-    Route::get('/bom/master', [ProcessCostController::class, 'master'])
+    Route::get('/bom/master', [BOMController::class, 'master'])
         ->name('bom.master');
 
 
     // Report page
-    Route::get('/bom/report', [ProcessCostController::class, 'report'])
+    Route::get('/bom/report', [BOMController::class, 'report'])
         ->name('bom.report');
 });
 
+#=============================
+#=====> Materials Route <=====
+#=============================
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/mat/import', [MaterialController::class, 'import'])->name('mat.import');
+});
+
+#=============================
+#====> Bill of Materials <====
+#=============================
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/bom/import', [BillOfMaterialController::class, 'import'])->name('bom.import');
+
+    Route::get('/bom/components/{id}', [BillOfMaterialController::class, 'components'])
+        ->name('bom.components');
+});
+
+#=============================
+#========> Packings <=========
+#=============================
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/pack/import', [PackingController::class, 'import'])->name('pack.import');
+});
+
+#=============================
+#=======> Processes <=========
+#=============================
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/proc/import', [ProcessController::class, 'import'])->name('proc.import');
+});
 
 #==========================
 #======== PC Route ========
@@ -126,15 +164,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/wd/import', [WagesDistributionController::class, 'import'])->name('wd.import');
 });
-
-#=============================
-#====> ReportController <=====
-#=============================
-
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::post('/rp/ctxsq', [ReportController::class, 'indexCTxSQ'])->name('rp.CTxSQ');
-});
-
 
 #==========================
 #====== Admin Route =======
