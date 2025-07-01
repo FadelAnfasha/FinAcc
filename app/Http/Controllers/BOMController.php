@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BillOfMaterial;
-use App\Models\BOM;
+use App\Models\ProcessCost;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Material;
@@ -16,6 +16,7 @@ class BOMController extends Controller
     public function master(Request $request)
     {
         $materials = Material::all();
+        $materials->load('bom');
         $bom = BillOfMaterial::where('depth', 1)->get();
         $packings = Packing::all();
         $processes = Process::all();
@@ -33,7 +34,6 @@ class BOMController extends Controller
                 }
             }
         }
-
         return Inertia::render("bom/master", [
             'materials' => $materials,
             'packings' => $packings,
@@ -47,10 +47,7 @@ class BOMController extends Controller
     {
         // Ambil semua data BOM yang sudah terurut
         $bomData = BillOfMaterial::all();
-
-        if ($bomData->isEmpty()) {
-            return response()->json(['message' => 'Tidak ada data BOM tersedia']);
-        }
+        $materials = Material::all();
 
         // Group data berdasarkan depth = 1 sebagai main, sisanya sebagai komponennya
         $groups = collect();
@@ -196,25 +193,61 @@ class BOMController extends Controller
             });
         }
 
-        // dump($group);
+        // Assign $materials here so it can be used in the closure
+        $materials = Material::all();
+
         return Inertia::render("bom/report", [
-            'bom' => $groups->map(function ($group) {
+            'bom' => $groups->map(function ($group) use ($materials) {
+                $main = $group->first();
+                $main->load(['processCost', 'materialInfo']);
+
+                // dump(vars: $main);
                 return [
-                    'main' => $group->first(),
+                    'materials' => $materials,
+                    'main' => $main,
                     'items' => $group->values(),
-                    'type_name' => $group->first()->type_name ?? null,
+                    'type_name' => $main->type_name ?? null,
+
                     'disc' => $group->disc,
+                    'disc_price' => $group->disc->materialInfo->price ?? null,
+
                     'rim' => $group->rim,
+                    'rim_price' => $group->rim->materialInfo->price ?? null,
+
                     'sidering' => $group->sidering,
+                    'sr_price' => $group->sidering->materialInfo->price ?? null,
+
+                    // Load processCost di setiap pr_* item
                     'pr_disc' => $group->pr_disc,
+                    'max_of_disc' => $main->processCost->max_of_disc ?? null,
+
                     'pr_rim' => $group->pr_rim,
+                    'max_of_rim' => $main->processCost->max_of_rim ?? null,
+
                     'pr_sr' => $group->pr_sr,
+                    'max_of_sr' => $main->processCost->max_of_sr ?? null,
+
                     'pr_assy' => $group->pr_assy,
+                    'max_of_assy' => $main->processCost->max_of_assy ?? null,
+
+                    // dump($group->tcW),
                     'ced_w' => $group->cedW,
                     'ced_sr' => $group->cedSR,
                     'tc_w' => $group->tcW,
                     'tc_sr' => $group->tcSR,
 
+                    'max_of_packaging' => $main->processCost->max_of_packaging ?? null,
+
+                    'wip_disc' => $group->wip_disc,
+                    'wip_rim' => $group->wip_rim,
+                    'wip_sr' => $group->wip_sr,
+                    'wip_assy' => $group->wip_assy,
+                    'wip_cedW' => $group->wip_cedW,
+                    'wip_cedSR' => $group->wip_cedSR,
+                    'wip_tcW' => $group->wip_tcW,
+                    'wip_tcSR' => $group->wip_tcSR,
+                    'wip_valve' => $group->wip_valve,
+                    // dump($group->wip_valve),
                 ];
             }),
         ]);

@@ -426,15 +426,7 @@ function exportCSV(type: 'ctxsq' | 'base' | 'cpp' | 'pc') {
                                     ref="dtPC"
                                 >
                                     <Column field="no" sortable header="No" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-
-                                    <Column field="bp_code" sortable header="BP Code" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="bp_name" sortable header="BP Name" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-
                                     <Column field="item_code" sortable header="Item Code" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="type" sortable header="Type" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-
-                                    <Column field="quantity" sortable header="Quantity" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-
                                     <Column field="max_of_disc" sortable header="Max of Disc" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
                                     <Column field="max_of_rim" sortable header="Max of Rim" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
                                     <Column

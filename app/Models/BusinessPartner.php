@@ -16,8 +16,8 @@ class BusinessPartner extends Model
         'bp_name', // tambahkan kolom lain yang relevan
     ];
 
-    // public function salesQty()
-    // {
-    //     return $this->hasMany(RawSalesQty::class, 'bp_code', 'bp_code');
-    // }
+    public function salesQty()
+    {
+        return $this->hasMany(SalesQuantity::class, 'bp_code', 'bp_code');
+    }
 }

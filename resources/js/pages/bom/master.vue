@@ -322,16 +322,15 @@ function viewComponents(bom: any) {
                                         :bodyStyle="bodyStyle"
                                     ></Column>
 
-                                    <Column
-                                        field="item_name"
-                                        sortable
-                                        header="Material Name"
-                                        :headerStyle="headerStyle"
-                                        :bodyStyle="bodyStyle"
-                                    ></Column>
+                                    <Column field="description" sortable header="Description" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ data.bom?.description ?? '-' }}
+                                        </template>
+                                    </Column>
 
                                     <Column field="in_stock" sortable header="In Stock" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
                                     <Column field="item_group" sortable header="Group" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
+                                    <Column field="price" sortable header="Price" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
 
                                     <Column field="created_at_formatted" sortable header="Added at" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="slotProps">

@@ -25,6 +25,6 @@ class ProcessCost extends Model
 
     public function bom()
     {
-        return $this->hasOne(BOM::class, 'item_code', 'item_code');
+        return $this->hasOne(BillOfMaterial::class, 'item_code', 'item_code');
     }
 }

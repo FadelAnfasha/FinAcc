@@ -24,7 +24,7 @@ class Material extends Model
         'manufacturer',
     ];
 
-    public function boms()
+    public function bom()
     {
         return $this->hasOne(BillOfMaterial::class, 'item_code', 'item_code');
     }
