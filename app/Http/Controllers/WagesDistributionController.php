@@ -77,4 +77,37 @@ class WagesDistributionController extends Controller
             ->with('addedItems', $addedItems)
             ->with('updatedItems', $updatedItems);
     }
+
+    public function update(Request $request)
+    {
+        // dd($request->all()); // Debugging, hapus nanti  
+        $validated = $request->validate([
+            'blanking' => 'required',
+            'spinDisc' => 'required',
+            'autoDisc' => 'required',
+            'manualDisc' => 'required',
+            'discLathe' => 'required',
+            'rim1' => 'required',
+            'rim2' => 'required',
+            'rim3' => 'required',
+            'coiler' => 'required',
+            'forming' => 'required',
+            'assy1' => 'required',
+            'assy2' => 'required',
+            'machining' => 'required',
+            'shotPeening' => 'required',
+            'ced' => 'required',
+            'topcoat' => 'required',
+            'packing_dom' => 'required',
+            'packing_exp' => 'required',
+        ]);
+
+        WagesDistribution::truncate();
+
+        WagesDistribution::insert($validated);
+
+        return redirect()->route('pc.master')->with([
+            'success' => 'Data updated successfully.',
+        ]);
+    }
 }

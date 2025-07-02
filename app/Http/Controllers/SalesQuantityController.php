@@ -81,4 +81,29 @@ class SalesQuantityController extends Controller
             'skippedItems' => $skippedItems
         ]);
     }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'quantity' => 'required|numeric|min:0',
+        ]);
+
+        $salesqty = SalesQuantity::findOrFail($id);
+
+        $salesqty->update([
+            'quantity' => $request->quantity,
+        ]);
+
+        return redirect()->route('pc.master')->with([
+            'success' => 'Data updated successfully.',
+        ]);
+    }
+
+    public function destroy($id)
+    {
+        $sq = SalesQuantity::findOrFail($id);
+        $sq->delete();
+
+        return redirect()->route('pc.master');
+    }
 }

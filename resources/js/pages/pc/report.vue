@@ -142,70 +142,167 @@ function exportCSV(type: 'ctxsq' | 'base' | 'cpp' | 'pc') {
 
                                     <Column field="quantity" sortable header="Quantity" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
 
-                                    <Column field="ctxsq.blanking" sortable header="Blanking" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="ctxsq.spinDisc" sortable header="Spin Disc" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="ctxsq.autoDisc" sortable header="Auto Disc" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column
-                                        field="ctxsq.manualDisc"
-                                        sortable
-                                        header="Manual Disc"
-                                        :headerStyle="headerStyle"
-                                        :bodyStyle="bodyStyle"
-                                    />
-                                    <Column field="ctxsq.discLathe" sortable header="Disc Lathe" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="ctxsq.Total Disc" sortable header="Total Disc" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="ctxsq.blanking" sortable header="Blanking" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.ctxsq.blanking).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="ctxsq.spinDisc" sortable header="Spinning Disc" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.ctxsq.spinDisc).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="ctxsq.autoDisc" sortable header="Auto Disc" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.ctxsq.autoDisc).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="ctxsq.manualDisc" sortable header="Manual Disc" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.ctxsq.manualDisc).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
 
-                                    <Column field="ctxsq.rim1" sortable header="Rim 1" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="ctxsq.rim2" sortable header="Rim 2" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="ctxsq.rim3" sortable header="Rim 3" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="ctxsq.Total Rim" sortable header="Total Rim" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="ctxsq.discLathe" sortable header="Disc Lathe" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.ctxsq.discLathe).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
 
-                                    <Column field="ctxsq.coiler" sortable header="Coiler" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="ctxsq.forming" sortable header="Forming" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="ctxsq.Total Disc" sortable header="Total Disc" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data['ctxsq']['Total Disc']).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="ctxsq.rim1" sortable header="Rim 1" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.ctxsq.rim1).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="ctxsq.rim2" sortable header="Rim 2" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.ctxsq.rim2).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="ctxsq.rim3" sortable header="Rim 3" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.ctxsq.rim3).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="ctxsq.Total Rim" sortable header="Total Rim" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data['ctxsq']['Total Rim']).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="ctxsq.coiler" sortable header="Coiler" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.ctxsq.coiler).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="ctxsq.forming" sortable header="Forming" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.ctxsq.forming).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
                                     <Column
                                         field="ctxsq.Total Sidering"
                                         sortable
                                         header="Total Sidering"
                                         :headerStyle="headerStyle"
                                         :bodyStyle="bodyStyle"
-                                    />
+                                    >
+                                        <template #body="{ data }">
+                                            {{ Number(data['ctxsq']['Total Sidering']).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
 
-                                    <Column field="ctxsq.assy1" sortable header="Assy 1" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="ctxsq.assy2" sortable header="Assy 2" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="ctxsq.machining" sortable header="Machining" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column
-                                        field="ctxsq.shotPeening"
-                                        sortable
-                                        header="Shotpeening"
-                                        :headerStyle="headerStyle"
-                                        :bodyStyle="bodyStyle"
-                                    />
-                                    <Column field="ctxsq.Total Assy" sortable header="Total Assy" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="ctxsq.assy1" sortable header="Assy 1" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.ctxsq.assy1).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="ctxsq.assy2" sortable header="Assy 2" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.ctxsq.assy2).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="ctxsq.machining" sortable header="Machining" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.ctxsq.machining).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="ctxsq.shotPeening" sortable header="Shotpeening" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.ctxsq.shotPeening).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
 
-                                    <Column field="ctxsq.ced" sortable header="CED" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="ctxsq.topcoat" sortable header="Topcoat" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="ctxsq.Total Assy" sortable header="Total Assy" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data['ctxsq']['Total Assy']).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="ctxsq.ced" sortable header="CED" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.ctxsq.ced).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="ctxsq.topcoat" sortable header="Topcoat" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.ctxsq.topcoat).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
                                     <Column
                                         field="ctxsq.Total Painting"
                                         sortable
                                         header="Total Painting"
                                         :headerStyle="headerStyle"
                                         :bodyStyle="bodyStyle"
-                                    />
+                                    >
+                                        <template #body="{ data }">
+                                            {{ Number(data['ctxsq']['Total Painting']).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
 
                                     <Column
                                         field="ctxsq.packing_dom"
                                         sortable
-                                        header="Packing DOM"
+                                        header="Packing Domestic"
                                         :headerStyle="headerStyle"
                                         :bodyStyle="bodyStyle"
-                                    />
+                                    >
+                                        <template #body="{ data }">
+                                            {{ Number(data.ctxsq.packing_dom).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
                                     <Column
                                         field="ctxsq.packing_exp"
                                         sortable
-                                        header="Packing EXP"
+                                        header="Packing Export"
                                         :headerStyle="headerStyle"
                                         :bodyStyle="bodyStyle"
-                                    />
+                                    >
+                                        <template #body="{ data }">
+                                            {{ Number(data.ctxsq.packing_exp).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column
+                                        field="ctxsq.Total Packaging"
+                                        sortable
+                                        header="Total Packaging"
+                                        :headerStyle="headerStyle"
+                                        :bodyStyle="bodyStyle"
+                                    >
+                                        <template #body="{ data }">
+                                            {{ Number(data['ctxsq']['Total Packaging']).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
                                 </DataTable>
                             </section>
                         </TabPanel>

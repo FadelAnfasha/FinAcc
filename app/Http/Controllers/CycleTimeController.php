@@ -123,4 +123,12 @@ class CycleTimeController extends Controller
             'invalidItems' => $invalidItems
         ]);
     }
+
+    public function destroy($item_code)
+    {
+        $ct = CycleTime::findOrFail($item_code);
+        $ct->delete();
+
+        return redirect()->route('pc.master')->with('deleted', 'Cycle Time ' . $item_code . ' deleted successfully');
+    }
 }

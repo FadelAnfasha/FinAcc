@@ -15,12 +15,13 @@ class BOMController extends Controller
 {
     public function master(Request $request)
     {
-        $materials = Material::all();
-        $materials->load('bom');
+        $materials = Material::with('bom')->get();
+
         $bom = BillOfMaterial::where('depth', 1)->get();
         $packings = Packing::all();
         $processes = Process::all();
 
+        // dump($materials);
         $componentItems = collect();
 
         if ($request->has('component_id')) {
@@ -247,7 +248,6 @@ class BOMController extends Controller
                     'wip_tcW' => $group->wip_tcW,
                     'wip_tcSR' => $group->wip_tcSR,
                     'wip_valve' => $group->wip_valve,
-                    // dump($group->wip_valve),
                 ];
             }),
         ]);

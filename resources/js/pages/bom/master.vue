@@ -6,12 +6,16 @@ import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
 import Dialog from 'primevue/dialog';
 import FileUpload, { FileUploadUploaderEvent } from 'primevue/fileupload';
+import InputNumber from 'primevue/inputnumber';
+import InputText from 'primevue/inputtext';
 import ProgressBar from 'primevue/progressbar';
+import Select from 'primevue/select';
 import Tab from 'primevue/tab';
 import TabList from 'primevue/tablist';
 import TabPanel from 'primevue/tabpanel';
 import TabPanels from 'primevue/tabpanels';
 import Tabs from 'primevue/tabs';
+import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
 import { computed, ref, watch } from 'vue';
 
@@ -19,13 +23,8 @@ const dtMAT = ref();
 const dtBOM = ref();
 const dtPACK = ref();
 const dtPROC = ref();
-const visible = ref(false);
-
 const toast = useToast();
 const page = usePage();
-
-const showImportDialog = ref(false);
-const importInProgress = ref(false);
 
 const materials = computed(() =>
     (page.props.materials as any[]).map((mat, index) => ({
@@ -84,6 +83,20 @@ watch(
 const headerStyle = { backgroundColor: '#758596', color: 'white' };
 const bodyStyle = { backgroundColor: '#c8cccc', color: 'black' };
 
+const showDialog = ref(false);
+const dialogWidth = ref('40rem');
+const editType = ref<'mat' | 'pack' | 'proc' | null>(null);
+const destroyType = ref<'mat' | 'pack' | 'proc' | 'bom' | null>(null);
+const headerType = ref<any>({});
+const showImportDialog = ref(false);
+const importInProgress = ref(false);
+const editedData = ref<any>({});
+const destroyedData = ref<any>({});
+const groups = ref([
+    { name: 'Raw Material', code: 'RAW MATERIAL' },
+    { name: 'Sparepart & Tools', code: 'SPAREPARTS AND TOOLS' },
+]);
+
 function handleCSVImport(event: FileUploadUploaderEvent, type: 'mat' | 'bom' | 'pack' | 'proc') {
     let file: File | undefined;
     if (Array.isArray(event.files)) {
@@ -121,13 +134,13 @@ function handleCSVImport(event: FileUploadUploaderEvent, type: 'mat' | 'bom' | '
         preserveScroll: true,
         preserveState: true,
         onSuccess: () => {
-            toast.add({ severity: 'success', summary: 'Success', detail: 'CSV imported', life: 3000 });
+            toast.add({ severity: 'success', group: 'br', summary: 'Success', detail: 'CSV imported', life: 3000 });
 
             // ✅ Import selesai
             importInProgress.value = false;
         },
         onError: () => {
-            toast.add({ severity: 'error', summary: 'Error', detail: 'Import failed', life: 3000 });
+            toast.add({ severity: 'error', group: 'br', summary: 'Error', detail: 'Import failed', life: 3000 });
             importInProgress.value = false;
         },
     });
@@ -168,16 +181,88 @@ function formatDate(dateStr: string): string {
     return `${yy}-${mm}-${dd}`;
 }
 
-function editMat(bp: any) {
-    console.log('Edit', bp);
-    // buka dialog edit atau redirect, tergantung desain kamu
+function editData(data: any, type: 'mat' | 'pack' | 'proc') {
+    console.log('Edit', data);
+    editedData.value = { ...data };
+    editType.value = type;
+    headerType.value = 'Edit data';
+    // Atur lebar berdasarkan type
+    if (type === 'mat') {
+        dialogWidth.value = '40rem';
+    } else if (type === 'pack') {
+        dialogWidth.value = '80rem';
+    }
+    showDialog.value = true;
 }
 
-function deleteMat(bp: any) {
-    if (confirm(`Hapus ${bp.bp_code}?`)) {
-        router.delete(route('bps.destroy', bp.id), {
+function handleSave() {
+    if (editType.value === 'mat') {
+        const item_code = editedData.value.item_code;
+        if (!item_code) return;
+
+        router.put(route('mat.update', item_code), editedData.value, {
+            preserveScroll: true,
+            preserveState: true,
             onSuccess: () => {
-                toast.add({ severity: 'success', summary: 'Deleted', detail: 'Data berhasil dihapus' });
+                toast.add({
+                    severity: 'success',
+                    summary: 'Success',
+                    group: 'br',
+                    detail: `Data ${editedData.value.item_code} updated successfully`,
+                    life: 3000,
+                });
+                showDialog.value = false;
+            },
+            onError: () => {
+                toast.add({
+                    severity: 'warn',
+                    summary: 'Error',
+                    group: 'br',
+                    detail: `Failed to delete data with ${editedData.value.bp_code}`,
+                    life: 3000,
+                });
+            },
+        });
+    }
+}
+
+function destroyData(data: any, type: 'mat' | 'pack' | 'proc' | 'bom') {
+    destroyedData.value = { ...data };
+    destroyType.value = type;
+    headerType.value = 'Delete data';
+    if (type === 'mat') {
+        dialogWidth.value = '40rem';
+    }
+    showDialog.value = true;
+}
+
+function handleDestroy() {
+    if (destroyType.value === 'mat') {
+        const item_code = destroyedData.value.item_code;
+        if (!item_code) return;
+
+        router.delete(route('mat.destroy', item_code), {
+            data: destroyedData.value,
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                toast.add({
+                    severity: 'error',
+                    summary: 'Success',
+                    detail: `Data ${destroyedData.value.item_code} deleted successfully`,
+                    group: 'br',
+                    life: 3000,
+                });
+                showDialog.value = false;
+            },
+            onError: () => {
+                toast.add({
+                    severity: 'warn',
+                    summary: 'Error',
+                    group: 'br',
+                    detail: `Failed to delete this  ${destroyedData.value.item_code} data`,
+                    life: 3000,
+                });
             },
         });
     }
@@ -194,9 +279,19 @@ function viewComponents(bom: any) {
         },
     );
 }
+
+const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+    }).format(value);
+};
 </script>
 
 <template>
+    <Toast group="br" position="bottom-right" />
+
     <Head title="Process Cost" />
     <AppLayout>
         <!-- <template>
@@ -256,23 +351,112 @@ function viewComponents(bom: any) {
                         </div>
                     </Dialog>
                 </div>
+
+                <Dialog v-model:visible="showComponent" header="Component Details of ${{  }}" modal class="w-[60rem]">
+                    <DataTable :value="componentItems" responsiveLayout="scroll">
+                        <Column header="#" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                            <template #body="{ index }">
+                                {{ index + 1 }}
+                            </template>
+                        </Column>
+                        <Column field="item_code" header="Item Code" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="description" header="Description" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="uom" header="Unit of Material" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="quantity" header="Quantity" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="warehouse" header="Warehouse" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="depth" header="Depth" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="bom_type" header="Bom Type" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                    </DataTable>
+                </Dialog>
+
+                <Dialog v-model:visible="showDialog" :header="headerType" modal :style="{ width: dialogWidth }" :closable="false">
+                    <div v-if="editType === 'mat'" class="space-y-6">
+                        <div class="mb-4 flex items-center gap-4">
+                            <label for="item_code" class="w-24 font-semibold">Material Code</label>
+                            <InputText id="item_code" class="flex-auto" v-model="editedData.item_code" autocomplete="off" :disabled="true" />
+                        </div>
+                        <div class="mb-4 flex items-center gap-4">
+                            <label for="description" class="w-24 font-semibold">Description</label>
+                            <InputText
+                                id="description"
+                                class="flex-auto"
+                                :value="editedData.bom?.description || '-'"
+                                autocomplete="off"
+                                :disabled="true"
+                            />
+                        </div>
+                        <div class="mb-4 flex items-center gap-4">
+                            <label for="in_stock" class="w-24 font-semibold">In Stock</label>
+                            <InputNumber
+                                id="in_stock"
+                                class="flex-auto"
+                                inputId="integeronly"
+                                :min="0"
+                                v-model="editedData.in_stock"
+                                autocomplete="off"
+                            />
+                        </div>
+                        <div class="mb-4 flex items-center gap-4">
+                            <label for="item_group" class="w-24 font-semibold">Group</label>
+                            <Select v-model="editedData.item_group" :options="groups" optionLabel="name" optionValue="code" class="w-full md:w-56" />
+                        </div>
+                        <div class="mb-4 flex items-center gap-4">
+                            <label for="price" class="w-24 font-semibold">Price</label>
+                            <InputNumber
+                                id="price"
+                                class="flex-auto"
+                                inputId="currency-indonesia"
+                                mode="currency"
+                                currency="IDR"
+                                locale="id-ID"
+                                :maxFractionDigits="2"
+                                v-model="editedData.price"
+                                autocomplete="off"
+                                :min="0"
+                            />
+                        </div>
+
+                        <!-- Action buttons -->
+                        <div class="mt-6 flex justify-end gap-2">
+                            <Button
+                                type="button"
+                                label="Cancel"
+                                severity="secondary"
+                                @click="
+                                    () => {
+                                        showDialog = false;
+                                        editType = null;
+                                    }
+                                "
+                            ></Button>
+                            <Button type="button" label="Save" @click="handleSave()"></Button>
+                        </div>
+                    </div>
+
+                    <div v-if="destroyType === 'mat'" class="space-y-6">
+                        <span>
+                            Are you sure want to delete material data with item code
+                            <span class="font-semibold text-red-600">{{ destroyedData.item_code }} </span> and description
+                            <span class="font-semibold text-red-600">{{ destroyedData.bom?.description || '-' }}</span> ?
+                        </span>
+                        <!-- Action buttons -->
+                        <div class="mt-6 flex justify-end gap-2">
+                            <Button
+                                type="button"
+                                label="Cancel"
+                                severity="secondary"
+                                @click="
+                                    () => {
+                                        showDialog = false;
+                                        destroyType = null;
+                                    }
+                                "
+                            ></Button>
+                            <Button type="button" label="Delete" severity="danger" @click="handleDestroy()"></Button>
+                        </div>
+                    </div>
+                </Dialog>
             </div>
-            <Dialog v-model:visible="showComponent" header="Component Details of ${{  }}" modal class="w-[60rem]">
-                <DataTable :value="componentItems" responsiveLayout="scroll">
-                    <Column header="#" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
-                        <template #body="{ index }">
-                            {{ index + 1 }}
-                        </template>
-                    </Column>
-                    <Column field="item_code" header="Item Code" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                    <Column field="description" header="Description" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                    <Column field="uom" header="Unit of Material" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                    <Column field="quantity" header="Quantity" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                    <Column field="warehouse" header="Warehouse" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                    <Column field="depth" header="Depth" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                    <Column field="bom_type" header="Bom Type" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                </DataTable>
-            </Dialog>
 
             <div class="mx-26 mb-26">
                 <Tabs value="0">
@@ -330,7 +514,11 @@ function viewComponents(bom: any) {
 
                                     <Column field="in_stock" sortable header="In Stock" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
                                     <Column field="item_group" sortable header="Group" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
-                                    <Column field="price" sortable header="Price" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
+                                    <Column field="price" header="Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ formatCurrency(data.price) }}
+                                        </template>
+                                    </Column>
 
                                     <Column field="created_at_formatted" sortable header="Added at" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="slotProps">
@@ -353,8 +541,20 @@ function viewComponents(bom: any) {
                                     <Column field="action" header="Action" :exportable="false" :headerStyle="headerStyle" :bodyStyle="bodyStyle"
                                         ><template #body="slotProps">
                                             <div class="flex gap-2">
-                                                <Button icon="pi pi-pencil" severity="warning" rounded text @click="editMat(slotProps.data)" />
-                                                <Button icon="pi pi-trash" severity="danger" rounded text @click="deleteMat(slotProps.data)" />
+                                                <Button
+                                                    icon="pi pi-pencil"
+                                                    severity="warning"
+                                                    rounded
+                                                    text
+                                                    @click="editData(slotProps.data, 'mat')"
+                                                />
+                                                <Button
+                                                    icon="pi pi-trash"
+                                                    severity="danger"
+                                                    rounded
+                                                    text
+                                                    @click="destroyData(slotProps.data, 'mat')"
+                                                />
                                             </div> </template
                                     ></Column>
                                 </DataTable>
@@ -391,8 +591,11 @@ function viewComponents(bom: any) {
                                     ref="dtBP"
                                 >
                                     <Column field="item_code" sortable header="Item Code" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
-                                    <Column field="price" sortable header="Packing Price" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
-
+                                    <Column field="price" header="Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ formatCurrency(data.price) }}
+                                        </template>
+                                    </Column>
                                     <Column field="created_at_formatted" sortable header="Added at" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="slotProps">
                                             {{ formatDate(slotProps.data.created_at) }}
@@ -414,8 +617,20 @@ function viewComponents(bom: any) {
                                     <Column field="action" header="Action" :exportable="false" :headerStyle="headerStyle" :bodyStyle="bodyStyle"
                                         ><template #body="slotProps">
                                             <div class="flex gap-2">
-                                                <Button icon="pi pi-pencil" severity="warning" rounded text @click="editMat(slotProps.data)" />
-                                                <Button icon="pi pi-trash" severity="danger" rounded text @click="deleteMat(slotProps.data)" />
+                                                <Button
+                                                    icon="pi pi-pencil"
+                                                    severity="warning"
+                                                    rounded
+                                                    text
+                                                    @click="editData(slotProps.data, 'pack')"
+                                                />
+                                                <Button
+                                                    icon="pi pi-trash"
+                                                    severity="danger"
+                                                    rounded
+                                                    text
+                                                    @click="destroyData(slotProps.data, 'pack')"
+                                                />
                                             </div> </template
                                     ></Column>
                                 </DataTable>
@@ -460,7 +675,11 @@ function viewComponents(bom: any) {
                                         :bodyStyle="bodyStyle"
                                     ></Column>
 
-                                    <Column field="price" sortable header="Price" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
+                                    <Column field="price" header="Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ formatCurrency(data.price) }}
+                                        </template>
+                                    </Column>
 
                                     <Column
                                         field="manufacturer"
@@ -491,8 +710,20 @@ function viewComponents(bom: any) {
                                     <Column field="action" header="Action" :exportable="false" :headerStyle="headerStyle" :bodyStyle="bodyStyle"
                                         ><template #body="slotProps">
                                             <div class="flex gap-2">
-                                                <Button icon="pi pi-pencil" severity="warning" rounded text @click="editMat(slotProps.data)" />
-                                                <Button icon="pi pi-trash" severity="danger" rounded text @click="deleteMat(slotProps.data)" />
+                                                <Button
+                                                    icon="pi pi-pencil"
+                                                    severity="warning"
+                                                    rounded
+                                                    text
+                                                    @click="editData(slotProps.data, 'proc')"
+                                                />
+                                                <Button
+                                                    icon="pi pi-trash"
+                                                    severity="danger"
+                                                    rounded
+                                                    text
+                                                    @click="destroyData(slotProps.data, 'proc')"
+                                                />
                                             </div> </template
                                     ></Column>
                                 </DataTable>

@@ -88,17 +88,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/mat/import', [MaterialController::class, 'import'])->name('mat.import');
-});
-
-#=============================
-#====> Bill of Materials <====
-#=============================
-
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::post('/bom/import', [BillOfMaterialController::class, 'import'])->name('bom.import');
-
-    Route::get('/bom/components/{id}', [BillOfMaterialController::class, 'components'])
-        ->name('bom.components');
+    Route::put('/mat/update/{id}', [MaterialController::class, 'update'])->name('mat.update');
+    Route::delete('/mat/destroy/{id}', [MaterialController::class, 'destroy'])->name('mat.destroy');
 });
 
 #=============================
@@ -115,6 +106,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/proc/import', [ProcessController::class, 'import'])->name('proc.import');
+});
+
+#=============================
+#====> Bill of Materials <====
+#=============================
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/bom/import', [BillOfMaterialController::class, 'import'])->name('bom.import');
+
+    Route::get('/bom/components/{id}', [BillOfMaterialController::class, 'components'])
+        ->name('bom.components');
 });
 
 #==========================
@@ -137,7 +139,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 #=============================
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::post('/bps/import', [BusinessPartnerController::class, 'import'])->name('bps.import');
+    Route::post('/bp/import', [BusinessPartnerController::class, 'import'])->name('bp.import');
 });
 
 
@@ -155,6 +157,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/sq/import', [SalesQuantityController::class, 'import'])->name('sq.import');
+    Route::put('/sq/update/{id}', [SalesQuantityController::class, 'update'])->name('sq.update');
+    Route::delete('/sq/destroy/{id}', [SalesQuantity::class, 'destroy'])->name('sq.destroy');
 });
 
 #=============================
@@ -163,6 +167,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/wd/import', [WagesDistributionController::class, 'import'])->name('wd.import');
+    Route::put('/wd/update', [WagesDistributionController::class, 'update'])->name('wd.update');
 });
 
 #==========================

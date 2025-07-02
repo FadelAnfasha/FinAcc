@@ -6,13 +6,18 @@ import Card from 'primevue/card';
 import Chart from 'primevue/chart';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
+import Dialog from 'primevue/dialog';
 import FileUpload, { FileUploadUploaderEvent } from 'primevue/fileupload';
+import InputNumber from 'primevue/inputnumber';
+import InputText from 'primevue/inputtext';
 import Panel from 'primevue/panel';
+import ProgressBar from 'primevue/progressbar';
 import Tab from 'primevue/tab';
 import TabList from 'primevue/tablist';
 import TabPanel from 'primevue/tabpanel';
 import TabPanels from 'primevue/tabpanels';
 import Tabs from 'primevue/tabs';
+import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref } from 'vue';
 
@@ -51,6 +56,10 @@ const salesQuantity = computed(() =>
 );
 
 const wagesDistribution = page.props.wagesDistribution as Record<string, string>;
+
+function getCSSVar(name: string) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
 
 // Ref untuk Chart Data dan Options
 const chartOptions = ref({});
@@ -166,6 +175,13 @@ chartDataTotal.value = {
     ],
 };
 
+const cyan500 = getCSSVar('--p-cyan-500');
+const orange500 = getCSSVar('--p-orange-500');
+const green500 = getCSSVar('--p-green-500');
+const purple500 = getCSSVar('--p-purple-500');
+const red500 = getCSSVar('--p-red-500');
+const blue500 = getCSSVar('--p-blue-500');
+
 const updateChartData = () => {
     const wd = page.props.wagesDistribution as Record<string, string>;
 
@@ -174,7 +190,8 @@ const updateChartData = () => {
         datasets: [
             {
                 label: 'Total Wages Distribution',
-                backgroundColor: ['#42A5F5', '#66BB6A', '#FFA726', '#AB47BC', '#FF7043', '#26A69A'],
+                backgroundColor: [cyan500, orange500, green500, purple500, red500, blue500],
+
                 data: [
                     parseFloat(wd.blanking) +
                         parseFloat(wd.spinDisc) +
@@ -195,7 +212,8 @@ const updateChartData = () => {
         datasets: [
             {
                 label: 'Total Wages Distribution',
-                backgroundColor: ['#42A5F5', '#66BB6A', '#FFA726', '#AB47BC', '#FF7043'],
+                backgroundColor: [cyan500, cyan500, cyan500, cyan500, cyan500],
+
                 data: [
                     parseFloat(wd.blanking),
                     parseFloat(wd.spinDisc),
@@ -211,7 +229,8 @@ const updateChartData = () => {
         datasets: [
             {
                 label: 'Total Wages Distribution',
-                backgroundColor: ['#42A5F5', '#66BB6A', '#FFA726'],
+                backgroundColor: [orange500, orange500],
+
                 data: [parseFloat(wd.rim1), parseFloat(wd.rim2), parseFloat(wd.rim3)],
             },
         ],
@@ -221,7 +240,7 @@ const updateChartData = () => {
         datasets: [
             {
                 label: 'Total Wages Distribution',
-                backgroundColor: ['#42A5F5', '#66BB6A'],
+                backgroundColor: [green500, green500],
                 data: [parseFloat(wd.coiler), parseFloat(wd.forming)],
             },
         ],
@@ -231,7 +250,8 @@ const updateChartData = () => {
         datasets: [
             {
                 label: 'Total Wages Distribution',
-                backgroundColor: ['#42A5F5', '#66BB6A', '#FFA726', '#AB47BC'],
+                backgroundColor: [purple500, purple500, purple500, purple500],
+
                 data: [parseFloat(wd.assy1), parseFloat(wd.assy2), parseFloat(wd.machining), parseFloat(wd.shotPeening)],
             },
         ],
@@ -241,7 +261,7 @@ const updateChartData = () => {
         datasets: [
             {
                 label: 'Total Wages Distribution',
-                backgroundColor: ['#42A5F5', '#66BB6A'],
+                backgroundColor: [red500, red500],
                 data: [parseFloat(wd.ced), parseFloat(wd.topcoat)],
             },
         ],
@@ -251,7 +271,7 @@ const updateChartData = () => {
         datasets: [
             {
                 label: 'Total Wages Distribution',
-                backgroundColor: ['#42A5F5', '#66BB6A'],
+                backgroundColor: [blue500, blue500],
                 data: [parseFloat(wd.packing_dom), parseFloat(wd.packing_exp)],
             },
         ],
@@ -260,6 +280,16 @@ const updateChartData = () => {
 
 const headerStyle = { backgroundColor: '#758596', color: 'white' };
 const bodyStyle = { backgroundColor: '#c8cccc', color: 'black' };
+
+const showDialog = ref(false);
+const dialogWidth = ref('40rem');
+const editType = ref<'ct' | 'sq' | 'wd' | null>(null);
+const destroyType = ref<'ct' | 'sq' | 'bp' | null>(null);
+const headerType = ref<any>({});
+const showImportDialog = ref(false);
+const importInProgress = ref(false);
+const editedData = ref<any>({});
+const destroyedData = ref<any>({});
 
 function handleCSVImport(event: FileUploadUploaderEvent, type: 'bp' | 'ct' | 'sq' | 'wd') {
     let file: File | undefined;
@@ -272,6 +302,7 @@ function handleCSVImport(event: FileUploadUploaderEvent, type: 'bp' | 'ct' | 'sq
 
     const formData = new FormData();
     formData.append('file', file);
+
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
     if (!csrfToken) {
         console.error('CSRF token not found in meta tag!');
@@ -279,9 +310,8 @@ function handleCSVImport(event: FileUploadUploaderEvent, type: 'bp' | 'ct' | 'sq
     }
 
     let $route = null;
-
     if (type === 'bp') {
-        $route = 'bps.import';
+        $route = 'bp.import';
     } else if (type === 'ct') {
         $route = 'ct.import';
     } else if (type === 'sq') {
@@ -290,13 +320,24 @@ function handleCSVImport(event: FileUploadUploaderEvent, type: 'bp' | 'ct' | 'sq
         $route = 'wd.import';
     }
 
+    // ✅ Mulai import: tampilkan dialog dan progress
+    showImportDialog.value = true;
+    importInProgress.value = true;
+
     router.post(route($route), formData, {
         preserveScroll: true,
         preserveState: true,
-        // nama prop yang harus di-refresh
         onSuccess: () => {
-            toast.add({ severity: 'success', summary: 'Success', detail: 'CSV imported', life: 3000 });
-            updateChartData();
+            toast.add({ severity: 'success', group: 'br', summary: 'Success', detail: 'CSV imported', life: 3000 });
+            if (type === 'wd') {
+                updateChartData();
+            }
+            // ✅ Import selesai
+            importInProgress.value = false;
+        },
+        onError: () => {
+            toast.add({ severity: 'error', group: 'br', summary: 'Error', detail: 'Import failed', life: 3000 });
+            importInProgress.value = false;
         },
     });
 }
@@ -336,16 +377,112 @@ function formatDate(dateStr: string): string {
     return `${yy}-${mm}-${dd}`;
 }
 
-function editBP(bp: any) {
-    console.log('Edit', bp);
-    // buka dialog edit atau redirect, tergantung desain kamu
+function editData(data: any, type: 'sq' | 'wd') {
+    editedData.value = { ...data }; // clone untuk menjaga reaktivitas
+    editType.value = type;
+    headerType.value = 'Edit data';
+    // Atur lebar berdasarkan type
+    if (type === 'sq') {
+        dialogWidth.value = '40rem';
+    } else if (type === 'wd') {
+        dialogWidth.value = '80rem';
+    }
+    showDialog.value = true;
 }
 
-function deleteBP(bp: any) {
-    if (confirm(`Hapus ${bp.bp_code}?`)) {
-        router.delete(route('bps.destroy', bp.id), {
+function handleSave() {
+    if (editType.value === 'sq') {
+        const id = editedData.value.id;
+        if (!id) return;
+
+        router.put(route('sq.update', id), editedData.value, {
+            preserveScroll: true,
+            preserveState: true,
             onSuccess: () => {
-                toast.add({ severity: 'success', summary: 'Deleted', detail: 'Data berhasil dihapus' });
+                toast.add({
+                    severity: 'success',
+                    summary: 'Success',
+                    group: 'br',
+                    detail: `Data ${editedData.value.bp_code} and ${editedData.value.item_code} updated successfully`,
+                    life: 3000,
+                });
+                showDialog.value = false;
+            },
+            onError: () => {
+                toast.add({
+                    severity: 'warn',
+                    summary: 'Error',
+                    group: 'br',
+                    detail: `Failed to delete data with ${editedData.value.bp_code} and ${editedData.value.item_code}`,
+                    life: 3000,
+                });
+            },
+        });
+    } else if (editType.value === 'wd') {
+        router.put(route('wd.update'), editedData.value, {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                toast.add({
+                    severity: 'warn',
+                    summary: 'Success',
+                    group: 'br',
+                    detail: 'Wages Distribution data updated successfully',
+                    life: 3000,
+                });
+                updateChartData();
+                showDialog.value = false;
+            },
+            onError: () => {
+                toast.add({
+                    severity: 'warn',
+                    summary: 'Error',
+                    group: 'br',
+                    detail: `Failed to update Wages Distribution data`,
+                    life: 3000,
+                });
+            },
+        });
+    }
+}
+
+function destroyData(data: any, type: 'sq') {
+    destroyedData.value = { ...data };
+    destroyType.value = type;
+    headerType.value = 'Delete data';
+    if (type === 'sq') {
+        dialogWidth.value = '40rem';
+    }
+    showDialog.value = true;
+}
+
+function handleDestroy() {
+    if (destroyType.value === 'sq') {
+        const bp_code = destroyedData.value.bp_code;
+        if (!bp_code) return;
+
+        router.delete(route('sq.destroy', bp_code), {
+            data: destroyedData.value,
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                toast.add({
+                    severity: 'error',
+                    summary: 'Success',
+                    detail: `Data ${destroyedData.value.bp_code} and ${destroyedData.value.item_code} deleted successfully`,
+                    group: 'br',
+                    life: 3000,
+                });
+                showDialog.value = false;
+            },
+            onError: () => {
+                toast.add({
+                    severity: 'warn',
+                    summary: 'Error',
+                    group: 'br',
+                    detail: `Failed to delete this  ${destroyedData.value.bp_code} data`,
+                    life: 3000,
+                });
             },
         });
     }
@@ -353,40 +490,10 @@ function deleteBP(bp: any) {
 </script>
 
 <template>
+    <Toast group="br" position="bottom-right" />
+
     <Head title="Process Cost" />
     <AppLayout>
-        <!-- <template>
-            <Dialog v-model:visible="showResultDialog" header="Import Result" modal class="w-[40rem]">
-                <div v-if="importResults.success" class="mb-4 text-green-600">
-                    {{ importResults.success }}
-                </div>
-
-                <div class="mb-2" v-if="importResults.added.length">
-                    <strong class="text-green-700">Ditambahkan:</strong>
-                    <ul class="list-disc pl-4">
-                        <li v-for="item in importResults.added" :key="'added-' + item">{{ item }}</li>
-                    </ul>
-                </div>
-
-                <div class="mb-2" v-if="importResults.updated.length">
-                    <strong class="text-yellow-700">Diperbarui:</strong>
-                    <ul class="list-disc pl-4">
-                        <li v-for="item in importResults.updated" :key="'updated-' + item">{{ item }}</li>
-                    </ul>
-                </div>
-
-                <div class="mb-2" v-if="importResults.invalid.length">
-                    <strong class="text-red-700">Gagal:</strong>
-                    <ul class="list-disc pl-4">
-                        <li v-for="item in importResults.invalid" :key="'invalid-' + item">{{ item }}</li>
-                    </ul>
-                </div>
-
-                <template #footer>
-                    <Button label="Tutup" icon="pi pi-times" @click="showResultDialog = false" />
-                </template>
-            </Dialog>
-        </template> -->
         <div class="m-6">
             <div class="flex flex-col gap-1">
                 <h2 class="mb-2 text-start text-3xl font-bold text-gray-900 dark:text-white">Process Cost Calculation</h2>
@@ -400,6 +507,372 @@ function deleteBP(bp: any) {
                     </h1>
                     <hr class="absolute top-1/2 left-0 z-0 w-full -translate-y-1/2 border-gray-300 dark:border-gray-600" />
                 </div>
+                <Dialog v-model:visible="showImportDialog" :closable="false" header="Importing CSV" modal class="w-[30rem]">
+                    <div v-if="importInProgress">
+                        <ProgressBar mode="indeterminate" style="height: 6px" />
+                        <p class="mt-2 text-center">Importing, please wait...</p>
+                    </div>
+                    <div v-else class="text-center">
+                        <p class="mb-3">Import complete!</p>
+                        <Button label="Close" icon="pi pi-times" @click="showImportDialog = false" />
+                    </div>
+                </Dialog>
+
+                <Dialog v-model:visible="showDialog" :header="headerType" modal :style="{ width: dialogWidth }" :closable="false">
+                    <div v-if="editType === 'sq'" class="space-y-6">
+                        <div class="mb-4 flex items-center gap-4">
+                            <label for="bp_code" class="w-24 font-semibold">BP Code</label>
+                            <InputText id="bp_code" class="flex-auto" v-model="editedData.bp_code" autocomplete="off" :disabled="true" />
+                        </div>
+                        <div class="gap4 mb-4 flex items-center gap-4">
+                            <label for="bp_name" class="w-24 font-semibold">BP Name</label>
+                            <InputText id="bp_name" class="flex-auto" v-model="editedData.bp.bp_name" autocomplete="off" :disabled="true" />
+                        </div>
+
+                        <div class="gap4 mb-4 flex items-center gap-4">
+                            <label for="item_code" class="w-24 font-semibold">Item Code</label>
+                            <InputText id="item_code" class="flex-auto" v-model="editedData.item_code" autocomplete="off" :disabled="true" />
+                        </div>
+
+                        <div class="gap4 mb-4 flex items-center gap-4">
+                            <label for="bp_name" class="w-24 font-semibold">BP Name</label>
+                            <InputText id="bp_name" class="flex-auto" v-model="editedData.item.type" autocomplete="off" :disabled="true" />
+                        </div>
+                        <div class="gap4 mb-4 flex items-center gap-4">
+                            <label for="quantity" class="w-24 font-semibold">Order Quantity</label>
+                            <InputNumber
+                                id="quantity"
+                                class="flex-auto"
+                                inputId="locale-user"
+                                :maxFractionDigits="2"
+                                autocomplete="off"
+                                v-model="editedData.quantity"
+                                :min="0"
+                            />
+                        </div>
+                        <!-- Action buttons -->
+                        <div class="mt-6 flex justify-end gap-2">
+                            <Button
+                                type="button"
+                                label="Cancel"
+                                severity="secondary"
+                                @click="
+                                    () => {
+                                        showDialog = false;
+                                        editType = null;
+                                    }
+                                "
+                            ></Button>
+                            <Button type="button" label="Save" @click="handleSave()"></Button>
+                        </div>
+                    </div>
+
+                    <div v-if="editType === 'wd'" class="space-y-6">
+                        <!-- Line Disc Section -->
+                        <div class="rounded-lg border bg-cyan-500 p-4">
+                            <h3 class="mb-4 border-b pb-2 text-lg font-semibold text-slate-900">Line Disc</h3>
+                            <div class="mb-4 grid grid-cols-2 gap-4">
+                                <div class="flex items-center gap-3">
+                                    <label for="blanking" class="w-32 font-medium text-gray-900">Blanking</label>
+                                    <InputNumber
+                                        id="blanking"
+                                        class="flex-1"
+                                        inputId="locale-user"
+                                        :maxFractionDigits="2"
+                                        autocomplete="off"
+                                        v-model="editedData.blanking"
+                                        :min="0"
+                                    />
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <label for="spinDisc" class="w-32 font-medium text-gray-900">Spinning Disc</label>
+                                    <InputNumber
+                                        id="spinDisc"
+                                        class="flex-1"
+                                        inputId="locale-user"
+                                        :maxFractionDigits="2"
+                                        autocomplete="off"
+                                        v-model="editedData.spinDisc"
+                                        :min="0"
+                                    />
+                                </div>
+                            </div>
+                            <div class="mb-4 grid grid-cols-2 gap-4">
+                                <div class="flex items-center gap-3">
+                                    <label for="autoDisc" class="w-32 font-medium text-gray-900">Auto Disc</label>
+                                    <InputNumber
+                                        id="autoDisc"
+                                        class="flex-1"
+                                        inputId="locale-user"
+                                        :maxFractionDigits="2"
+                                        autocomplete="off"
+                                        v-model="editedData.autoDisc"
+                                        :min="0"
+                                    />
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <label for="manualDisc" class="w-32 font-medium text-gray-900">Manual Disc</label>
+                                    <InputNumber
+                                        id="manualDisc"
+                                        class="flex-1"
+                                        inputId="locale-user"
+                                        :maxFractionDigits="2"
+                                        autocomplete="off"
+                                        v-model="editedData.manualDisc"
+                                        :min="0"
+                                    />
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="flex items-center gap-3">
+                                    <label for="discLathe" class="w-32 font-medium text-gray-900">Disc Lathe</label>
+                                    <InputNumber
+                                        id="discLathe"
+                                        class="flex-1"
+                                        inputId="locale-user"
+                                        :maxFractionDigits="2"
+                                        autocomplete="off"
+                                        v-model="editedData.discLathe"
+                                        :min="0"
+                                    />
+                                </div>
+                                <div></div>
+                                <!-- Empty div for alignment -->
+                            </div>
+                        </div>
+
+                        <!-- Rim Section -->
+                        <div class="rounded-lg border bg-orange-500 p-4">
+                            <h3 class="mb-4 border-b pb-2 text-lg font-semibold text-slate-900">Rim</h3>
+                            <div class="grid grid-cols-3 gap-4">
+                                <div class="flex items-center gap-3">
+                                    <label for="rim1" class="w-20 font-medium text-gray-900">Rim 1</label>
+                                    <InputNumber
+                                        id="rim1"
+                                        class="flex-1"
+                                        inputId="locale-user"
+                                        :maxFractionDigits="2"
+                                        autocomplete="off"
+                                        v-model="editedData.rim1"
+                                        :min="0"
+                                    />
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <label for="rim2" class="w-20 font-medium text-gray-900">Rim 2</label>
+                                    <InputNumber
+                                        id="rim2"
+                                        class="flex-1"
+                                        inputId="locale-user"
+                                        :maxFractionDigits="2"
+                                        autocomplete="off"
+                                        v-model="editedData.rim2"
+                                        :min="0"
+                                    />
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <label for="rim3" class="w-20 font-medium text-gray-900">Rim 3</label>
+                                    <InputNumber
+                                        id="rim3"
+                                        class="flex-1"
+                                        inputId="locale-user"
+                                        :maxFractionDigits="2"
+                                        autocomplete="off"
+                                        v-model="editedData.rim3"
+                                        :min="0"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sidering Section -->
+                        <div class="rounded-lg border bg-green-500 p-4">
+                            <h3 class="mb-4 border-b pb-2 text-lg font-semibold text-slate-900">Sidering</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="flex items-center gap-3">
+                                    <label for="coiler" class="w-32 font-medium text-gray-900">Coiler</label>
+                                    <InputNumber
+                                        id="coiler"
+                                        class="flex-1"
+                                        inputId="locale-user"
+                                        :maxFractionDigits="2"
+                                        autocomplete="off"
+                                        v-model="editedData.coiler"
+                                        :min="0"
+                                    />
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <label for="forming" class="w-32 font-medium text-gray-900">Forming</label>
+                                    <InputNumber
+                                        id="forming"
+                                        class="flex-1"
+                                        inputId="locale-user"
+                                        :maxFractionDigits="2"
+                                        autocomplete="off"
+                                        v-model="editedData.forming"
+                                        :min="0"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Assy Section -->
+                        <div class="rounded-lg border bg-purple-500 p-4">
+                            <h3 class="mb-4 border-b pb-2 text-lg font-semibold text-slate-900">Assembly</h3>
+                            <div class="mb-4 grid grid-cols-2 gap-4">
+                                <div class="flex items-center gap-3">
+                                    <label for="assy1" class="w-32 font-medium text-gray-900">Assy 1</label>
+                                    <InputNumber
+                                        id="assy1"
+                                        class="flex-1"
+                                        inputId="locale-user"
+                                        :maxFractionDigits="2"
+                                        autocomplete="off"
+                                        v-model="editedData.assy1"
+                                        :min="0"
+                                    />
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <label for="assy2" class="w-32 font-medium text-gray-900">Assy 2</label>
+                                    <InputNumber
+                                        id="assy2"
+                                        class="flex-1"
+                                        inputId="locale-user"
+                                        :maxFractionDigits="2"
+                                        autocomplete="off"
+                                        v-model="editedData.assy2"
+                                        :min="0"
+                                    />
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="flex items-center gap-3">
+                                    <label for="machining" class="w-32 font-medium text-gray-900">Machining</label>
+                                    <InputNumber
+                                        id="machining"
+                                        class="flex-1"
+                                        inputId="locale-user"
+                                        :maxFractionDigits="2"
+                                        autocomplete="off"
+                                        v-model="editedData.machining"
+                                        :min="0"
+                                    />
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <label for="shotPeening" class="w-32 font-medium text-gray-900">Shot Peening</label>
+                                    <InputNumber
+                                        id="shotPeening"
+                                        class="flex-1"
+                                        inputId="locale-user"
+                                        :maxFractionDigits="2"
+                                        autocomplete="off"
+                                        v-model="editedData.shotPeening"
+                                        :min="0"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Painting Section -->
+                        <div class="rounded-lg border bg-red-500 p-4">
+                            <h3 class="mb-4 border-b pb-2 text-lg font-semibold text-slate-900">Painting</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="flex items-center gap-3">
+                                    <label for="ced" class="w-32 font-medium text-gray-900">CED</label>
+                                    <InputNumber
+                                        id="ced"
+                                        class="flex-1"
+                                        inputId="locale-user"
+                                        :maxFractionDigits="2"
+                                        autocomplete="off"
+                                        v-model="editedData.ced"
+                                        :min="0"
+                                    />
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <label for="topcoat" class="w-32 font-medium text-gray-900">Top Coat</label>
+                                    <InputNumber
+                                        id="topcoat"
+                                        class="flex-1"
+                                        inputId="locale-user"
+                                        :maxFractionDigits="2"
+                                        autocomplete="off"
+                                        v-model="editedData.topcoat"
+                                        :min="0"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Packaging Section -->
+                        <div class="rounded-lg border bg-blue-500 p-4">
+                            <h3 class="mb-4 border-b pb-2 text-lg font-semibold text-slate-900">Packaging</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="flex items-center gap-3">
+                                    <label for="packing_dom" class="w-32 font-medium text-gray-900">Packing Domestic</label>
+                                    <InputNumber
+                                        id="packing_dom"
+                                        class="flex-1"
+                                        inputId="locale-user"
+                                        :maxFractionDigits="2"
+                                        autocomplete="off"
+                                        v-model="editedData.packing_dom"
+                                        :min="0"
+                                    />
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <label for="packing_exp" class="w-32 font-medium text-gray-900">Packing Export</label>
+                                    <InputNumber
+                                        id="packing_exp"
+                                        class="flex-1"
+                                        inputId="locale-user"
+                                        :maxFractionDigits="2"
+                                        autocomplete="off"
+                                        v-model="editedData.packing_exp"
+                                        :min="0"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Action buttons -->
+                        <div class="mt-6 flex justify-end gap-2">
+                            <Button
+                                type="button"
+                                label="Cancel"
+                                severity="secondary"
+                                @click="
+                                    () => {
+                                        showDialog = false;
+                                        editType = null;
+                                    }
+                                "
+                            ></Button>
+                            <Button type="button" label="Save" @click="handleSave()"></Button>
+                        </div>
+                    </div>
+
+                    <div v-if="destroyType === 'sq'" class="space-y-6">
+                        <span>
+                            Are you sure want to delete Sales Order data with BP Name
+                            <span class="font-semibold text-red-600">{{ destroyedData.bp.bp_name }} - ({{ destroyedData.bp_code }})</span> and Item
+                            <span class="font-semibold text-red-600">{{ destroyedData.item_code }}({{ destroyedData.item.type }})</span>?
+                        </span>
+                        <!-- Action buttons -->
+                        <div class="mt-6 flex justify-end gap-2">
+                            <Button
+                                type="button"
+                                label="Cancel"
+                                severity="secondary"
+                                @click="
+                                    () => {
+                                        showDialog = false;
+                                        destroyType = null;
+                                    }
+                                "
+                            ></Button>
+                            <Button type="button" label="Delete" severity="danger" @click="handleDestroy()"></Button>
+                        </div>
+                    </div>
+                </Dialog>
             </div>
             <div class="mx-26 mb-26">
                 <Tabs value="0">
@@ -459,14 +932,6 @@ function deleteBP(bp: any) {
                                             {{ formatDate(slotProps.data.updated_at) }}
                                         </template>
                                     </Column>
-
-                                    <Column field="action" header="Action" :exportable="false" :headerStyle="headerStyle" :bodyStyle="bodyStyle"
-                                        ><template #body="slotProps">
-                                            <div class="flex gap-2">
-                                                <Button icon="pi pi-pencil" severity="warning" rounded text @click="editBP(slotProps.data)" />
-                                                <Button icon="pi pi-trash" severity="danger" rounded text @click="deleteBP(slotProps.data)" />
-                                            </div> </template
-                                    ></Column>
                                 </DataTable>
                             </section>
                         </TabPanel>
@@ -579,14 +1044,6 @@ function deleteBP(bp: any) {
                                             {{ formatDate(slotProps.data.updated_at) }}
                                         </template>
                                     </Column>
-                                    <Column field="action" header="Action" :exportable="false" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
-                                        <template #body="slotProps">
-                                            <div class="flex gap-2">
-                                                <Button icon="pi pi-pencil" severity="warning" rounded text @click="editBP(slotProps.data)" />
-                                                <Button icon="pi pi-trash" severity="danger" rounded text @click="deleteBP(slotProps.data)" />
-                                            </div>
-                                        </template>
-                                    </Column>
                                 </DataTable>
                             </section>
                         </TabPanel>
@@ -658,8 +1115,14 @@ function deleteBP(bp: any) {
                                     <Column field="action" header="Action" :exportable="false" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="slotProps">
                                             <div class="flex gap-2">
-                                                <Button icon="pi pi-pencil" severity="warning" rounded text @click="editBP(slotProps.data)" />
-                                                <Button icon="pi pi-trash" severity="danger" rounded text @click="deleteBP(slotProps.data)" />
+                                                <Button icon="pi pi-pencil" severity="warning" rounded text @click="editData(slotProps.data, 'sq')" />
+                                                <Button
+                                                    icon="pi pi-trash"
+                                                    severity="danger"
+                                                    rounded
+                                                    text
+                                                    @click="destroyData(slotProps.data, 'sq')"
+                                                />
                                             </div>
                                         </template>
                                     </Column>
@@ -698,7 +1161,7 @@ function deleteBP(bp: any) {
                                             </template>
 
                                             <template #footer>
-                                                <Button label="Edit" class="w-full" severity="info" />
+                                                <Button label="Edit" class="w-full" severity="info" @click="editData(wagesDistribution, 'wd')" />
                                             </template>
                                         </Card>
                                     </div>
@@ -713,9 +1176,6 @@ function deleteBP(bp: any) {
                                             <template #content>
                                                 <Chart type="bar" :data="chartDataDisc" :options="chartOptions" class="h-[20rem]" />
                                             </template>
-                                            <template #footer>
-                                                <Button label="Edit" class="w-full" severity="info" />
-                                            </template>
                                         </Card>
 
                                         <Card style="width: 25rem">
@@ -727,9 +1187,6 @@ function deleteBP(bp: any) {
                                             <template #content>
                                                 <Chart type="bar" :data="chartDataRim" :options="chartOptions" class="h-[20rem]" />
                                             </template>
-                                            <template #footer>
-                                                <Button label="Edit" class="w-full" severity="info" />
-                                            </template>
                                         </Card>
 
                                         <Card style="width: 25rem">
@@ -740,9 +1197,6 @@ function deleteBP(bp: any) {
                                             </template>
                                             <template #content>
                                                 <Chart type="bar" :data="chartDataSidering" :options="chartOptions" class="h-[20rem]" />
-                                            </template>
-                                            <template #footer>
-                                                <Button label="Edit" class="w-full" severity="info" />
                                             </template>
                                         </Card>
                                     </div>
@@ -757,9 +1211,6 @@ function deleteBP(bp: any) {
                                             <template #content>
                                                 <Chart type="bar" :data="chartDataAssy" :options="chartOptions" class="h-[20rem]" />
                                             </template>
-                                            <template #footer>
-                                                <Button label="Edit" class="w-full" severity="info" />
-                                            </template>
                                         </Card>
 
                                         <Card style="width: 25rem">
@@ -771,9 +1222,6 @@ function deleteBP(bp: any) {
                                             <template #content>
                                                 <Chart type="bar" :data="chartDataPainting" :options="chartOptions" class="h-[20rem]" />
                                             </template>
-                                            <template #footer>
-                                                <Button label="Edit" class="w-full" severity="info" />
-                                            </template>
                                         </Card>
 
                                         <Card style="width: 25rem">
@@ -784,9 +1232,6 @@ function deleteBP(bp: any) {
                                             </template>
                                             <template #content>
                                                 <Chart type="bar" :data="chartDataPacking" :options="chartOptions" class="h-[20rem]" />
-                                            </template>
-                                            <template #footer>
-                                                <Button label="Edit" class="w-full" severity="info" />
                                             </template>
                                         </Card>
                                     </div>

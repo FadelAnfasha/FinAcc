@@ -71,4 +71,84 @@ class MaterialController extends Controller
             'updatedItems' => $updatedItems,
         ]);
     }
+
+    public function update(Request $request, $item_code)
+    {
+        // Validasi input
+        $request->validate([
+            // 'item_desc' => 'required',
+            'in_stock' => 'required',
+            'item_group' => 'required',
+            'price' => 'required'
+        ]);
+
+        $in_stock = $request->input('in_stock');
+        $price = $request->input('price');
+
+        // Temukan material berdasarkan item_code dan perbarui
+        $material = Material::findOrFail($item_code);
+
+        $material->update([
+            // 'item_desc' => $request->input('item_desc'),
+            'in_stock' => $in_stock,
+            'item_group' => $request->input('item_group'),
+            'price' => $price, // Menggunakan nilai price yang sudah diolah
+        ]);
+
+        redirect()->route(route: 'pc.master');
+    }
+
+    public function destroy($item_code)
+    {
+        $material = Material::findOrFail($item_code);
+        $material->delete();
+
+        redirect()->route(route: 'pc.master');
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'type' => 'required',
+            // 'item_desc' => 'required',
+            'in_stock' => 'required',
+            'item_group' => 'required',
+            'price' => 'required',
+        ]);
+
+
+        // Generate item_code
+        $type = $request->input('type');
+        $prefix = 'RF' . strtoupper(substr($type, 0, 1));
+        $materials = Material::where('item_code', 'like', $prefix . '%')->orderBy('item_code', 'asc')->get();
+
+        $existingNumbers = $materials->map(function ($material) use ($prefix) {
+            return intval(substr($material->item_code, strlen($prefix)));
+        })->toArray();
+
+        $newNumber = '001';
+        for ($i = 1; $i <= count($existingNumbers) + 1; $i++) {
+            if (!in_array($i, $existingNumbers)) {
+                $newNumber = str_pad($i, 3, '0', STR_PAD_LEFT);
+                break;
+            }
+        }
+
+        $in_stock = str_replace(',', '', $request->input('in_stock'));
+        $price = str_replace(',', '', $request->input('price'));
+
+        $item_code = $prefix . $newNumber;
+
+        // dd($item_code, $in_stock, $price);
+        // Create new material
+        Material::create([
+            'item_code' => $item_code,
+            // 'item_desc' => $request->input('item_desc'),
+            'in_stock' => $in_stock,
+            'item_group' => $request->input('item_group'),
+            'price' => $price,
+        ]);
+
+        return redirect()->route('materials.index')->with('success', 'Material added successfully with code : ' . $item_code);
+    }
 }
