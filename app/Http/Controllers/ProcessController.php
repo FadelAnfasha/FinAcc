@@ -75,7 +75,7 @@ class ProcessController extends Controller
         $process = Process::findOrFail($item_code);
         $process->delete();
 
-        return redirect()->route('processes.index')->with('deleted', 'Process ' . $item_code . ' deleted successfully');
+        redirect()->route(route: 'pc.master');
     }
 
     public function export()
@@ -115,16 +115,17 @@ class ProcessController extends Controller
             'price' => 'required'
         ]);
 
-        // Menghapus pemisah ribuan (titik) pada price
-        $price = str_replace(',', '', $request->input('price'));
+        $price = $request->input('price');
+        $manufacturer = $request->input('manufacturer');
 
         // Temukan process berdasarkan item_code dan perbarui
         $process = Process::findOrFail($item_code);
         $process->update([
             'price' => $price, // Menggunakan nilai price yang sudah diolah
+            'manufacturer' => $manufacturer,
         ]);
 
-        return redirect()->route('processes.index')->with('updated', 'Process with code ' . $item_code . ' updated successfully');
+        redirect()->route(route: 'pc.master');
     }
 
     public function create()

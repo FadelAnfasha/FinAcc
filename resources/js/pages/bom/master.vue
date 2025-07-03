@@ -96,6 +96,13 @@ const groups = ref([
     { name: 'Raw Material', code: 'RAW MATERIAL' },
     { name: 'Sparepart & Tools', code: 'SPAREPARTS AND TOOLS' },
 ]);
+const manufacturer = ref([
+    { name: 'M TL', code: 'M TL' },
+    { name: 'M Single', code: 'M Single' },
+    { name: 'M Double', code: 'M Double' },
+    { name: 'L WT', code: 'L WT' },
+    { name: '- No Manufacturer -', code: '- No Manufacturer -' },
+]);
 
 function handleCSVImport(event: FileUploadUploaderEvent, type: 'mat' | 'bom' | 'pack' | 'proc') {
     let file: File | undefined;
@@ -190,7 +197,9 @@ function editData(data: any, type: 'mat' | 'pack' | 'proc') {
     if (type === 'mat') {
         dialogWidth.value = '40rem';
     } else if (type === 'pack') {
-        dialogWidth.value = '80rem';
+        dialogWidth.value = '40rem';
+    } else if (type === 'proc') {
+        dialogWidth.value = '40rem';
     }
     showDialog.value = true;
 }
@@ -223,6 +232,60 @@ function handleSave() {
                 });
             },
         });
+    } else if (editType.value === 'pack') {
+        const item_code = editedData.value.item_code;
+        if (!item_code) return;
+
+        router.put(route('pack.update', item_code), editedData.value, {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                toast.add({
+                    severity: 'success',
+                    summary: 'Success',
+                    group: 'br',
+                    detail: `Data ${editedData.value.item_code} updated successfully`,
+                    life: 3000,
+                });
+                showDialog.value = false;
+            },
+            onError: () => {
+                toast.add({
+                    severity: 'warn',
+                    summary: 'Error',
+                    group: 'br',
+                    detail: `Failed to delete data with ${editedData.value.bp_code}`,
+                    life: 3000,
+                });
+            },
+        });
+    } else if (editType.value === 'proc') {
+        const item_code = editedData.value.item_code;
+        if (!item_code) return;
+
+        router.put(route('proc.update', item_code), editedData.value, {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                toast.add({
+                    severity: 'success',
+                    summary: 'Success',
+                    group: 'br',
+                    detail: `Data ${editedData.value.item_code} updated successfully`,
+                    life: 3000,
+                });
+                showDialog.value = false;
+            },
+            onError: () => {
+                toast.add({
+                    severity: 'warn',
+                    summary: 'Error',
+                    group: 'br',
+                    detail: `Failed to delete data with ${editedData.value.bp_code}`,
+                    life: 3000,
+                });
+            },
+        });
     }
 }
 
@@ -232,7 +295,13 @@ function destroyData(data: any, type: 'mat' | 'pack' | 'proc' | 'bom') {
     headerType.value = 'Delete data';
     if (type === 'mat') {
         dialogWidth.value = '40rem';
+    } else if (type === 'pack') {
+        dialogWidth.value = '40rem';
     }
+    if (type === 'proc') {
+        dialogWidth.value = '40rem';
+    }
+
     showDialog.value = true;
 }
 
@@ -242,6 +311,62 @@ function handleDestroy() {
         if (!item_code) return;
 
         router.delete(route('mat.destroy', item_code), {
+            data: destroyedData.value,
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                toast.add({
+                    severity: 'error',
+                    summary: 'Success',
+                    detail: `Data ${destroyedData.value.item_code} deleted successfully`,
+                    group: 'br',
+                    life: 3000,
+                });
+                showDialog.value = false;
+            },
+            onError: () => {
+                toast.add({
+                    severity: 'warn',
+                    summary: 'Error',
+                    group: 'br',
+                    detail: `Failed to delete this  ${destroyedData.value.item_code} data`,
+                    life: 3000,
+                });
+            },
+        });
+    } else if (destroyType.value === 'pack') {
+        const item_code = destroyedData.value.item_code;
+        if (!item_code) return;
+
+        router.delete(route('pack.destroy', item_code), {
+            data: destroyedData.value,
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                toast.add({
+                    severity: 'error',
+                    summary: 'Success',
+                    detail: `Data ${destroyedData.value.item_code} deleted successfully`,
+                    group: 'br',
+                    life: 3000,
+                });
+                showDialog.value = false;
+            },
+            onError: () => {
+                toast.add({
+                    severity: 'warn',
+                    summary: 'Error',
+                    group: 'br',
+                    detail: `Failed to delete this  ${destroyedData.value.item_code} data`,
+                    life: 3000,
+                });
+            },
+        });
+    } else if (destroyType.value === 'proc') {
+        const item_code = destroyedData.value.item_code;
+        if (!item_code) return;
+
+        router.delete(route('proc.destroy', item_code), {
             data: destroyedData.value,
             preserveScroll: true,
             preserveState: true,
@@ -339,6 +464,7 @@ const formatCurrency = (value: number) => {
                     </h1>
                     <hr class="absolute top-1/2 left-0 z-0 w-full -translate-y-1/2 border-gray-300 dark:border-gray-600" />
                 </div>
+
                 <div class="relative mb-6 text-center">
                     <Dialog v-model:visible="showImportDialog" :closable="false" header="Importing CSV" modal class="w-[30rem]">
                         <div v-if="importInProgress">
@@ -352,7 +478,7 @@ const formatCurrency = (value: number) => {
                     </Dialog>
                 </div>
 
-                <Dialog v-model:visible="showComponent" header="Component Details of ${{  }}" modal class="w-[60rem]">
+                <Dialog v-model:visible="showComponent" :header="`Component`" modal class="w-[60rem]">
                     <DataTable :value="componentItems" responsiveLayout="scroll">
                         <Column header="#" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                             <template #body="{ index }">
@@ -433,11 +559,145 @@ const formatCurrency = (value: number) => {
                         </div>
                     </div>
 
+                    <div v-if="editType === 'pack'" class="space-y-6">
+                        <div class="mb-4 flex items-center gap-4">
+                            <label for="item_code" class="w-24 font-semibold">Item Code</label>
+                            <InputText id="item_code" class="flex-auto" v-model="editedData.item_code" autocomplete="off" :disabled="true" />
+                        </div>
+                        <div class="mb-4 flex items-center gap-4">
+                            <label for="price" class="w-24 font-semibold">Price</label>
+                            <InputNumber
+                                id="price"
+                                class="flex-auto"
+                                inputId="currency-indonesia"
+                                mode="currency"
+                                currency="IDR"
+                                locale="id-ID"
+                                :maxFractionDigits="2"
+                                v-model="editedData.price"
+                                autocomplete="off"
+                                :min="0"
+                            />
+                        </div>
+
+                        <div class="mt-6 flex justify-end gap-2">
+                            <Button
+                                type="button"
+                                label="Cancel"
+                                severity="secondary"
+                                @click="
+                                    () => {
+                                        showDialog = false;
+                                        editType = null;
+                                    }
+                                "
+                            ></Button>
+                            <Button type="button" label="Save" @click="handleSave()"></Button>
+                        </div>
+                    </div>
+
+                    <div v-if="editType === 'proc'" class="space-y-6">
+                        <div class="mb-4 flex items-center gap-4">
+                            <label for="item_code" class="w-24 font-semibold">Item Code</label>
+                            <InputText id="item_code" class="flex-auto" v-model="editedData.item_code" autocomplete="off" :disabled="true" />
+                        </div>
+                        <div class="mb-4 flex items-center gap-4">
+                            <label for="description" class="w-24 font-semibold">Description</label>
+                            <InputText id="description" class="flex-auto" v-model="editedData.description" autocomplete="off" :disabled="true" />
+                        </div>
+                        <div class="mb-4 flex items-center gap-4">
+                            <label for="price" class="w-24 font-semibold">Price</label>
+                            <InputNumber
+                                id="price"
+                                class="flex-auto"
+                                inputId="currency-indonesia"
+                                mode="currency"
+                                currency="IDR"
+                                locale="id-ID"
+                                :maxFractionDigits="2"
+                                v-model="editedData.price"
+                                autocomplete="off"
+                                :min="0"
+                            />
+                        </div>
+                        <div class="mb-4 flex items-center gap-4">
+                            <label for="manufacturer" class="w-24 font-semibold">Manufacturer</label>
+                            <Select
+                                v-model="editedData.manufacturer"
+                                :options="manufacturer"
+                                optionLabel="name"
+                                optionValue="code"
+                                class="w-full md:w-56"
+                            />
+                        </div>
+
+                        <div class="mt-6 flex justify-end gap-2">
+                            <Button
+                                type="button"
+                                label="Cancel"
+                                severity="secondary"
+                                @click="
+                                    () => {
+                                        showDialog = false;
+                                        editType = null;
+                                    }
+                                "
+                            ></Button>
+                            <Button type="button" label="Save" @click="handleSave()"></Button>
+                        </div>
+                    </div>
+
                     <div v-if="destroyType === 'mat'" class="space-y-6">
                         <span>
-                            Are you sure want to delete material data with item code
+                            Are you sure want to delete Material data with item code
                             <span class="font-semibold text-red-600">{{ destroyedData.item_code }} </span> and description
                             <span class="font-semibold text-red-600">{{ destroyedData.bom?.description || '-' }}</span> ?
+                        </span>
+                        <!-- Action buttons -->
+                        <div class="mt-6 flex justify-end gap-2">
+                            <Button
+                                type="button"
+                                label="Cancel"
+                                severity="secondary"
+                                @click="
+                                    () => {
+                                        showDialog = false;
+                                        destroyType = null;
+                                    }
+                                "
+                            ></Button>
+                            <Button type="button" label="Delete" severity="danger" @click="handleDestroy()"></Button>
+                        </div>
+                    </div>
+
+                    <div v-if="destroyType === 'pack'" class="space-y-6">
+                        <span>
+                            Are you sure want to delete Packing data with item code
+                            <span class="font-semibold text-red-600">{{ destroyedData.item_code }} </span> and description
+                            <span class="font-semibold text-red-600">{{ destroyedData.bom?.description || '-' }}</span> ?
+                        </span>
+                        <!-- Action buttons -->
+                        <div class="mt-6 flex justify-end gap-2">
+                            <Button
+                                type="button"
+                                label="Cancel"
+                                severity="secondary"
+                                @click="
+                                    () => {
+                                        showDialog = false;
+                                        destroyType = null;
+                                    }
+                                "
+                            ></Button>
+                            <Button type="button" label="Delete" severity="danger" @click="handleDestroy()"></Button>
+                        </div>
+                    </div>
+
+                    <div v-if="destroyType === 'proc'" class="space-y-6">
+                        <span>
+                            Are you sure want to delete Process data with item code
+                            <span class="font-semibold text-red-600">{{ destroyedData.item_code }} </span> and description
+                            <span class="font-semibold text-red-600">{{ destroyedData.description || '-' }}</span> ?
                         </span>
                         <!-- Action buttons -->
                         <div class="mt-6 flex justify-end gap-2">
@@ -788,7 +1048,14 @@ const formatCurrency = (value: number) => {
                                     <Column field="action" header="Action" :exportable="false" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="slotProps">
                                             <div class="flex gap-2">
-                                                <Button icon="pi pi-eye" severity="info" rounded text @click="viewComponents(slotProps.data)" />
+                                                <Button
+                                                    v-tooltip="'View Component'"
+                                                    icon="pi pi-eye"
+                                                    severity="info"
+                                                    rounded
+                                                    text
+                                                    @click="viewComponents(slotProps.data)"
+                                                />
                                             </div>
                                         </template>
                                     </Column>

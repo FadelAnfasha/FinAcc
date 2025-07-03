@@ -98,6 +98,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/pack/import', [PackingController::class, 'import'])->name('pack.import');
+    Route::put('/pack/update/{id}', [PackingController::class, 'update'])->name('pack.update');
+    Route::delete('/pack/destroy/{id}', [PackingController::class, 'destroy'])->name('pack.destroy');
 });
 
 #=============================
@@ -106,6 +108,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/proc/import', [ProcessController::class, 'import'])->name('proc.import');
+    Route::put('/proc/update/{id}', [ProcessController::class, 'update'])->name('proc.update');
+    Route::delete('/proc/destroy/{id}', [ProcessController::class, 'destroy'])->name('proc.destroy');
 });
 
 #=============================
@@ -140,6 +144,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/bp/import', [BusinessPartnerController::class, 'import'])->name('bp.import');
+    Route::post('/bp/store', [BusinessPartnerController::class, 'store'])->name('bp.store');
 });
 
 

@@ -104,14 +104,9 @@ class BusinessPartnerController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'company_name' => 'required',
-            'company_type' => 'required',
-        ]);
-
-        $companyName = strtoupper(trim($request->input('company_name')));
+        $companyName = strtoupper(trim($request->input('bp_name')));
         $companyType = strtoupper(trim($request->input('company_type')));
-        $bp_name = $companyName . ', ' . $companyType;
+        $bp_name = $companyName . ', ' . $companyType . '.';
 
         // Cek apakah nama BP sudah ada di database
         $nameExists = BusinessPartner::where('bp_name', $bp_name)->exists();
@@ -143,7 +138,6 @@ class BusinessPartnerController extends Controller
             'bp_name' => $bp_name,
         ]);
 
-        return redirect()->route('bps.index')
-            ->with('success', 'Business Partner added successfully with code: ' . $item_no);
+        return redirect()->route('pc.master');
     }
 }

@@ -64,61 +64,31 @@ class PackingController extends Controller
         ]);
     }
 
-    // public function destroy($item_code)
-    // {
-    //     $packing = PackingsInfo::findOrFail($item_code);
-    //     $packing->delete();
+    public function destroy($item_code)
+    {
+        $packing = Packing::findOrFail($item_code);
+        $packing->delete();
 
-    //     return redirect()->route('packings.index')->with('deleted', 'Packing Price ' . $item_code . ' deleted successfully');
-    // }
+        redirect()->route(route: 'pc.master');
+    }
 
-    // public function export()
-    // {
-    //     $materials = PackingsInfo::all();
+    public function update(Request $request, $item_code)
+    {
+        // Validasi input
+        $request->validate([
+            'price' => 'required'
+        ]);
 
-    //     $filename = 'RawMaterial_Master ' . date('Y') . '-' . date('m') . '-' . date('d') . '.csv';
+        // Menghapus pemisah ribuan (titik) pada price
+        $price = $request->input('price');
 
-    //     return response()->streamDownload(function () use ($materials) {
-    //         $handle = fopen('php://output', 'w');
-    //         fputcsv($handle, ['Item No', 'In Stock', 'Item Group', 'Price']);
+        // Temukan packing berdasarkan item_code dan perbarui
+        $packing = Packing::findOrFail($item_code);
+        $packing->update([
+            // 'item_desc' => $request->input('item_desc'),
+            'price' => $price, // Menggunakan nilai price yang sudah diolah
+        ]);
 
-    //         foreach ($materials as $material) {
-    //             fputcsv($handle, [
-    //                 $material->item_code,
-    //                 $material->in_stock,
-    //                 $material->item_group,
-    //                 $material->price,
-    //             ]);
-    //         }
-
-    //         fclose($handle);
-    //     }, $filename, ['Content-Type' => 'text/csv']);
-    // }
-
-    // public function edit($item_code)
-    // {
-    //     $packing = PackingsInfo::findOrFail($item_code);
-
-    //     return view('packings.edit', compact('packing'));
-    // }
-
-    // public function update(Request $request, $item_code)
-    // {
-    //     // Validasi input
-    //     $request->validate([
-    //         'price' => 'required'
-    //     ]);
-
-    //     // Menghapus pemisah ribuan (titik) pada price
-    //     $price = str_replace(',', '', $request->input('price'));
-
-    //     // Temukan packing berdasarkan item_code dan perbarui
-    //     $packing = PackingsInfo::findOrFail($item_code);
-    //     $packing->update([
-    //         // 'item_desc' => $request->input('item_desc'),
-    //         'price' => $price, // Menggunakan nilai price yang sudah diolah
-    //     ]);
-
-    //     return redirect()->route('packings.index')->with('updated', 'Packing price from ' . $item_code . ' updated successfully');
-    // }
+        redirect()->route(route: 'pc.master');
+    }
 }

@@ -12,6 +12,7 @@ import InputNumber from 'primevue/inputnumber';
 import InputText from 'primevue/inputtext';
 import Panel from 'primevue/panel';
 import ProgressBar from 'primevue/progressbar';
+import Select from 'primevue/select';
 import Tab from 'primevue/tab';
 import TabList from 'primevue/tablist';
 import TabPanel from 'primevue/tabpanel';
@@ -19,7 +20,7 @@ import TabPanels from 'primevue/tabpanels';
 import Tabs from 'primevue/tabs';
 import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 
 const dtBP = ref();
 const dtCT = ref();
@@ -284,12 +285,25 @@ const bodyStyle = { backgroundColor: '#c8cccc', color: 'black' };
 const showDialog = ref(false);
 const dialogWidth = ref('40rem');
 const editType = ref<'ct' | 'sq' | 'wd' | null>(null);
+const addType = ref<'bp' | null>(null);
+
 const destroyType = ref<'ct' | 'sq' | 'bp' | null>(null);
 const headerType = ref<any>({});
 const showImportDialog = ref(false);
 const importInProgress = ref(false);
 const editedData = ref<any>({});
+
+const form = reactive({
+    company_type: '',
+    bp_name: '',
+});
+
 const destroyedData = ref<any>({});
+
+const company_type = ref([
+    { name: 'Commanditaire Vennootschap', code: 'CV' },
+    { name: 'Perseroan Terbatas', code: 'PT' },
+]);
 
 function handleCSVImport(event: FileUploadUploaderEvent, type: 'bp' | 'ct' | 'sq' | 'wd') {
     let file: File | undefined;
@@ -390,6 +404,16 @@ function editData(data: any, type: 'sq' | 'wd') {
     showDialog.value = true;
 }
 
+function addData(type: 'bp') {
+    headerType.value = 'Add data';
+    addType.value = type;
+    // Atur lebar berdasarkan type
+    if (type === 'bp') {
+        dialogWidth.value = '40rem';
+    }
+    showDialog.value = true;
+}
+
 function handleSave() {
     if (editType.value === 'sq') {
         const id = editedData.value.id;
@@ -443,6 +467,41 @@ function handleSave() {
                 });
             },
         });
+    }
+}
+
+function handleAdd() {
+    if (addType.value === 'bp') {
+        router.post(
+            route('bp.store'),
+            {
+                company_type: form.company_type,
+                bp_name: form.bp_name,
+            },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => {
+                    toast.add({
+                        severity: 'success',
+                        summary: 'Success',
+                        group: 'br',
+                        detail: `Data ${form.company_type}.${form.bp_name} stored successfully`,
+                        life: 3000,
+                    });
+                    showDialog.value = false;
+                },
+                onError: () => {
+                    toast.add({
+                        severity: 'warn',
+                        summary: 'Error',
+                        group: 'br',
+                        detail: `Failed to stored ${form.company_type}.${form.bp_name} data`,
+                        life: 3000,
+                    });
+                },
+            },
+        );
     }
 }
 
@@ -519,6 +578,39 @@ function handleDestroy() {
                 </Dialog>
 
                 <Dialog v-model:visible="showDialog" :header="headerType" modal :style="{ width: dialogWidth }" :closable="false">
+                    <div v-if="addType === 'bp'" class="space-y-6">
+                        <div class="mb-4 flex items-center gap-4">
+                            <label for="company_type" class="w-24 font-semibold">Company Type</label>
+                            <Select
+                                v-model="form.company_type"
+                                :options="company_type"
+                                optionLabel="name"
+                                optionValue="code"
+                                class="w-full md:w-56"
+                            />
+                        </div>
+                        <div class="mb-4 flex items-center gap-4">
+                            <label for="bp_name" class="w-24 font-semibold">BP Name</label>
+                            <InputText v-model="form.bp_name" id="bp_name" class="flex-auto" autocomplete="off" />
+                        </div>
+
+                        <!-- Action buttons -->
+                        <div class="mt-6 flex justify-end gap-2">
+                            <Button
+                                type="button"
+                                label="Cancel"
+                                severity="secondary"
+                                @click="
+                                    () => {
+                                        showDialog = false;
+                                        editType = null;
+                                    }
+                                "
+                            ></Button>
+                            <Button type="button" label="Add" @click="handleAdd()"></Button>
+                        </div>
+                    </div>
+
                     <div v-if="editType === 'sq'" class="space-y-6">
                         <div class="mb-4 flex items-center gap-4">
                             <label for="bp_code" class="w-24 font-semibold">BP Code</label>
@@ -899,6 +991,13 @@ function handleDestroy() {
                                             @uploader="(event) => handleCSVImport(event, 'bp')"
                                         />
 
+                                        <Button
+                                            icon="pi pi-users
+"
+                                            class="text-end"
+                                            label="Add BP"
+                                            @click="addData('bp')"
+                                        />
                                         <Button icon="pi pi-download" class="text-end" label="Export" @click="exportCSV('bp')" />
                                     </div>
                                 </div>
