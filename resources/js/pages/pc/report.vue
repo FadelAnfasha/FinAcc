@@ -127,6 +127,9 @@ function exportCSV(type: 'ctxsq' | 'base' | 'cpp' | 'pc') {
                                     tableStyle="min-width: 50rem"
                                     paginator
                                     :rows="10"
+                                    resizableColumns
+                                    columnResizeMode="expand"
+                                    showGridlines
                                     removableSort
                                     class="text-md"
                                     filterDisplay="header"
@@ -135,11 +138,18 @@ function exportCSV(type: 'ctxsq' | 'base' | 'cpp' | 'pc') {
                                     <Column field="no" sortable header="No" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
 
                                     <Column field="bp_code" sortable header="BP Code" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="bp_name" sortable header="BP Name" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="bp_name" header="BP Name" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ data.bp_name.length > 20 ? data.bp_name.slice(0, 20) + '…' : data.bp_name }}
+                                        </template>
+                                    </Column>
 
                                     <Column field="item_code" sortable header="Item Code" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="type" sortable header="Type" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-
+                                    <Column field="type" header="Type" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ data.type.length > 20 ? data.type.slice(0, 20) + '…' : data.type }}
+                                        </template>
+                                    </Column>
                                     <Column field="quantity" sortable header="Quantity" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
 
                                     <Column field="ctxsq.blanking" sortable header="Blanking" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
@@ -319,6 +329,9 @@ function exportCSV(type: 'ctxsq' | 'base' | 'cpp' | 'pc') {
                                     tableStyle="min-width: 50rem"
                                     paginator
                                     :rows="10"
+                                    resizableColumns
+                                    columnResizeMode="expand"
+                                    showGridlines
                                     removableSort
                                     class="text-md"
                                     filterDisplay="header"
@@ -327,11 +340,17 @@ function exportCSV(type: 'ctxsq' | 'base' | 'cpp' | 'pc') {
                                     <Column field="no" sortable header="No" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
 
                                     <Column field="bp_code" sortable header="BP Code" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="bp_name" sortable header="BP Name" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-
+                                    <Column field="bp_name" header="BP Name" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ data.bp_name.length > 20 ? data.bp_name.slice(0, 20) + '…' : data.bp_name }}
+                                        </template>
+                                    </Column>
                                     <Column field="item_code" sortable header="Item Code" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="type" sortable header="Type" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-
+                                    <Column field="type" header="Type" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ data.type.length > 20 ? data.type.slice(0, 20) + '…' : data.type }}
+                                        </template>
+                                    </Column>
                                     <Column field="quantity" sortable header="Quantity" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
 
                                     <Column field="basecost.blanking" sortable header="Blanking" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
@@ -446,6 +465,9 @@ function exportCSV(type: 'ctxsq' | 'base' | 'cpp' | 'pc') {
                                     paginator
                                     :rows="10"
                                     removableSort
+                                    resizableColumns
+                                    columnResizeMode="expand"
+                                    showGridlines
                                     class="text-md"
                                     filterDisplay="header"
                                     ref="dtCPP"
@@ -453,11 +475,17 @@ function exportCSV(type: 'ctxsq' | 'base' | 'cpp' | 'pc') {
                                     <Column field="no" sortable header="No" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
 
                                     <Column field="bp_code" sortable header="BP Code" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="bp_name" sortable header="BP Name" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-
+                                    <Column field="bp_name" header="BP Name" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ data.bp_name.length > 20 ? data.bp_name.slice(0, 20) + '…' : data.bp_name }}
+                                        </template>
+                                    </Column>
                                     <Column field="item_code" sortable header="Item Code" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="type" sortable header="Type" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-
+                                    <Column field="type" header="Type" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ data.type.length > 20 ? data.type.slice(0, 20) + '…' : data.type }}
+                                        </template>
+                                    </Column>
                                     <Column field="quantity" sortable header="Quantity" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
 
                                     <Column field="cpp.blanking" sortable header="Blanking" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
@@ -518,6 +546,9 @@ function exportCSV(type: 'ctxsq' | 'base' | 'cpp' | 'pc') {
                                     paginator
                                     :rows="10"
                                     removableSort
+                                    resizableColumns
+                                    columnResizeMode="expand"
+                                    showGridlines
                                     class="text-md"
                                     filterDisplay="header"
                                     ref="dtPC"

@@ -738,6 +738,9 @@ const formatCurrency = (value: number) => {
                                             mode="basic"
                                             name="file"
                                             :auto="true"
+                                            resizableColumns
+                                            columnResizeMode="expand"
+                                            showGridlines
                                             :customUpload="true"
                                             accept=".csv"
                                             chooseLabel="Import CSV"
@@ -753,6 +756,9 @@ const formatCurrency = (value: number) => {
                                     tableStyle="min-width: 50rem"
                                     paginator
                                     :rows="10"
+                                    resizableColumns
+                                    columnResizeMode="expand"
+                                    showGridlines
                                     removableSort
                                     class="text-md"
                                     filterDisplay="header"
@@ -844,6 +850,9 @@ const formatCurrency = (value: number) => {
                                     :value="packings"
                                     tableStyle="min-width: 50rem"
                                     paginator
+                                    resizableColumns
+                                    columnResizeMode="expand"
+                                    showGridlines
                                     :rows="10"
                                     removableSort
                                     class="text-md"
@@ -920,6 +929,9 @@ const formatCurrency = (value: number) => {
                                     :value="processes"
                                     tableStyle="min-width: 50rem"
                                     paginator
+                                    resizableColumns
+                                    columnResizeMode="expand"
+                                    showGridlines
                                     :rows="10"
                                     removableSort
                                     class="text-md"
@@ -1012,6 +1024,9 @@ const formatCurrency = (value: number) => {
                                     tableStyle="min-width: 50rem"
                                     :rows="10"
                                     paginator
+                                    resizableColumns
+                                    columnResizeMode="expand"
+                                    showGridlines
                                     removableSort
                                     class="text-md"
                                     filterDisplay="header"

@@ -3,6 +3,12 @@ import type { NavItem } from '@/types';
 
 export const mainNavItems: NavItem[] = [
     {
+        key: 'dashboard',
+        title: 'Dashboard',
+        href: 'dashboard',
+        icon: 'pi-bars',
+    },
+    {
         key: 'rfs',
         title: 'Request for Service',
         href: 'rfs.index',
@@ -13,7 +19,7 @@ export const mainNavItems: NavItem[] = [
         title: 'Administrator',
         href: 'admin.index',
         icon: 'pi-prime',
-        onlyFor: ['Admin'],
+        onlyFor: ['Admin', 'Superior'],
     },
     {
         key: 'pc',

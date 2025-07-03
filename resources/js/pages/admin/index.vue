@@ -23,7 +23,10 @@ import { ref } from 'vue';
 
 const toast = useToast();
 const page = usePage();
-
+const props = defineProps({
+    services: Array,
+    auth: Object,
+});
 // Dialog states
 
 // ===========================
@@ -285,11 +288,11 @@ const getRoleTagClass = (roleName: string) => {
 
     switch (roleName) {
         case 'Admin':
-            return `${base} bg-red-500 hover:bg-red-700`;
+            return `${base} bg-slate-500 hover:bg-slate-700`;
         case 'Superior':
-            return `${base} bg-rose-500 hover:bg-rose-700`;
+            return `${base} bg-teal-600 hover:bg-teal-800`;
         case 'User':
-            return `${base} bg-emerald-500 hover:bg-emerald-700`;
+            return `${base} bg-amber-500 hover:bg-amber-700`;
         default:
             return `${base} bg-gray-500 hover:bg-gray-700`;
     }
@@ -364,14 +367,14 @@ const registUser = () => {
 
             <Tabs value="0">
                 <TabList>
-                    <Tab value="0">Roles Management</Tab>
-                    <Tab value="1">Permission Management</Tab>
-                    <Tab value="2">User Role Assignment</Tab>
-                    <Tab value="3">Create User</Tab>
+                    <Tab value="0">Create User</Tab>
+                    <Tab v-if="auth?.user?.role === 'Admin'" value="1">Roles Management</Tab>
+                    <Tab v-if="auth?.user?.role === 'Admin'" value="2">Permission Management</Tab>
+                    <Tab v-if="auth?.user?.role === 'Admin'" value="3">User Role Assignment</Tab>
                 </TabList>
                 <TabPanels>
                     <!-- Roles Tab -->
-                    <TabPanel header="Roles Management" value="0">
+                    <TabPanel v-if="auth?.user?.role === 'Admin'" header="Roles Management" value="1">
                         <Card>
                             <template #header>
                                 <div class="flex items-center justify-between p-4">
@@ -418,7 +421,7 @@ const registUser = () => {
                     </TabPanel>
 
                     <!-- Permissions Management -->
-                    <TabPanel header="Permissions Management" value="1">
+                    <TabPanel v-if="auth?.user?.role === 'Admin'" header="Permissions Management" value="2">
                         <Card>
                             <template #header>
                                 <div class="flex items-center justify-between p-4">
@@ -453,7 +456,7 @@ const registUser = () => {
                     </TabPanel>
 
                     <!-- User Role Assignment Tab -->
-                    <TabPanel header="User Role Assignment" value="2">
+                    <TabPanel v-if="auth?.user?.role === 'Admin'" header="User Role Assignment" value="3">
                         <Card>
                             <template #header>
                                 <div class="p-4">
@@ -486,7 +489,7 @@ const registUser = () => {
                     </TabPanel>
 
                     <!-- Register new user Tab -->
-                    <TabPanel header="Create User" value="3">
+                    <TabPanel v-if="auth?.user?.role === 'Admin' || auth?.user?.role === 'Superior'" header="Create User" value="0">
                         <Card>
                             <template #header>
                                 <div class="p-4">

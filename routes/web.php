@@ -51,10 +51,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
     Route::post('/rfs/{id}/accept', [RequestForServiceController::class, 'accept'])
-        ->middleware('role:Superior');
+        ->middleware('role:Admin');
 
     Route::post('/rfs/{id}/reject', [RequestForServiceController::class, 'reject'])
-        ->middleware('role:Superior');
+        ->middleware('role:Admin');
 
     Route::post('/rfs/{id}/execute', [RequestForServiceController::class, 'execute'])
         ->middleware('role:Admin');
@@ -178,14 +178,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 #==========================
 #====== Admin Route =======
 #==========================
-Route::middleware(['auth', 'verified', 'role:Admin'])->group(function () {
+Route::middleware(['auth', 'verified', 'role:Superior|Admin'])->group(function () {
 
     // Admin Panel Main Route
     Route::get('/admin', [AdminController::class, 'index'])
         ->name('admin.index');
 
     // Role Management Routes
-    Route::prefix('admin/roles')->name('admin.roles.')->group(function () {
+    Route::prefix('admin/roles')->middleware('role:Admin')->name('admin.roles.')->group(function () {
         Route::post('/', [AdminController::class, 'storeRole'])->name('store');
         Route::put('/{role}', [AdminController::class, 'updateRole'])->name('update');
         Route::delete('/{role}', [AdminController::class, 'destroyRole'])->name('destroy');
@@ -193,7 +193,7 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->group(function () {
     });
 
     // Permission Management Routes
-    Route::prefix('admin/permissions')->name('admin.permissions.')->group(function () {
+    Route::prefix('admin/permissions')->middleware('role:Admin')->name('admin.permissions.')->group(function () {
         Route::post('/', [AdminController::class, 'storePermission'])->name('store');
         Route::put('/{permission}', [AdminController::class, 'updatePermission'])->name('update');
         Route::delete('/{permission}', [AdminController::class, 'destroyPermission'])->name('destroy');
@@ -201,14 +201,14 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->group(function () {
     });
 
     // User Role Assignment Routes
-    Route::prefix('admin/users')->name('admin.users.')->group(function () {
+    Route::prefix('admin/users')->middleware('role:Admin')->name('admin.users.')->group(function () {
         Route::post('{selected_user}/assign-role', [AdminController::class, 'assignRole'])->name('assign-role');
         Route::post('/remove-role', [AdminController::class, 'removeRole'])->name('remove-role');
         Route::get('/list', [AdminController::class, 'getUsers'])->name('list');
     });
 
     // Register new user by Admin
-    Route::prefix('admin')->name('admin.')->group(function () {
+    Route::prefix('admin')->middleware('role:Admin')->name('admin.')->group(function () {
         Route::post('register', [RegisteredUserController::class, 'store'])->name('register');
     });
 });

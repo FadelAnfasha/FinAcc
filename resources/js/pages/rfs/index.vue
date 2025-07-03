@@ -213,20 +213,20 @@ const resetForm = () => {
     <Head title="RFS" />
     <AppLayout>
         <!-- Data Table Section -->
-        <section ref="dataSection" class="p-6">
-            <div class="flex flex-col gap-1">
-                <h2 class="mb-2 text-start text-3xl font-bold text-gray-900 dark:text-white">Request Data</h2>
-                <p class="text-start text-gray-600 dark:text-gray-400">Display all request, create request, and approving request.</p>
-            </div>
-            <div class="mb-4 flex items-center justify-between">
+        <section ref="dataSection" class="mx-24 my-8 scroll-mt-8">
+            <div class="mb-8 flex items-center justify-between">
+                <div class="flex flex-col gap-1">
+                    <h2 class="mb-2 text-start text-3xl font-bold text-gray-900 dark:text-white">Request Data</h2>
+                    <p class="text-start text-gray-600 dark:text-gray-400">Display all request, create request, and approving request.</p>
+                </div>
                 <Button
-                    label="Create"
+                    label=" Create"
                     severity="info"
-                    v-if="auth?.user?.role === 'User'"
-                    icon="pi pi-plus"
-                    variant="outlined"
-                    rounded
+                    v-if="auth?.user?.role === 'User' || auth?.user?.role === 'Superior'"
+                    unstyled
                     @click="scrollToCreateForm"
+                    icon="pi pi-plus"
+                    class="rounded-xl border border-teal-500 bg-white px-3 py-1 text-teal-500 hover:border-white hover:bg-teal-500 hover:text-white"
                 />
             </div>
 
@@ -343,7 +343,7 @@ const resetForm = () => {
 
                 <Column field="description" header="Req. Description" :showFilterMenu="false" sortable style="width: 20%">
                     <template #body="{ data }">
-                        <div class="max-w-[200px] truncate" :title="data.description">
+                        <div class="max-w-[200px] truncate" :title="data.description" v-tooltip.top="data.description">
                             {{ data.description }}
                         </div>
                     </template>
@@ -425,11 +425,11 @@ const resetForm = () => {
                     </template>
                 </Column>
 
-                <Column header="Action" v-if="auth?.user?.role === 'Superior' || auth?.user?.role === 'Admin'" style="width: 20%">
+                <Column header="Action" v-if="auth?.user?.role === 'Admin'" style="width: 20%">
                     <template #body="{ data }">
                         <div class="flex gap-2">
                             <!-- Superior actions -->
-                            <template v-if="auth?.user?.role === 'Superior'">
+                            <template v-if="auth?.user?.role === 'Admin'">
                                 <button
                                     v-if="data.status === 'wait_for_review'"
                                     class="inline-flex cursor-pointer items-center gap-1 rounded bg-green-400 px-3 py-1 text-xs font-semibold text-black hover:bg-green-600 hover:text-white"
@@ -447,10 +447,6 @@ const resetForm = () => {
                                 </button>
                                 <i class="pi pi-spin pi-cog" style="color: orange" v-if="data.status === 'in_progress'"></i>
                                 <i class="pi pi-spin pi-hourglass" style="color: cyan" v-if="data.status === 'accepted'"></i>
-                            </template>
-
-                            <!-- Admin actions -->
-                            <template v-if="auth?.user?.role === 'Admin'">
                                 <button
                                     v-if="data.status === 'accepted'"
                                     class="inline-flex cursor-pointer items-center gap-1 rounded bg-orange-400 px-3 py-1 text-xs font-semibold text-black hover:bg-orange-600 hover:text-white"
@@ -478,10 +474,18 @@ const resetForm = () => {
         </section>
 
         <!-- Create Form Section -->
-        <section ref="createFormSection" v-if="auth?.user?.role === 'User'" class="mx-24 my-8 scroll-mt-8">
+        <section ref="createFormSection" v-if="auth?.user?.role === 'User' || auth?.user?.role === 'Superior'" class="mx-24 my-8 scroll-mt-8">
             <div class="mb-8 flex items-center justify-between">
                 <h2 class="text-3xl font-semibold">Create Form</h2>
-                <Button label="See Data" severity="warn" icon="pi pi-eye" variant="outlined" rounded @click="scrollTodataSection" />
+                <Button
+                    label=" See Data"
+                    severity="warn"
+                    icon="pi pi-eye"
+                    variant="outlined"
+                    unstyled
+                    @click="scrollTodataSection"
+                    class="rounded-xl border border-amber-500 bg-white px-3 py-1 text-amber-500 hover:border-white hover:bg-amber-500 hover:text-white"
+                />
             </div>
 
             <div class="p-6">

@@ -28,22 +28,24 @@ class DatabaseSeeder extends Seeder
         // 2. Permissions
         Permission::create(['name' => 'Approve']);
         Permission::create(['name' => 'Reject']);
+        Permission::create(['name' => 'Execute']);
+        Permission::create(['name' => 'Finish']);
         Permission::create(['name' => 'CreateRequest']);
         Permission::create(['name' => 'CreateUser']);
 
         // 3. Assign Permissions
-        $superior->givePermissionTo(['Approve', 'Reject']);
-        $userRole->givePermissionTo(['CreateRequest']);
-        $admin->givePermissionTo(['CreateUser', 'Approve', 'Reject', 'CreateRequest']);
+        $superior->givePermissionTo(['CreateRequest', 'CreateUser']);
+        $userRole->givePermissionTo(['CreateRequest',]);
+        $admin->givePermissionTo(['CreateUser', 'Approve', 'Reject', 'CreateRequest', 'Execute', 'Finish']);
 
         // 4. Users
         $users = [
             ['name' => 'Tuti', 'npk' => '140025', 'role' => 'Superior'],
-            ['name' => 'Inge', 'npk' => '100101', 'role' => 'Superior'],
+            ['name' => 'Inge', 'npk' => '100101', 'role' => 'User'],
             ['name' => 'Rudi', 'npk' => '140023', 'role' => 'User'],
             ['name' => 'Setyaningsih', 'npk' => '140207', 'role' => 'User'],
             ['name' => 'Ayu', 'npk' => '190349', 'role' => 'User'],
-            ['name' => 'Matsuyama', 'npk' => '240458', 'role' => 'Superior'],
+            ['name' => 'Matsuyama', 'npk' => '240458', 'role' => 'User'],
             ['name' => 'Fadel', 'npk' => '240473', 'role' => 'Admin'],
         ];
 

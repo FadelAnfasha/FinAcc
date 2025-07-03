@@ -1008,6 +1008,9 @@ function handleDestroy() {
                                     paginator
                                     :rows="10"
                                     removableSort
+                                    resizableColumns
+                                    columnResizeMode="expand"
+                                    showGridlines
                                     class="text-md"
                                     filterDisplay="header"
                                     ref="dtBP"
@@ -1058,6 +1061,9 @@ function handleDestroy() {
                                     :rows="10"
                                     paginator
                                     removableSort
+                                    resizableColumns
+                                    columnResizeMode="expand"
+                                    showGridlines
                                     class="text-md"
                                     filterDisplay="header"
                                     ref="dtCT"
@@ -1170,6 +1176,9 @@ function handleDestroy() {
                                     :rows="10"
                                     paginator
                                     removableSort
+                                    resizableColumns
+                                    columnResizeMode="expand"
+                                    showGridlines
                                     class="text-md"
                                     filterDisplay="header"
                                     ref="dtSQ"
