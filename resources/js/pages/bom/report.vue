@@ -41,6 +41,7 @@ function tbStyle(section: 'main' | 'rm' | 'pr' | 'wip' | 'fg') {
 }
 
 const bom = ref<any[]>([]);
+console.log(bom);
 
 const type = ['All', 'Disc', 'Side Ring', 'Wheel'];
 
@@ -147,7 +148,7 @@ function exportCSV(type: 'bom') {
 </script>
 
 <template>
-    <Head title="Process Cost" />
+    <Head title="Bill of Material" />
     <AppLayout>
         <div class="p-6">
             <div class="flex flex-col gap-1">
@@ -182,6 +183,10 @@ function exportCSV(type: 'bom') {
                                     tableStyle="min-width: 50rem"
                                     paginator
                                     :rows="10"
+                                    :rowsPerPageOptions="[5, 10, 20, 50]"
+                                    resizableColumns
+                                    columnResizeMode="expand"
+                                    showGridlines
                                     removableSort
                                     v-model:filters="filters"
                                     filterDisplay="row"
@@ -201,8 +206,6 @@ function exportCSV(type: 'bom') {
                                             />
                                         </template>
                                     </Column>
-
-                                    <Column field="main.description" sortable header="Name" v-bind="tbStyle('main')"></Column>
 
                                     <Column field="type_name" :showFilterMenu="false" sortable header="Type" v-bind="tbStyle('main')">
                                         <template #filter="{ filterModel, filterCallback }">
@@ -256,110 +259,172 @@ function exportCSV(type: 'bom') {
                                         </template></Column
                                     >
 
-                                    <Column field="disc.item_code" sortable header="Disc" v-bind="tbStyle('rm')"></Column>
+                                    <Column field="main.description" sortable header="Name" v-bind="tbStyle('main')"></Column>
+
                                     <Column field="disc.quantity" sortable header="Qty" v-bind="tbStyle('rm')"></Column>
-                                    <Column field="discXqty" sortable header="Price" v-bind="tbStyle('rm')"></Column>
+                                    <Column field="disc.item_code" sortable header="Disc" v-bind="tbStyle('rm')"></Column>
+                                    <Column field="discXqty" sortable header="Price" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.discXqty).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
 
-                                    <Column field="rim.item_code" sortable header="Rim" v-bind="tbStyle('rm')"></Column>
                                     <Column field="rim.quantity" sortable header="Qty" v-bind="tbStyle('rm')"></Column>
-                                    <Column field="rimXqty" sortable header="Price" v-bind="tbStyle('rm')"></Column>
+                                    <Column field="rim.item_code" sortable header="Rim" v-bind="tbStyle('rm')"></Column>
+                                    <Column field="rimXqty" sortable header="Price" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.rimXqty).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
 
-                                    <Column field="sidering.item_code" sortable header="Sidering" v-bind="tbStyle('rm')"></Column>
                                     <Column field="sidering.quantity" sortable header="Qty" v-bind="tbStyle('rm')"></Column>
-                                    <Column field="srXqty" sortable header="Price" v-bind="tbStyle('rm')"></Column>
+                                    <Column field="sidering.item_code" sortable header="Sidering" v-bind="tbStyle('rm')"></Column>
+                                    <Column field="srXqty" sortable header="Price" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.srXqty).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
 
                                     <Column field="pr_disc.item_code" sortable header="Pr Disc" v-bind="tbStyle('pr')"></Column>
                                     <Column field="max_of_disc" sortable header="Price" v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
-                                            {{ data.main?.process_cost?.max_of_disc ?? '-' }}
+                                            {{ Number(data.max_of_disc).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
                                     <Column field="pr_rim.item_code" sortable header="Pr Rim" v-bind="tbStyle('pr')"></Column>
                                     <Column field="max_of_rim" sortable header="Price" v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
-                                            {{ data.main?.process_cost?.max_of_rim ?? '-' }}
+                                            {{ Number(data.max_of_rim).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
                                     <Column field="pr_sr.item_code" sortable header="Pr Sidering" v-bind="tbStyle('pr')"></Column>
                                     <Column field="max_of_sr" sortable header="Price" v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
-                                            {{ data.main?.process_cost?.max_of_sidering ?? '-' }}
+                                            {{ Number(data.max_of_sr).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
                                     <Column field="pr_assy.item_code" sortable header="Pr Assy" v-bind="tbStyle('pr')"></Column>
                                     <Column field="max_of_assy" sortable header="Price" v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
-                                            {{ data.main?.process_cost?.max_of_assy ?? '-' }}
+                                            {{ Number(data.max_of_assy).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
                                     <Column field="ced_w.item_code" sortable header="Pr CED_W" v-bind="tbStyle('pr')" />
                                     <Column field="max_of_cedW" sortable header="Price" v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
-                                            {{ data.ced_price_w?.toFixed(2) ?? '-' }}
+                                            {{ Number(data.max_of_cedW).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
                                     <Column field="ced_sr.item_code" sortable header="Pr CED_SR" v-bind="tbStyle('pr')" />
                                     <Column field="max_of_cedSR" sortable header="Price" v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
-                                            {{ data.ced_price_sr?.toFixed(2) ?? '-' }}
+                                            {{ Number(data.max_of_cedSR).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
                                     <Column field="tc_w.item_code" sortable header="Pr TC_W" v-bind="tbStyle('pr')"></Column>
                                     <Column field="max_of_tcW" sortable header="Price" v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
-                                            {{ data.tc_price_w?.toFixed(2) ?? '-' }}
+                                            {{ Number(data.max_of_tcW).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
                                     <Column field="tc_sr.item_code" sortable header="Pr TC_SR" v-bind="tbStyle('pr')"></Column>
                                     <Column field="max_of_tcSR" sortable header="Price" v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
-                                            {{ data.tc_price_sr?.toFixed(2) ?? '-' }}
+                                            {{ Number(data.max_of_tcSR).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="max_of_packaging" sortable header="Packing" v-bind="tbStyle('pr')">
+                                    <Column field="max_of_packaging" sortable header="Price" v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
-                                            {{ data.main?.process_cost?.max_of_packaging ?? '-' }}
+                                            {{ Number(data.max_of_packaging).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
                                     <Column field="wip_disc.item_code" sortable header="WiP Disc" v-bind="tbStyle('wip')"></Column>
-                                    <Column field="wip_disc_cost" sortable header="Cost" v-bind="tbStyle('wip')"></Column>
+                                    <Column field="wip_disc_cost" sortable header="Cost" v-bind="tbStyle('wip')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.wip_disc_cost).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
 
                                     <Column field="wip_rim.item_code" sortable header="WiP Rim" v-bind="tbStyle('wip')"></Column>
-                                    <Column field="wip_rim_cost" sortable header="Cost" v-bind="tbStyle('wip')"></Column>
+                                    <Column field="wip_rim_cost" sortable header="Cost" v-bind="tbStyle('wip')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.wip_rim_cost).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
 
                                     <Column field="wip_sr.item_code" sortable header="WiP Sidering" v-bind="tbStyle('wip')"></Column>
-                                    <Column field="wip_sr_cost" sortable header="Cost" v-bind="tbStyle('wip')"></Column>
+                                    <Column field="wip_sr_cost" sortable header="Cost" v-bind="tbStyle('wip')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.wip_sr_cost).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
 
                                     <Column field="wip_assy.item_code" sortable header="WiP Assy" v-bind="tbStyle('wip')"></Column>
-                                    <Column field="wip_assy_cost" sortable header="Cost" v-bind="tbStyle('wip')"></Column>
+                                    <Column field="wip_assy_cost" sortable header="Cost" v-bind="tbStyle('wip')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.wip_assy_cost).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
 
                                     <Column field="wip_cedW.item_code" sortable header="WiP CED W" v-bind="tbStyle('wip')"></Column>
-                                    <Column field="wip_cedW_cost" sortable header="Cost" v-bind="tbStyle('wip')"></Column>
+                                    <Column field="wip_cedW_cost" sortable header="Cost" v-bind="tbStyle('wip')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.wip_cedW_cost).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
 
                                     <Column field="wip_cedSR.item_code" sortable header="WiP CED SR" v-bind="tbStyle('wip')"></Column>
-                                    <Column field="wip_cedSR_cost" sortable header="Cost" v-bind="tbStyle('wip')"></Column>
+                                    <Column field="wip_cedSR_cost" sortable header="Cost" v-bind="tbStyle('wip')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.wip_cedSR_cost).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
 
                                     <Column field="wip_tcW.item_code" sortable header="WiP TC W" v-bind="tbStyle('wip')"></Column>
-                                    <Column field="wip_tcW_cost" sortable header="Cost" v-bind="tbStyle('wip')"></Column>
+                                    <Column field="wip_tcW_cost" sortable header="Cost" v-bind="tbStyle('wip')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.wip_tcW_cost).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
 
                                     <Column field="wip_tcSR.item_code" sortable header="WiP TC SR" v-bind="tbStyle('wip')"></Column>
-                                    <Column field="wip_tcSR_cost" sortable header="Cost" v-bind="tbStyle('wip')"></Column>
+                                    <Column field="wip_tcSR_cost" sortable header="Cost" v-bind="tbStyle('wip')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.wip_tcSR_cost).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
 
                                     <Column field="wip_valve.item_code" sortable header="Valve" v-bind="tbStyle('wip')"></Column>
-                                    <Column field="wip_valve_cost" sortable header="Cost" v-bind="tbStyle('wip')"></Column>
+                                    <Column field="wip_valve_cost" sortable header="Cost" v-bind="tbStyle('wip')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.wip_valve_cost).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
 
-                                    <Column field="total_rm" sortable header="Total Raw Material" v-bind="tbStyle('fg')"></Column>
-                                    <Column field="total_pr" sortable header="Total Process" v-bind="tbStyle('fg')"></Column>
-                                    <Column field="total" sortable header="Total" v-bind="tbStyle('fg')"></Column>
+                                    <Column field="total_rm" sortable header="Total Raw Material" v-bind="tbStyle('fg')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.total_rm).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="total_pr" sortable header="Total Process" v-bind="tbStyle('fg')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.total_pr).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="total" sortable header="Total" v-bind="tbStyle('fg')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.total).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
                                 </DataTable>
                             </section>
                         </TabPanel>

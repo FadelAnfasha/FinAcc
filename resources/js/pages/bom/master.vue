@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
+import { FilterMatchMode } from '@primevue/core/api';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
@@ -25,6 +26,11 @@ const dtPACK = ref();
 const dtPROC = ref();
 const toast = useToast();
 const page = usePage();
+
+const filters = ref({
+    item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
+});
+const loading = ref(false);
 
 const materials = computed(() =>
     (page.props.materials as any[]).map((mat, index) => ({
@@ -417,40 +423,8 @@ const formatCurrency = (value: number) => {
 <template>
     <Toast group="br" position="bottom-right" />
 
-    <Head title="Process Cost" />
+    <Head title="Bill of Material" />
     <AppLayout>
-        <!-- <template>
-            <Dialog v-model:visible="showResultDialog" header="Import Result" modal class="w-[40rem]">
-                <div v-if="importResults.success" class="mb-4 text-green-600">
-                    {{ importResults.success }}
-                </div>
-
-                <div class="mb-2" v-if="importResults.added.length">
-                    <strong class="text-green-700">Ditambahkan:</strong>
-                    <ul class="list-disc pl-4">
-                        <li v-for="item in importResults.added" :key="'added-' + item">{{ item }}</li>
-                    </ul>
-                </div>
-
-                <div class="mb-2" v-if="importResults.updated.length">
-                    <strong class="text-yellow-700">Diperbarui:</strong>
-                    <ul class="list-disc pl-4">
-                        <li v-for="item in importResults.updated" :key="'updated-' + item">{{ item }}</li>
-                    </ul>
-                </div>
-
-                <div class="mb-2" v-if="importResults.invalid.length">
-                    <strong class="text-red-700">Gagal:</strong>
-                    <ul class="list-disc pl-4">
-                        <li v-for="item in importResults.invalid" :key="'invalid-' + item">{{ item }}</li>
-                    </ul>
-                </div>
-
-                <template #footer>
-                    <Button label="Tutup" icon="pi pi-times" @click="showResultDialog = false" />
-                </template>
-            </Dialog>
-        </template> -->
         <div class="m-6">
             <div class="flex flex-col gap-1">
                 <h2 class="mb-2 text-start text-3xl font-bold text-gray-900 dark:text-white">Bill of Material</h2>
@@ -760,21 +734,32 @@ const formatCurrency = (value: number) => {
                                     columnResizeMode="expand"
                                     showGridlines
                                     removableSort
+                                    v-model:filters="filters"
+                                    filterDisplay="row"
+                                    :loading="loading"
+                                    :globalFilterFields="['item_code']"
                                     class="text-md"
-                                    filterDisplay="header"
                                     ref="dtBP"
                                 >
                                     <Column
                                         field="item_code"
-                                        sortable
                                         header="Material Code"
+                                        :showFilterMenu="false"
+                                        sortable
                                         :headerStyle="headerStyle"
                                         :bodyStyle="bodyStyle"
+                                        ><template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search item code"
+                                                class="w-full"
+                                            /> </template
                                     ></Column>
 
                                     <Column field="description" sortable header="Description" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
-                                            {{ data.bom?.description ?? '-' }}
+                                            {{ data?.bom?.description ?? '-' }}
                                         </template>
                                     </Column>
 
@@ -850,16 +835,33 @@ const formatCurrency = (value: number) => {
                                     :value="packings"
                                     tableStyle="min-width: 50rem"
                                     paginator
+                                    :rows="10"
                                     resizableColumns
                                     columnResizeMode="expand"
                                     showGridlines
-                                    :rows="10"
                                     removableSort
+                                    v-model:filters="filters"
+                                    filterDisplay="row"
+                                    :loading="loading"
+                                    :globalFilterFields="['item_code']"
                                     class="text-md"
-                                    filterDisplay="header"
                                     ref="dtBP"
                                 >
-                                    <Column field="item_code" sortable header="Item Code" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
+                                    <Column
+                                        field="item_code"
+                                        header="Item Code"
+                                        :showFilterMenu="false"
+                                        sortable
+                                        :headerStyle="headerStyle"
+                                        :bodyStyle="bodyStyle"
+                                        ><template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search item code"
+                                                class="w-full"
+                                            /> </template
+                                    ></Column>
                                     <Column field="price" header="Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ formatCurrency(data.price) }}
@@ -929,16 +931,33 @@ const formatCurrency = (value: number) => {
                                     :value="processes"
                                     tableStyle="min-width: 50rem"
                                     paginator
+                                    :rows="10"
                                     resizableColumns
                                     columnResizeMode="expand"
                                     showGridlines
-                                    :rows="10"
                                     removableSort
+                                    v-model:filters="filters"
+                                    filterDisplay="row"
+                                    :loading="loading"
+                                    :globalFilterFields="['item_code']"
                                     class="text-md"
-                                    filterDisplay="header"
                                     ref="dtBP"
                                 >
-                                    <Column field="item_code" sortable header="Item Code" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
+                                    <Column
+                                        field="item_code"
+                                        header="Item Code"
+                                        :showFilterMenu="false"
+                                        sortable
+                                        :headerStyle="headerStyle"
+                                        :bodyStyle="bodyStyle"
+                                        ><template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search item code"
+                                                class="w-full"
+                                            /> </template
+                                    ></Column>
                                     <Column
                                         field="description"
                                         sortable
@@ -1016,23 +1035,39 @@ const formatCurrency = (value: number) => {
                                             chooseLabel="Import CSV"
                                             @uploader="(event) => handleCSVImport(event, 'bom')"
                                         />
-                                        <Button icon="pi pi-download" class="text-end" label="Export" @click="exportCSV('bom')" />
                                     </div>
                                 </div>
                                 <DataTable
                                     :value="billOfMaterials"
                                     tableStyle="min-width: 50rem"
-                                    :rows="10"
                                     paginator
+                                    :rows="10"
                                     resizableColumns
                                     columnResizeMode="expand"
                                     showGridlines
                                     removableSort
+                                    v-model:filters="filters"
+                                    filterDisplay="row"
+                                    :loading="loading"
+                                    :globalFilterFields="['item_code']"
                                     class="text-md"
-                                    filterDisplay="header"
                                     ref="dtCT"
                                 >
-                                    <Column field="item_code" header="Item Code" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column
+                                        field="item_code"
+                                        header="Item Code"
+                                        :showFilterMenu="false"
+                                        sortable
+                                        :headerStyle="headerStyle"
+                                        :bodyStyle="bodyStyle"
+                                        ><template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search item code"
+                                                class="w-full"
+                                            /> </template
+                                    ></Column>
                                     <Column field="description" header="Description" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
                                     <Column field="uom" header="Unit of Material" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
 

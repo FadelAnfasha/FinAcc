@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
+import { FilterMatchMode } from '@primevue/core/api';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
 import Chart from 'primevue/chart';
@@ -21,6 +22,12 @@ import Tabs from 'primevue/tabs';
 import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, reactive, ref } from 'vue';
+
+const filters = ref({
+    bp_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
+});
+const loading = ref(false);
 
 const dtBP = ref();
 const dtCT = ref();
@@ -1007,15 +1014,32 @@ function handleDestroy() {
                                     tableStyle="min-width: 50rem"
                                     paginator
                                     :rows="10"
-                                    removableSort
                                     resizableColumns
                                     columnResizeMode="expand"
                                     showGridlines
+                                    removableSort
+                                    v-model:filters="filters"
+                                    filterDisplay="row"
+                                    :loading="loading"
+                                    :globalFilterFields="['bp_code']"
                                     class="text-md"
-                                    filterDisplay="header"
                                     ref="dtBP"
                                 >
-                                    <Column field="bp_code" sortable header="BP Code" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
+                                    <Column
+                                        field="bp_code"
+                                        header="BP Code"
+                                        :showFilterMenu="false"
+                                        sortable
+                                        :headerStyle="headerStyle"
+                                        :bodyStyle="bodyStyle"
+                                        ><template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search BP code"
+                                                class="w-full"
+                                            /> </template
+                                    ></Column>
                                     <Column field="bp_name" sortable header="BP Name" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
                                     <Column field="created_at_formatted" sortable header="Added at" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="slotProps">
@@ -1058,17 +1082,34 @@ function handleDestroy() {
                                 <DataTable
                                     :value="cycleTimes"
                                     tableStyle="min-width: 50rem"
-                                    :rows="10"
                                     paginator
-                                    removableSort
+                                    :rows="10"
                                     resizableColumns
                                     columnResizeMode="expand"
                                     showGridlines
+                                    removableSort
+                                    v-model:filters="filters"
+                                    filterDisplay="row"
+                                    :loading="loading"
+                                    :globalFilterFields="['bp_code']"
                                     class="text-md"
-                                    filterDisplay="header"
                                     ref="dtCT"
                                 >
-                                    <Column field="item_code" header="Item Code" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column
+                                        field="item_code"
+                                        header="Item Code"
+                                        :showFilterMenu="false"
+                                        sortable
+                                        :headerStyle="headerStyle"
+                                        :bodyStyle="bodyStyle"
+                                        ><template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search Item code"
+                                                class="w-full"
+                                            /> </template
+                                    ></Column>
                                     <Column field="size" header="Size" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
                                     <Column field="type" header="Type" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
 
@@ -1172,25 +1213,38 @@ function handleDestroy() {
                                 </div>
                                 <DataTable
                                     :value="salesQuantity"
-                                    tableStyle="500px"
-                                    :rows="10"
+                                    tableStyle="min-width: 50rem"
                                     paginator
-                                    removableSort
+                                    :rows="10"
                                     resizableColumns
                                     columnResizeMode="expand"
                                     showGridlines
+                                    removableSort
+                                    v-model:filters="filters"
+                                    filterDisplay="row"
+                                    :loading="loading"
+                                    :globalFilterFields="['bp_code', 'item_code']"
                                     class="text-md"
-                                    filterDisplay="header"
                                     ref="dtSQ"
                                 >
                                     <Column field="no" sortable header="No" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
+
                                     <Column
                                         field="bp_code"
+                                        header="BP Code"
+                                        :showFilterMenu="false"
                                         sortable
-                                        header="Business Partner Code"
                                         :headerStyle="headerStyle"
                                         :bodyStyle="bodyStyle"
+                                        ><template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search BP code"
+                                                class="w-full"
+                                            /> </template
                                     ></Column>
+
                                     <Column
                                         field="bp.bp_name"
                                         sortable
@@ -1199,7 +1253,23 @@ function handleDestroy() {
                                         :bodyStyle="bodyStyle"
                                     ></Column>
 
-                                    <Column field="item_code" sortable header="Item Code" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
+                                    <Column
+                                        field="item_code"
+                                        header="Item Code"
+                                        :showFilterMenu="false"
+                                        sortable
+                                        :headerStyle="headerStyle"
+                                        :bodyStyle="bodyStyle"
+                                        ><template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search Item code"
+                                                class="w-full"
+                                            />
+                                        </template>
+                                    </Column>
+
                                     <Column field="item.type" sortable header="Type" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
 
                                     <Column field="quantity" sortable header="Quantity" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
@@ -1220,6 +1290,7 @@ function handleDestroy() {
                                             {{ formatDate(slotProps.data.updated_at) }}
                                         </template>
                                     </Column>
+
                                     <Column field="action" header="Action" :exportable="false" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="slotProps">
                                             <div class="flex gap-2">
