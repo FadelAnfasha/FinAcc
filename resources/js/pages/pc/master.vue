@@ -1032,6 +1032,7 @@ function handleDestroy() {
 
                                         <FileUpload
                                             mode="basic"
+                                            chooseIcon="pi pi-upload"
                                             name="file"
                                             :auto="true"
                                             :customUpload="true"
@@ -1120,6 +1121,7 @@ function handleDestroy() {
                                         </div>
                                         <FileUpload
                                             mode="basic"
+                                            chooseIcon="pi pi-upload"
                                             name="file"
                                             :auto="true"
                                             :customUpload="true"
@@ -1261,6 +1263,7 @@ function handleDestroy() {
                                         </div>
                                         <FileUpload
                                             mode="basic"
+                                            chooseIcon="pi pi-upload"
                                             name="file"
                                             :auto="true"
                                             :customUpload="true"
@@ -1385,6 +1388,7 @@ function handleDestroy() {
                                         </div>
                                         <FileUpload
                                             mode="basic"
+                                            chooseIcon="pi pi-upload"
                                             name="file"
                                             accept=".csv"
                                             :customUpload="true"

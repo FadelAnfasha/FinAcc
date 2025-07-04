@@ -750,6 +750,7 @@ const formatCurrency = (value: number) => {
                                         </div>
                                         <FileUpload
                                             mode="basic"
+                                            chooseIcon="pi pi-upload"
                                             name="file"
                                             :auto="true"
                                             resizableColumns
@@ -868,6 +869,7 @@ const formatCurrency = (value: number) => {
                                         </div>
                                         <FileUpload
                                             mode="basic"
+                                            chooseIcon="pi pi-upload"
                                             name="file"
                                             :auto="true"
                                             :customUpload="true"
@@ -973,6 +975,7 @@ const formatCurrency = (value: number) => {
                                         </div>
                                         <FileUpload
                                             mode="basic"
+                                            chooseIcon="pi pi-upload"
                                             name="file"
                                             :auto="true"
                                             :customUpload="true"
@@ -1095,6 +1098,7 @@ const formatCurrency = (value: number) => {
                                         </div>
                                         <FileUpload
                                             mode="basic"
+                                            chooseIcon="pi pi-upload"
                                             name="file"
                                             :auto="true"
                                             :customUpload="true"
