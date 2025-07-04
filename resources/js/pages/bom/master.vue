@@ -2,6 +2,7 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { FilterMatchMode } from '@primevue/core/api';
+import dayjs from 'dayjs';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
@@ -72,6 +73,36 @@ interface ComponentItem {
     item_code: string;
     description: string;
     // Tambahkan field lain jika diperlukan
+}
+
+const lastUpdate = computed(() => {
+    // Business Partners
+    const mat_update = ((page.props.materials as any[]) ?? []).map((mat) => new Date(mat.updated_at));
+    const Max_matUpdate = mat_update.length ? new Date(Math.max(...mat_update.map((d) => d.getTime()))) : null;
+
+    // Cycle Times
+    const pack_update = ((page.props.packings as any[]) ?? []).map((pack) => new Date(pack.updated_at));
+    const Max_packUpdate = pack_update.length ? new Date(Math.max(...pack_update.map((d) => d.getTime()))) : null;
+
+    // Sales Quantities
+    const proc_update = ((page.props.processes as any[]) ?? []).map((proc) => new Date(proc.updated_at));
+    const Max_procUpdate = proc_update.length ? new Date(Math.max(...proc_update.map((d) => d.getTime()))) : null;
+
+    const bom_update = ((page.props.billOfMaterials as any[]) ?? []).map((bom) => new Date(bom.updated_at));
+    const Max_bomUpdate = bom_update.length ? new Date(Math.max(...bom_update.map((d) => d.getTime()))) : null;
+
+    return [Max_matUpdate, Max_packUpdate, Max_procUpdate, Max_bomUpdate];
+});
+
+const dataSource = [
+    'Share Others/Finacc/BillOfMaterial/Material Price (MP)/mat_master.csv',
+    'Share Others/Finacc/BillOfMaterial/Packing Price (MP)/pack_master.csv',
+    'Share Others/Finacc/BillOfMaterial/Process Price (MP)/proc_master.csv',
+    'Share Others/Finacc/BillOfMaterial/Bill of Material (BOM)/bom_master.csv',
+];
+
+function formatlastUpdate(date: Date | string) {
+    return dayjs(date).format('DD MMM YYYY HH:mm:ss');
 }
 
 const componentItems = ref((page.props.component as ComponentItem[]) ?? []);
@@ -708,6 +739,15 @@ const formatCurrency = (value: number) => {
                                 <div class="mb-4 flex items-center justify-between">
                                     <h2 class="text-3xl font-semibold hover:text-indigo-500">Material</h2>
                                     <div class="flex gap-4">
+                                        <div>
+                                            <div>
+                                                Last Update :
+                                                <span class="text-red-300">{{ lastUpdate[0] ? formatlastUpdate(lastUpdate[0]) : '-' }}</span>
+                                            </div>
+                                            <div>
+                                                Data source From : <span class="text-cyan-300">{{ dataSource[0] }}</span>
+                                            </div>
+                                        </div>
                                         <FileUpload
                                             mode="basic"
                                             name="file"
@@ -817,6 +857,15 @@ const formatCurrency = (value: number) => {
                                 <div class="mb-4 flex items-center justify-between">
                                     <h2 class="text-3xl font-semibold hover:text-indigo-500">Packing</h2>
                                     <div class="flex gap-4">
+                                        <div>
+                                            <div>
+                                                Last Update :
+                                                <span class="text-red-300">{{ lastUpdate[1] ? formatlastUpdate(lastUpdate[1]) : '-' }}</span>
+                                            </div>
+                                            <div>
+                                                Data source From : <span class="text-cyan-300">{{ dataSource[1] }}</span>
+                                            </div>
+                                        </div>
                                         <FileUpload
                                             mode="basic"
                                             name="file"
@@ -913,6 +962,15 @@ const formatCurrency = (value: number) => {
                                 <div class="mb-4 flex items-center justify-between">
                                     <h2 class="text-3xl font-semibold hover:text-indigo-500">Process</h2>
                                     <div class="flex gap-4">
+                                        <div>
+                                            <div>
+                                                Last Update :
+                                                <span class="text-red-300">{{ lastUpdate[2] ? formatlastUpdate(lastUpdate[2]) : '-' }}</span>
+                                            </div>
+                                            <div>
+                                                Data source From : <span class="text-cyan-300">{{ dataSource[2] }}</span>
+                                            </div>
+                                        </div>
                                         <FileUpload
                                             mode="basic"
                                             name="file"
@@ -1026,6 +1084,15 @@ const formatCurrency = (value: number) => {
                                 <div class="mb-4 flex items-center justify-between">
                                     <h2 class="text-3xl font-semibold hover:text-indigo-500">Bill of Material</h2>
                                     <div class="flex gap-4">
+                                        <div>
+                                            <div>
+                                                Last Update :
+                                                <span class="text-red-300">{{ lastUpdate[3] ? formatlastUpdate(lastUpdate[3]) : '-' }}</span>
+                                            </div>
+                                            <div>
+                                                Data source From : <span class="text-cyan-300">{{ dataSource[3] }}</span>
+                                            </div>
+                                        </div>
                                         <FileUpload
                                             mode="basic"
                                             name="file"

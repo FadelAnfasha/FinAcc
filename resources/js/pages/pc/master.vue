@@ -2,6 +2,7 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { FilterMatchMode } from '@primevue/core/api';
+import dayjs from 'dayjs';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
 import Chart from 'primevue/chart';
@@ -64,6 +65,37 @@ const salesQuantity = computed(() =>
 );
 
 const wagesDistribution = page.props.wagesDistribution as Record<string, string>;
+
+const lastUpdate = computed(() => {
+    // Business Partners
+    const bp_update = ((page.props.businessPartners as any[]) ?? []).map((bp) => new Date(bp.updated_at));
+    const Max_bpUpdate = bp_update.length ? new Date(Math.max(...bp_update.map((d) => d.getTime()))) : null;
+
+    // Cycle Times
+    const ct_update = ((page.props.cycleTimes as any[]) ?? []).map((ct) => new Date(ct.updated_at));
+    const Max_ctUpdate = ct_update.length ? new Date(Math.max(...ct_update.map((d) => d.getTime()))) : null;
+
+    // Sales Quantities
+    const sq_update = ((page.props.salesQuantities as any[]) ?? []).map((sq) => new Date(sq.updated_at));
+    const Max_sqUpdate = sq_update.length ? new Date(Math.max(...sq_update.map((d) => d.getTime()))) : null;
+
+    // Wages Distribution
+    const wagesDistribution = page.props.wagesDistribution as { updated_at?: string } | null;
+    const Max_wdUpdate = wagesDistribution?.updated_at ? new Date(wagesDistribution.updated_at) : null;
+
+    return [Max_bpUpdate, Max_ctUpdate, Max_sqUpdate, Max_wdUpdate];
+});
+
+const dataSource = [
+    'Share Others/Finacc/ProcessCost/Business Partner(BP)/bp_master.csv',
+    'Share Others/Finacc/ProcessCost/Cycle Time (CT)/ct_master.csv',
+    'Share Others/Finacc/ProcessCost/Sales Quantity (SQ)/sq_master.csv',
+    'Share Others/Finacc/ProcessCost/Wages Distribution (WD)/wd_master.csv',
+];
+
+function formatlastUpdate(date: Date | string) {
+    return dayjs(date).format('DD MMM YYYY HH:mm:ss');
+}
 
 function getCSSVar(name: string) {
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -299,13 +331,12 @@ const headerType = ref<any>({});
 const showImportDialog = ref(false);
 const importInProgress = ref(false);
 const editedData = ref<any>({});
+const destroyedData = ref<any>({});
 
 const form = reactive({
     company_type: '',
     bp_name: '',
 });
-
-const destroyedData = ref<any>({});
 
 const company_type = ref([
     { name: 'Commanditaire Vennootschap', code: 'CV' },
@@ -573,6 +604,7 @@ function handleDestroy() {
                     </h1>
                     <hr class="absolute top-1/2 left-0 z-0 w-full -translate-y-1/2 border-gray-300 dark:border-gray-600" />
                 </div>
+
                 <Dialog v-model:visible="showImportDialog" :closable="false" header="Importing CSV" modal class="w-[30rem]">
                     <div v-if="importInProgress">
                         <ProgressBar mode="indeterminate" style="height: 6px" />
@@ -988,6 +1020,16 @@ function handleDestroy() {
                                 <div class="mb-4 flex items-center justify-between">
                                     <h2 class="text-3xl font-semibold hover:text-indigo-500">Business Partner</h2>
                                     <div class="flex gap-4">
+                                        <div>
+                                            <div>
+                                                Last Update :
+                                                <span class="text-red-300">{{ lastUpdate[0] ? formatlastUpdate(lastUpdate[0]) : '-' }}</span>
+                                            </div>
+                                            <div>
+                                                Data source From : <span class="text-cyan-300">{{ dataSource[0] }}</span>
+                                            </div>
+                                        </div>
+
                                         <FileUpload
                                             mode="basic"
                                             name="file"
@@ -1067,6 +1109,15 @@ function handleDestroy() {
                                 <div class="mb-4 flex items-center justify-between">
                                     <h2 class="text-3xl font-semibold hover:text-indigo-500">Cycle Time</h2>
                                     <div class="flex gap-4">
+                                        <div>
+                                            <div>
+                                                Last Update :
+                                                <span class="text-red-300">{{ lastUpdate[1] ? formatlastUpdate(lastUpdate[1]) : '-' }}</span>
+                                            </div>
+                                            <div>
+                                                Data source From : <span class="text-cyan-300">{{ dataSource[1] }}</span>
+                                            </div>
+                                        </div>
                                         <FileUpload
                                             mode="basic"
                                             name="file"
@@ -1199,6 +1250,15 @@ function handleDestroy() {
                                 <div class="mb-4 flex items-center justify-between">
                                     <h2 class="text-3xl font-semibold hover:text-indigo-500">Sales Quantity</h2>
                                     <div class="flex gap-4">
+                                        <div>
+                                            <div>
+                                                Last Update :
+                                                <span class="text-red-300">{{ lastUpdate[2] ? formatlastUpdate(lastUpdate[2]) : '-' }}</span>
+                                            </div>
+                                            <div>
+                                                Data source From : <span class="text-cyan-300">{{ dataSource[2] }}</span>
+                                            </div>
+                                        </div>
                                         <FileUpload
                                             mode="basic"
                                             name="file"
@@ -1313,7 +1373,16 @@ function handleDestroy() {
                             <section ref="wdSection" class="p-2">
                                 <div class="mb-4 flex items-center justify-between">
                                     <h2 class="text-3xl font-semibold hover:text-indigo-500">Wages Distribution</h2>
-                                    <div>
+                                    <div class="flex gap-4">
+                                        <div>
+                                            <div>
+                                                Last Update :
+                                                <span class="text-red-300">{{ lastUpdate[3] ? formatlastUpdate(lastUpdate[3]) : '-' }}</span>
+                                            </div>
+                                            <div>
+                                                Data source From : <span class="text-cyan-300">{{ dataSource[3] }}</span>
+                                            </div>
+                                        </div>
                                         <FileUpload
                                             mode="basic"
                                             name="file"

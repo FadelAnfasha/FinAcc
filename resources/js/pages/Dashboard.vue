@@ -20,7 +20,7 @@ const breadcrumbs: BreadcrumbItem[] = mainNavItems
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 items-center justify-center rounded-xl p-4">
-            <span class="animate-bounce text-7xl">Coming Soon <i class="pi pi-spin pi-cog" style="font-size: 6rem"></i></span>
+            <span class="animate-bounce text-7xl">Under Development <i class="pi pi-spin pi-cog" style="font-size: 6rem"></i></span>
         </div>
     </AppLayout>
 </template>
