@@ -603,7 +603,7 @@ const formatCurrency = (value: number) => {
                     :closable="false"
                     @hide="resetImportState"
                 >
-                    <Transition name="fade" class="mb-2">
+                    <Transition name="fade" class="mb-3">
                         <div v-if="uploadProgress > 0" class="pt-2">
                             <span>Progress : </span>
                             <ProgressBar :value="uploadProgress" showValue />
@@ -650,18 +650,20 @@ const formatCurrency = (value: number) => {
                             Import
                             <strong class="text-blue-500">Finish</strong>, it's safe to close window.
                         </p>
-                        <Button
-                            label="close"
-                            icon="pi pi-times"
-                            severity="secondary"
-                            :disabled="isUploading"
-                            @click="
-                                () => {
-                                    showImportDialog = false;
-                                    resetImportState();
-                                }
-                            "
-                        />
+                        <div class="flex justify-end gap-3 pt-4">
+                            <Button
+                                label="close"
+                                icon="pi pi-times"
+                                severity="secondary"
+                                :disabled="isUploading"
+                                @click="
+                                    () => {
+                                        showImportDialog = false;
+                                        resetImportState();
+                                    }
+                                "
+                            />
+                        </div>
                     </div>
                 </Dialog>
 

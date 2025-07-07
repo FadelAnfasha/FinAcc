@@ -53,7 +53,7 @@ class DatabaseSeeder extends Seeder
             $u = User::create([
                 'name' => $data['name'],
                 'npk' => $data['npk'],
-                'password' => Hash::make('qweasdzxc'),
+                'password' => Hash::make('qweasd'),
             ]);
 
             $u->assignRole($data['role']);
