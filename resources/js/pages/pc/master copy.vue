@@ -22,7 +22,7 @@ import TabPanels from 'primevue/tabpanels';
 import Tabs from 'primevue/tabs';
 import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
-import { computed, nextTick, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 
 const filters = ref({
     bp_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -86,13 +86,11 @@ const lastUpdate = computed(() => {
     return [Max_bpUpdate, Max_ctUpdate, Max_sqUpdate, Max_wdUpdate];
 });
 
-const userName = computed(() => page.props.auth?.user?.name ?? '');
-
 const dataSource = [
-    'Share Others/Finacc/Process Cost/Business Partner(BP)/bp_master.csv',
-    'Share Others/Finacc/Process Cost/Cycle Time (CT)/ct_master.csv',
-    'Share Others/Finacc/Process Cost/Sales Quantity (SQ)/sq_master.csv',
-    'Share Others/Finacc/Process Cost/Wages Distribution (WD)/wd_master.csv',
+    'Share Others/Finacc/ProcessCost/Business Partner(BP)/bp_master.csv',
+    'Share Others/Finacc/ProcessCost/Cycle Time (CT)/ct_master.csv',
+    'Share Others/Finacc/ProcessCost/Sales Quantity (SQ)/sq_master.csv',
+    'Share Others/Finacc/ProcessCost/Wages Distribution (WD)/wd_master.csv',
 ];
 
 function formatlastUpdate(date: Date | string) {
@@ -330,6 +328,8 @@ const addType = ref<'bp' | null>(null);
 
 const destroyType = ref<'ct' | 'sq' | 'bp' | null>(null);
 const headerType = ref<any>({});
+const showImportDialog = ref(false);
+const importInProgress = ref(false);
 const editedData = ref<any>({});
 const destroyedData = ref<any>({});
 
@@ -343,152 +343,53 @@ const company_type = ref([
     { name: 'Perseroan Terbatas', code: 'PT' },
 ]);
 
-const showImportDialog = ref(false);
-const importName = ref<any>({});
-const selectedFile = ref<File | null>(null);
-const importType = ref<'bp' | 'ct' | 'sq' | 'wd' | null>(null);
-const fileUploaderBP = ref<any>(null);
-const fileUploaderCT = ref<any>(null);
-const fileUploaderSQ = ref<any>(null);
-const fileUploaderWD = ref<any>(null);
-const uploadProgress = ref(0);
-const isUploading = ref(false);
-
 function handleCSVImport(event: FileUploadUploaderEvent, type: 'bp' | 'ct' | 'sq' | 'wd') {
     let file: File | undefined;
-
     if (Array.isArray(event.files)) {
         file = event.files[0];
     } else if (event.files instanceof File) {
         file = event.files;
     }
-
     if (!file) return;
 
-    const expectedNames = {
-        bp: 'bp_master.csv',
-        ct: 'ct_master.csv',
-        sq: 'sq_master.csv',
-        wd: 'wd_master.csv',
-    };
-
-    const expectedFileName = expectedNames[type];
-
-    if (file.name !== expectedFileName) {
-        toast.add({
-            severity: 'error',
-            summary: 'File name missmatch!',
-            detail: `⚠️ Expected: ${expectedFileName}, but got: ${file.name}`,
-            life: 4000,
-            group: 'br',
-        });
-        selectedFile.value = null;
-
-        nextTick(() => {
-            if (type === 'bp') fileUploaderBP.value?.clear();
-            if (type === 'ct') fileUploaderCT.value?.clear();
-            if (type === 'sq') fileUploaderSQ.value?.clear();
-            if (type === 'wd') fileUploaderWD.value?.clear();
-        });
-
-        return;
-    }
-
-    selectedFile.value = file;
-    importType.value = type;
-    importName.value = file.name;
-
-    nextTick(() => {
-        showImportDialog.value = true;
-    });
-}
-
-function cancelCSVimport(type: 'bp' | 'ct' | 'sq' | 'wd') {
-    showImportDialog.value = false;
-    selectedFile.value = null;
-
-    nextTick(() => {
-        if (type === 'bp') fileUploaderBP.value?.clear();
-        if (type === 'ct') fileUploaderCT.value?.clear();
-        if (type === 'sq') fileUploaderSQ.value?.clear();
-        if (type === 'wd') fileUploaderWD.value?.clear();
-    });
-}
-
-function confirmUpload(type: 'bp' | 'ct' | 'sq' | 'wd') {
-    if (!selectedFile.value || !importType.value) return;
-
     const formData = new FormData();
-    formData.append('file', selectedFile.value);
+    formData.append('file', file);
 
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
     if (!csrfToken) {
-        console.error('CSRF token not found');
+        console.error('CSRF token not found in meta tag!');
         return;
     }
 
-    const routes = {
-        bp: 'bp.import',
-        ct: 'ct.import',
-        sq: 'sq.import',
-        wd: 'wd.import',
-    };
+    let $route = null;
+    if (type === 'bp') {
+        $route = 'bp.import';
+    } else if (type === 'ct') {
+        $route = 'ct.import';
+    } else if (type === 'sq') {
+        $route = 'sq.import';
+    } else if (type === 'wd') {
+        $route = 'wd.import';
+    }
 
-    isUploading.value = true;
-    uploadProgress.value = 0;
+    // ✅ Mulai import: tampilkan dialog dan progress
+    showImportDialog.value = true;
+    importInProgress.value = true;
 
-    router.post(route(routes[importType.value]), formData, {
+    router.post(route($route), formData, {
         preserveScroll: true,
         preserveState: true,
-        onProgress: (e) => {
-            if (e && e.lengthComputable && typeof e.total === 'number' && e.total > 0) {
-                const percent = Math.round((e.loaded * 100) / e.total);
-                uploadProgress.value = percent;
-            }
-        },
         onSuccess: () => {
-            isUploading.value = false;
-            toast.add({
-                severity: 'success',
-                summary: 'Import Success',
-                detail: `${importName.value} imported successfully`,
-                life: 3000,
-                group: 'br',
-            });
-
-            if (importType.value === 'wd') {
+            toast.add({ severity: 'success', group: 'br', summary: 'Success', detail: 'CSV imported', life: 3000 });
+            if (type === 'wd') {
                 updateChartData();
             }
-
-            showImportDialog.value = false;
-            selectedFile.value = null;
-
-            nextTick(() => {
-                if (type === 'bp') fileUploaderBP.value?.clear();
-                if (type === 'ct') fileUploaderCT.value?.clear();
-                if (type === 'sq') fileUploaderSQ.value?.clear();
-                if (type === 'wd') fileUploaderWD.value?.clear();
-            });
+            // ✅ Import selesai
+            importInProgress.value = false;
         },
         onError: () => {
-            isUploading.value = false;
-            toast.add({
-                severity: 'error',
-                summary: 'Import Failed',
-                detail: 'There was an error importing the CSV',
-                life: 3000,
-                group: 'br',
-            });
-
-            showImportDialog.value = false;
-            selectedFile.value = null;
-
-            nextTick(() => {
-                if (type === 'bp') fileUploaderBP.value?.clear();
-                if (type === 'ct') fileUploaderCT.value?.clear();
-                if (type === 'sq') fileUploaderSQ.value?.clear();
-                if (type === 'wd') fileUploaderWD.value?.clear();
-            });
+            toast.add({ severity: 'error', group: 'br', summary: 'Error', detail: 'Import failed', life: 3000 });
+            importInProgress.value = false;
         },
     });
 }
@@ -703,39 +604,15 @@ function handleDestroy() {
                     </h1>
                     <hr class="absolute top-1/2 left-0 z-0 w-full -translate-y-1/2 border-gray-300 dark:border-gray-600" />
                 </div>
-                <Dialog v-model:visible="showImportDialog" header="Import Confirmation" modal class="w-[30rem]" :closable="false">
-                    <div class="space-y-4">
-                        <p>
-                            Hi <span class="text-red-400">{{ userName }}</span
-                            >,
-                        </p>
 
-                        <p>
-                            Are you sure you want to import
-                            <strong class="text-blue-500">{{ importName }}</strong
-                            >?
-                        </p>
-
-                        <div v-if="isUploading" class="pt-2">
-                            <ProgressBar :value="uploadProgress" showValue />
-                        </div>
-
-                        <div class="flex justify-end gap-3 pt-4">
-                            <Button
-                                label="Cancel"
-                                icon="pi pi-times"
-                                severity="secondary"
-                                :disabled="isUploading"
-                                @click="cancelCSVimport(importType!)"
-                            />
-                            <Button
-                                label="Yes, Import"
-                                icon="pi pi-check"
-                                severity="success"
-                                :loading="isUploading"
-                                @click="() => confirmUpload(importType!)"
-                            />
-                        </div>
+                <Dialog v-model:visible="showImportDialog" :closable="false" header="Importing CSV" modal class="w-[30rem]">
+                    <div v-if="importInProgress">
+                        <ProgressBar mode="indeterminate" style="height: 6px" />
+                        <p class="mt-2 text-center">Importing, please wait...</p>
+                    </div>
+                    <div v-else class="text-center">
+                        <p class="mb-3">Import complete!</p>
+                        <Button label="Close" icon="pi pi-times" @click="showImportDialog = false" />
                     </div>
                 </Dialog>
 
@@ -1149,38 +1026,29 @@ function handleDestroy() {
                                                 <span class="text-red-300">{{ lastUpdate[0] ? formatlastUpdate(lastUpdate[0]) : '-' }}</span>
                                             </div>
                                             <div>
-                                                Data source From : <span class="text-cyan-400">{{ dataSource[0] }}</span>
+                                                Data source From : <span class="text-cyan-300">{{ dataSource[0] }}</span>
                                             </div>
                                         </div>
-                                        <div class="flex flex-col items-center gap-3">
-                                            <FileUpload
-                                                ref="fileUploaderBP"
-                                                mode="basic"
-                                                name="file"
-                                                :customUpload="true"
-                                                accept=".csv"
-                                                chooseLabel="Import CSV"
-                                                chooseIcon="pi pi-upload"
-                                                @select="(event) => handleCSVImport(event, 'bp')"
-                                            />
-                                        </div>
-                                        <div class="flex flex-col items-center gap-3">
-                                            <Button
-                                                icon="pi pi-users
+
+                                        <FileUpload
+                                            mode="basic"
+                                            chooseIcon="pi pi-upload"
+                                            name="file"
+                                            :auto="true"
+                                            :customUpload="true"
+                                            accept=".csv"
+                                            chooseLabel="Import CSV"
+                                            @uploader="(event) => handleCSVImport(event, 'bp')"
+                                        />
+
+                                        <Button
+                                            icon="pi pi-users
 "
-                                                label=" Add BP"
-                                                unstyled
-                                                class="w-28 cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900"
-                                                @click="addData('bp')"
-                                            />
-                                            <Button
-                                                icon="pi pi-download"
-                                                label=" Export"
-                                                unstyled
-                                                class="w-28 cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900"
-                                                @click="exportCSV('bp')"
-                                            />
-                                        </div>
+                                            class="text-end"
+                                            label="Add BP"
+                                            @click="addData('bp')"
+                                        />
+                                        <Button icon="pi pi-download" class="text-end" label="Export" @click="exportCSV('bp')" />
                                     </div>
                                 </div>
 
@@ -1248,30 +1116,20 @@ function handleDestroy() {
                                                 <span class="text-red-300">{{ lastUpdate[1] ? formatlastUpdate(lastUpdate[1]) : '-' }}</span>
                                             </div>
                                             <div>
-                                                Data source From : <span class="text-cyan-400">{{ dataSource[1] }}</span>
+                                                Data source From : <span class="text-cyan-300">{{ dataSource[1] }}</span>
                                             </div>
                                         </div>
-                                        <div class="flex flex-col items-center gap-3">
-                                            <FileUpload
-                                                ref="fileUploaderCT"
-                                                mode="basic"
-                                                name="file"
-                                                :customUpload="true"
-                                                accept=".csv"
-                                                chooseLabel="Import CSV"
-                                                chooseIcon="pi pi-upload"
-                                                @select="(event) => handleCSVImport(event, 'ct')"
-                                            />
-                                        </div>
-                                        <div class="flex flex-col items-center gap-3">
-                                            <Button
-                                                icon="pi pi-download"
-                                                label=" Export"
-                                                unstyled
-                                                class="w-28 cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900"
-                                                @click="exportCSV('ct')"
-                                            />
-                                        </div>
+                                        <FileUpload
+                                            mode="basic"
+                                            chooseIcon="pi pi-upload"
+                                            name="file"
+                                            :auto="true"
+                                            :customUpload="true"
+                                            accept=".csv"
+                                            chooseLabel="Import CSV"
+                                            @uploader="(event) => handleCSVImport(event, 'ct')"
+                                        />
+                                        <Button icon="pi pi-download" class="text-end" label="Export" @click="exportCSV('ct')" />
                                     </div>
                                 </div>
                                 <DataTable
@@ -1400,30 +1258,20 @@ function handleDestroy() {
                                                 <span class="text-red-300">{{ lastUpdate[2] ? formatlastUpdate(lastUpdate[2]) : '-' }}</span>
                                             </div>
                                             <div>
-                                                Data source From : <span class="text-cyan-400">{{ dataSource[2] }}</span>
+                                                Data source From : <span class="text-cyan-300">{{ dataSource[2] }}</span>
                                             </div>
                                         </div>
-                                        <div class="flex flex-col items-center gap-3">
-                                            <FileUpload
-                                                ref="fileUploaderSQ"
-                                                mode="basic"
-                                                name="file"
-                                                :customUpload="true"
-                                                accept=".csv"
-                                                chooseLabel="Import CSV"
-                                                chooseIcon="pi pi-upload"
-                                                @select="(event) => handleCSVImport(event, 'sq')"
-                                            />
-                                        </div>
-                                        <div class="flex flex-col items-center gap-3">
-                                            <Button
-                                                icon="pi pi-download"
-                                                label=" Export"
-                                                unstyled
-                                                class="w-28 cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900"
-                                                @click="exportCSV('sq')"
-                                            />
-                                        </div>
+                                        <FileUpload
+                                            mode="basic"
+                                            chooseIcon="pi pi-upload"
+                                            name="file"
+                                            :auto="true"
+                                            :customUpload="true"
+                                            accept=".csv"
+                                            chooseLabel="Import CSV"
+                                            @uploader="(event) => handleCSVImport(event, 'sq')"
+                                        />
+                                        <Button icon="pi pi-download" class="text-end" label="Export" @click="exportCSV('ct')" />
                                     </div>
                                 </div>
                                 <DataTable
@@ -1535,30 +1383,20 @@ function handleDestroy() {
                                                 <span class="text-red-300">{{ lastUpdate[3] ? formatlastUpdate(lastUpdate[3]) : '-' }}</span>
                                             </div>
                                             <div>
-                                                Data source From : <span class="text-cyan-400">{{ dataSource[3] }}</span>
+                                                Data source From : <span class="text-cyan-300">{{ dataSource[3] }}</span>
                                             </div>
                                         </div>
-                                        <div class="flex flex-col items-center gap-3">
-                                            <FileUpload
-                                                ref="fileUploaderWD"
-                                                mode="basic"
-                                                name="file"
-                                                :customUpload="true"
-                                                accept=".csv"
-                                                chooseLabel="Import CSV"
-                                                chooseIcon="pi pi-upload"
-                                                @select="(event) => handleCSVImport(event, 'wd')"
-                                            />
-                                        </div>
-                                        <div class="flex flex-col items-center gap-3">
-                                            <Button
-                                                icon="pi pi-download"
-                                                label=" Export"
-                                                unstyled
-                                                class="w-28 cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900"
-                                                @click="exportCSV('wd')"
-                                            />
-                                        </div>
+                                        <FileUpload
+                                            mode="basic"
+                                            chooseIcon="pi pi-upload"
+                                            name="file"
+                                            accept=".csv"
+                                            :customUpload="true"
+                                            :maxFileSize="1000000"
+                                            @uploader="(event) => handleCSVImport(event, 'wd')"
+                                            :auto="true"
+                                            chooseLabel="Import CSV"
+                                        />
                                     </div>
                                 </div>
                                 <Panel>

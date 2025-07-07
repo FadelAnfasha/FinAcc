@@ -2,7 +2,6 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { FilterMatchMode } from '@primevue/core/api';
-import axios from 'axios';
 import dayjs from 'dayjs';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
@@ -20,7 +19,7 @@ import TabPanels from 'primevue/tabpanels';
 import Tabs from 'primevue/tabs';
 import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
-import { computed, nextTick, ref, Ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 const dtMAT = ref();
 const dtBOM = ref();
@@ -70,8 +69,6 @@ const processes = computed(() =>
     })),
 );
 
-const userName = computed(() => page.props.auth?.user?.name ?? '');
-
 interface ComponentItem {
     item_code: string;
     description: string;
@@ -99,8 +96,8 @@ const lastUpdate = computed(() => {
 
 const dataSource = [
     'Share Others/Finacc/Bill of Material/Material Price (MP)/mat_master.csv',
-    'Share Others/Finacc/Bill of Material/Packing Price (MP)/pack_master.csv',
-    'Share Others/Finacc/Bill of Material/Process Price (MP)/proc_master.csv',
+    'Share Others/Finacc/Bill of Material/Packing Price (Pack)/pack_master.csv',
+    'Share Others/Finacc/Bill of Material/Process Price (Proc)/proc_master.csv',
     'Share Others/Finacc/Bill of Material/Bill of Material (BOM)/bom_master.csv',
 ];
 
@@ -128,6 +125,8 @@ const dialogWidth = ref('40rem');
 const editType = ref<'mat' | 'pack' | 'proc' | null>(null);
 const destroyType = ref<'mat' | 'pack' | 'proc' | 'bom' | null>(null);
 const headerType = ref<any>({});
+const showImportDialog = ref(false);
+const importInProgress = ref(false);
 const editedData = ref<any>({});
 const destroyedData = ref<any>({});
 const groups = ref([
@@ -142,177 +141,53 @@ const manufacturer = ref([
     { name: '- No Manufacturer -', code: '- No Manufacturer -' },
 ]);
 
-const showImportDialog: Ref<boolean> = ref(false);
-const importName = ref<any>({});
-const selectedFile = ref<File | null>(null);
-const importType = ref<'mat' | 'pack' | 'proc' | 'bom' | null>(null);
-const notImported = ref(true);
-const fileUploaderMAT = ref<any>(null);
-const fileUploaderPACK = ref<any>(null);
-const fileUploaderPROC = ref<any>(null);
-const fileUploaderBOM = ref<any>(null);
-const uploadProgress = ref(0);
-const isUploading = ref(false);
-
-function handleCSVImport(event: FileUploadUploaderEvent, type: 'mat' | 'pack' | 'proc' | 'bom') {
+function handleCSVImport(event: FileUploadUploaderEvent, type: 'mat' | 'bom' | 'pack' | 'proc') {
     let file: File | undefined;
-
     if (Array.isArray(event.files)) {
         file = event.files[0];
     } else if (event.files instanceof File) {
         file = event.files;
     }
-
     if (!file) return;
 
-    const expectedNames = {
-        mat: 'mat_master.csv',
-        pack: 'pack_master.csv',
-        proc: 'proc_master.csv',
-        bom: 'bom_master.csv',
-    };
+    const formData = new FormData();
+    formData.append('file', file);
 
-    const expectedFileName = expectedNames[type];
-
-    if (file.name !== expectedFileName) {
-        toast.add({
-            severity: 'error',
-            summary: 'File name missmatch!',
-            detail: `⚠️ Expected: ${expectedFileName}, but got: ${file.name}`,
-            life: 4000,
-            group: 'br',
-        });
-        selectedFile.value = null;
-
-        nextTick(() => {
-            if (type === 'mat') fileUploaderMAT.value?.clear();
-            if (type === 'pack') fileUploaderPACK.value?.clear();
-            if (type === 'proc') fileUploaderPROC.value?.clear();
-            if (type === 'bom') fileUploaderBOM.value?.clear();
-        });
-
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    if (!csrfToken) {
+        console.error('CSRF token not found in meta tag!');
         return;
     }
 
-    selectedFile.value = file;
-    importType.value = type;
-    importName.value = file.name;
+    let $route = null;
+    if (type === 'mat') {
+        $route = 'mat.import';
+    } else if (type === 'bom') {
+        $route = 'bom.import';
+    } else if (type === 'pack') {
+        $route = 'pack.import';
+    } else if (type === 'proc') {
+        $route = 'proc.import';
+    }
 
-    nextTick(() => {
-        showImportDialog.value = true;
-    });
-}
+    // ✅ Mulai import: tampilkan dialog dan progress
+    showImportDialog.value = true;
+    importInProgress.value = true;
 
-function cancelCSVimport(type: 'mat' | 'pack' | 'proc' | 'bom') {
-    showImportDialog.value = false;
-    selectedFile.value = null;
-
-    nextTick(() => {
-        if (type === 'mat') fileUploaderMAT.value?.clear();
-        if (type === 'pack') fileUploaderPACK.value?.clear();
-        if (type === 'proc') fileUploaderPROC.value?.clear();
-        if (type === 'bom') fileUploaderBOM.value?.clear();
-    });
-}
-
-function confirmUpload(type: 'mat' | 'pack' | 'proc' | 'bom') {
-    if (!selectedFile.value || !importType.value) return;
-
-    const formData = new FormData();
-    formData.append('file', selectedFile.value);
-
-    const routes = {
-        mat: 'mat.import',
-        pack: 'pack.import',
-        proc: 'proc.import',
-        bom: 'bom.import',
-    };
-
-    isUploading.value = true;
-    uploadProgress.value = 0;
-    startPollingProgress(type);
-
-    router.post(route(routes[importType.value]), formData, {
+    router.post(route($route), formData, {
         preserveScroll: true,
         preserveState: true,
-
         onSuccess: () => {
-            isUploading.value = false;
+            toast.add({ severity: 'success', group: 'br', summary: 'Success', detail: 'CSV imported', life: 3000 });
 
-            toast.add({
-                severity: 'success',
-                summary: 'Import Success',
-                detail: `${importName.value} imported successfully`,
-                life: 3000,
-                group: 'br',
-            });
-
-            selectedFile.value = null;
-
-            nextTick(() => {
-                if (type === 'mat') fileUploaderMAT.value?.clear();
-                if (type === 'pack') fileUploaderPACK.value?.clear();
-                if (type === 'proc') fileUploaderPROC.value?.clear();
-                if (type === 'bom') fileUploaderBOM.value?.clear();
-            });
+            // ✅ Import selesai
+            importInProgress.value = false;
         },
-
         onError: () => {
-            isUploading.value = false;
-            showImportDialog.value = false;
-
-            toast.add({
-                severity: 'error',
-                summary: 'Import Failed',
-                detail: 'There was an error importing the CSV',
-                life: 3000,
-                group: 'br',
-            });
-
-            selectedFile.value = null;
-
-            nextTick(() => {
-                if (type === 'mat') fileUploaderMAT.value?.clear();
-                if (type === 'pack') fileUploaderPACK.value?.clear();
-                if (type === 'proc') fileUploaderPROC.value?.clear();
-                if (type === 'bom') fileUploaderBOM.value?.clear();
-            });
+            toast.add({ severity: 'error', group: 'br', summary: 'Error', detail: 'Import failed', life: 3000 });
+            importInProgress.value = false;
         },
     });
-}
-
-function resetImportState() {
-    uploadProgress.value = 0;
-    selectedFile.value = null;
-    notImported.value = true;
-}
-
-function startPollingProgress(type: 'mat' | 'pack' | 'proc' | 'bom') {
-    uploadProgress.value = 0;
-
-    const endpointMap = {
-        mat: '/mat/import-progress',
-        pack: '/pack/import-progress',
-        proc: '/proc/import-progress',
-        bom: '/bom/import-progress',
-    };
-
-    const interval = setInterval(async () => {
-        try {
-            const res = await axios.get(endpointMap[type]);
-            uploadProgress.value = res.data.progress;
-
-            console.log(`Real ${type} progress:`, uploadProgress.value + '%');
-
-            if (uploadProgress.value >= 100) {
-                clearInterval(interval);
-                notImported.value = false; // ✅ sekarang bisa ganti tombol menjadi "Close"
-            }
-        } catch (err) {
-            console.error(`Error polling ${type} import progress:`, err);
-            clearInterval(interval);
-        }
-    }, 1000);
 }
 
 function exportCSV(type: 'mat' | 'bom' | 'pack' | 'proc') {
@@ -595,75 +470,18 @@ const formatCurrency = (value: number) => {
                     <hr class="absolute top-1/2 left-0 z-0 w-full -translate-y-1/2 border-gray-300 dark:border-gray-600" />
                 </div>
 
-                <Dialog
-                    v-model:visible="showImportDialog"
-                    header="Import Confirmation"
-                    modal
-                    class="w-[30rem]"
-                    :closable="false"
-                    @hide="resetImportState"
-                >
-                    <Transition name="fade" class="mb-2">
-                        <div v-if="uploadProgress > 0" class="pt-2">
-                            <span>Progress : </span>
-                            <ProgressBar :value="uploadProgress" showValue />
+                <div class="relative mb-6 text-center">
+                    <Dialog v-model:visible="showImportDialog" :closable="false" header="Importing CSV" modal class="w-[30rem]">
+                        <div v-if="importInProgress">
+                            <ProgressBar mode="indeterminate" style="height: 6px" />
+                            <p class="mt-2 text-center">Importing, please wait...</p>
                         </div>
-                    </Transition>
-
-                    <div class="space-y-4" v-if="notImported">
-                        <p>
-                            Hi <span class="text-red-400">{{ userName }}</span
-                            >,
-                        </p>
-
-                        <p>
-                            Are you sure you want to import
-                            <strong class="text-blue-500">{{ importName }}</strong
-                            >?
-                        </p>
-
-                        <div class="flex justify-end gap-3 pt-4">
-                            <Button
-                                label="Cancel"
-                                icon="pi pi-times"
-                                severity="secondary"
-                                :disabled="isUploading"
-                                @click="cancelCSVimport(importType!)"
-                            />
-                            <Button
-                                label="Yes, Import"
-                                icon="pi pi-check"
-                                severity="success"
-                                :loading="isUploading"
-                                @click="() => confirmUpload(importType!)"
-                            />
+                        <div v-else class="text-center">
+                            <p class="mb-3">Import complete!</p>
+                            <Button label="Close" icon="pi pi-times" @click="showImportDialog = false" />
                         </div>
-                    </div>
-
-                    <div class="space-y-4" v-if="!notImported">
-                        <p>
-                            Hi <span class="text-red-400">{{ userName }}</span
-                            >,
-                        </p>
-
-                        <p>
-                            Import
-                            <strong class="text-blue-500">Finish</strong>, it's safe to close window.
-                        </p>
-                        <Button
-                            label="close"
-                            icon="pi pi-times"
-                            severity="secondary"
-                            :disabled="isUploading"
-                            @click="
-                                () => {
-                                    showImportDialog = false;
-                                    resetImportState();
-                                }
-                            "
-                        />
-                    </div>
-                </Dialog>
+                    </Dialog>
+                </div>
 
                 <Dialog v-model:visible="showComponent" :header="`Component`" modal class="w-[60rem]">
                     <DataTable :value="componentItems" responsiveLayout="scroll">
@@ -919,7 +737,7 @@ const formatCurrency = (value: number) => {
                         <TabPanel value="0">
                             <section ref="matSection" class="p-2">
                                 <div class="mb-4 flex items-center justify-between">
-                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Material Price</h2>
+                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Material</h2>
                                     <div class="flex gap-4">
                                         <div>
                                             <div>
@@ -927,30 +745,24 @@ const formatCurrency = (value: number) => {
                                                 <span class="text-red-300">{{ lastUpdate[0] ? formatlastUpdate(lastUpdate[0]) : '-' }}</span>
                                             </div>
                                             <div>
-                                                Data source From : <span class="text-cyan-400">{{ dataSource[0] }}</span>
+                                                Data source From : <span class="text-cyan-300">{{ dataSource[0] }}</span>
                                             </div>
                                         </div>
-                                        <div class="flex flex-col items-center gap-3">
-                                            <FileUpload
-                                                ref="fileUploaderMAT"
-                                                mode="basic"
-                                                name="file"
-                                                :customUpload="true"
-                                                accept=".csv"
-                                                chooseLabel="Import CSV"
-                                                chooseIcon="pi pi-upload"
-                                                @select="(event) => handleCSVImport(event, 'mat')"
-                                            />
-                                        </div>
-                                        <div class="flex flex-col items-center gap-3">
-                                            <Button
-                                                icon="pi pi-download"
-                                                label=" Export"
-                                                unstyled
-                                                class="w-28 cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900"
-                                                @click="exportCSV('mat')"
-                                            />
-                                        </div>
+                                        <FileUpload
+                                            mode="basic"
+                                            chooseIcon="pi pi-upload"
+                                            name="file"
+                                            :auto="true"
+                                            resizableColumns
+                                            columnResizeMode="expand"
+                                            showGridlines
+                                            :customUpload="true"
+                                            accept=".csv"
+                                            chooseLabel="Import CSV"
+                                            @uploader="(event) => handleCSVImport(event, 'mat')"
+                                        />
+
+                                        <Button icon="pi pi-download" class="text-end" label="Export" @click="exportCSV('mat')" />
                                     </div>
                                 </div>
 
@@ -1044,7 +856,7 @@ const formatCurrency = (value: number) => {
                         <TabPanel value="1">
                             <section ref="packSection" class="p-2">
                                 <div class="mb-4 flex items-center justify-between">
-                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Packing Price</h2>
+                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Packing</h2>
                                     <div class="flex gap-4">
                                         <div>
                                             <div>
@@ -1052,30 +864,21 @@ const formatCurrency = (value: number) => {
                                                 <span class="text-red-300">{{ lastUpdate[1] ? formatlastUpdate(lastUpdate[1]) : '-' }}</span>
                                             </div>
                                             <div>
-                                                Data source From : <span class="text-cyan-400">{{ dataSource[1] }}</span>
+                                                Data source From : <span class="text-cyan-300">{{ dataSource[1] }}</span>
                                             </div>
                                         </div>
-                                        <div class="flex flex-col items-center gap-3">
-                                            <FileUpload
-                                                ref="fileUploaderPACK"
-                                                mode="basic"
-                                                name="file"
-                                                :customUpload="true"
-                                                accept=".csv"
-                                                chooseLabel="Import CSV"
-                                                chooseIcon="pi pi-upload"
-                                                @select="(event) => handleCSVImport(event, 'pack')"
-                                            />
-                                        </div>
-                                        <div class="flex flex-col items-center gap-3">
-                                            <Button
-                                                icon="pi pi-download"
-                                                label=" Export"
-                                                unstyled
-                                                class="w-28 cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900"
-                                                @click="exportCSV('pack')"
-                                            />
-                                        </div>
+                                        <FileUpload
+                                            mode="basic"
+                                            chooseIcon="pi pi-upload"
+                                            name="file"
+                                            :auto="true"
+                                            :customUpload="true"
+                                            accept=".csv"
+                                            chooseLabel="Import CSV"
+                                            @uploader="(event) => handleCSVImport(event, 'pack')"
+                                        />
+
+                                        <Button icon="pi pi-download" class="text-end" label="Export" @click="exportCSV('pack')" />
                                     </div>
                                 </div>
 
@@ -1159,7 +962,7 @@ const formatCurrency = (value: number) => {
                         <TabPanel value="2">
                             <section ref="packSection" class="p-2">
                                 <div class="mb-4 flex items-center justify-between">
-                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Process Price</h2>
+                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Process</h2>
                                     <div class="flex gap-4">
                                         <div>
                                             <div>
@@ -1167,30 +970,21 @@ const formatCurrency = (value: number) => {
                                                 <span class="text-red-300">{{ lastUpdate[2] ? formatlastUpdate(lastUpdate[2]) : '-' }}</span>
                                             </div>
                                             <div>
-                                                Data source From : <span class="text-cyan-400">{{ dataSource[2] }}</span>
+                                                Data source From : <span class="text-cyan-300">{{ dataSource[2] }}</span>
                                             </div>
                                         </div>
-                                        <div class="flex flex-col items-center gap-3">
-                                            <FileUpload
-                                                ref="fileUploaderPROC"
-                                                mode="basic"
-                                                name="file"
-                                                :customUpload="true"
-                                                accept=".csv"
-                                                chooseLabel="Import CSV"
-                                                chooseIcon="pi pi-upload"
-                                                @select="(event) => handleCSVImport(event, 'proc')"
-                                            />
-                                        </div>
-                                        <div class="flex flex-col items-center gap-3">
-                                            <Button
-                                                icon="pi pi-download"
-                                                label=" Export"
-                                                unstyled
-                                                class="w-28 cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900"
-                                                @click="exportCSV('proc')"
-                                            />
-                                        </div>
+                                        <FileUpload
+                                            mode="basic"
+                                            chooseIcon="pi pi-upload"
+                                            name="file"
+                                            :auto="true"
+                                            :customUpload="true"
+                                            accept=".csv"
+                                            chooseLabel="Import CSV"
+                                            @uploader="(event) => handleCSVImport(event, 'proc')"
+                                        />
+
+                                        <Button icon="pi pi-download" class="text-end" label="Export" @click="exportCSV('proc')" />
                                     </div>
                                 </div>
 
@@ -1299,30 +1093,19 @@ const formatCurrency = (value: number) => {
                                                 <span class="text-red-300">{{ lastUpdate[3] ? formatlastUpdate(lastUpdate[3]) : '-' }}</span>
                                             </div>
                                             <div>
-                                                Data source From : <span class="text-cyan-400">{{ dataSource[3] }}</span>
+                                                Data source From : <span class="text-cyan-300">{{ dataSource[3] }}</span>
                                             </div>
                                         </div>
-                                        <div class="flex flex-col items-center gap-3">
-                                            <FileUpload
-                                                ref="fileUploaderBOM"
-                                                mode="basic"
-                                                name="file"
-                                                :customUpload="true"
-                                                accept=".csv"
-                                                chooseLabel="Import CSV"
-                                                chooseIcon="pi pi-upload"
-                                                @select="(event) => handleCSVImport(event, 'bom')"
-                                            />
-                                        </div>
-                                        <div class="flex flex-col items-center gap-3">
-                                            <Button
-                                                icon="pi pi-download"
-                                                label=" Export"
-                                                unstyled
-                                                class="w-28 cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900"
-                                                @click="exportCSV('bom')"
-                                            />
-                                        </div>
+                                        <FileUpload
+                                            mode="basic"
+                                            chooseIcon="pi pi-upload"
+                                            name="file"
+                                            :auto="true"
+                                            :customUpload="true"
+                                            accept=".csv"
+                                            chooseLabel="Import CSV"
+                                            @uploader="(event) => handleCSVImport(event, 'bom')"
+                                        />
                                     </div>
                                 </div>
                                 <DataTable

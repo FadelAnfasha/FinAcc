@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Packing;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class PackingController extends Controller
 {
@@ -21,8 +22,9 @@ class PackingController extends Controller
 
         $addedItems = [];
         $updatedItems = [];
+        $total = count($csvData);
 
-        foreach ($csvData as $row) {
+        foreach ($csvData as $index => $row) {
             // Ambil packing berdasarkan item_code
             $packing = Packing::where('item_code', $row[0])->first();
 
@@ -55,7 +57,10 @@ class PackingController extends Controller
                     $updatedItems[] = $packing->item_code; // Tambahkan ke daftar updatedItems
                 }
             }
+            $progress = intval(($index + 1) / $total * 100);
+            Cache::put('import-progress-pack', $progress, now()->addMinutes(5));
         }
+        Cache::put('import-progress-pack', 100, now()->addMinutes(5));
 
         redirect()->route('pc.master')->with([
             'success' => 'CSV file imported successfully',

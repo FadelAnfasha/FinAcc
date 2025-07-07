@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BillOfMaterial;
 use Illuminate\Http\Request;
 use Symfony\Component\String\TruncateMode;
+use Illuminate\Support\Facades\Cache;
 
 class BillOfMaterialController extends Controller
 {
@@ -25,8 +26,9 @@ class BillOfMaterialController extends Controller
         $invalidItems = [];
         BillOfMaterial::truncate();
         $validGroup = session('validGroup', false);
+        $total = count($csvData);
 
-        foreach ($csvData as $data) {
+        foreach ($csvData as $index => $data) {
             // Ambil no urut dari index 0
             $order = intval($data[0] ?? 0); // <= nomor urut dari frontend
 
@@ -66,7 +68,10 @@ class BillOfMaterialController extends Controller
                 ]);
                 $addedItems[] = $item_code;
             }
+            $progress = intval(($index + 1) / $total * 100);
+            Cache::put('import-progress-bom', $progress, now()->addMinutes(5));
         }
+        Cache::put('import-progress-bom', 100, now()->addMinutes(5));
 
         return redirect()->route('bom.master')->with([
             'success' => 'CSV file imported successfully',

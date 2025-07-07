@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Material;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class MaterialController extends Controller
 {
@@ -21,8 +22,9 @@ class MaterialController extends Controller
 
         $addedItems = [];
         $updatedItems = [];
+        $total = count($csvData);
 
-        foreach ($csvData as $row) {
+        foreach ($csvData as $index => $row) {
             // Ambil material berdasarkan item_code
             $material = Material::where('item_code', $row[0])->first();
 
@@ -62,7 +64,11 @@ class MaterialController extends Controller
                     $updatedItems[] = $material->item_code; // Tambahkan ke daftar updatedItems
                 }
             }
+            $progress = intval(($index + 1) / $total * 100);
+            Cache::put('import-progress-mat', $progress, now()->addMinutes(5));
         }
+        Cache::put('import-progress-mat', 100, now()->addMinutes(5));
+
 
         // Kirim data feedback ke view
         redirect()->route('pc.master')->with([

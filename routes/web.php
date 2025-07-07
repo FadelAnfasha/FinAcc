@@ -5,6 +5,7 @@ use App\Http\Controllers\SalesQuantityController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Cache;
 use App\Http\Controllers\RequestForServiceController;
 use Inertia\Inertia;
 use App\Http\Controllers\BOMController;
@@ -90,6 +91,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/mat/import', [MaterialController::class, 'import'])->name('mat.import');
     Route::put('/mat/update/{id}', [MaterialController::class, 'update'])->name('mat.update');
     Route::delete('/mat/destroy/{id}', [MaterialController::class, 'destroy'])->name('mat.destroy');
+    Route::get('/mat/import-progress', function () {
+        return response()->json([
+            'progress' => Cache::get('import-progress-mat', 0),
+        ]);
+    });
 });
 
 #=============================
@@ -100,6 +106,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/pack/import', [PackingController::class, 'import'])->name('pack.import');
     Route::put('/pack/update/{id}', [PackingController::class, 'update'])->name('pack.update');
     Route::delete('/pack/destroy/{id}', [PackingController::class, 'destroy'])->name('pack.destroy');
+    Route::get('/pack/import-progress', function () {
+        return response()->json([
+            'progress' => Cache::get('import-progress-pack', 0),
+        ]);
+    });
 });
 
 #=============================
@@ -110,6 +121,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/proc/import', [ProcessController::class, 'import'])->name('proc.import');
     Route::put('/proc/update/{id}', [ProcessController::class, 'update'])->name('proc.update');
     Route::delete('/proc/destroy/{id}', [ProcessController::class, 'destroy'])->name('proc.destroy');
+    Route::get('/proc/import-progress', function () {
+        return response()->json([
+            'progress' => Cache::get('import-progress-proc', 0),
+        ]);
+    });
 });
 
 #=============================
@@ -121,6 +137,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/bom/components/{id}', [BillOfMaterialController::class, 'components'])
         ->name('bom.components');
+
+    Route::get('/bom/import-progress', function () {
+        return response()->json([
+            'progress' => Cache::get('import-progress-bom', 0),
+        ]);
+    });
 });
 
 #==========================
