@@ -6,6 +6,7 @@ use App\Models\SalesQuantity;
 use Illuminate\Http\Request;
 use App\Models\BusinessPartner;
 use App\Models\CycleTime;
+use Illuminate\Support\Facades\Cache;
 
 class SalesQuantityController extends Controller
 {
@@ -24,7 +25,9 @@ class SalesQuantityController extends Controller
         $updatedItems = [];
         $skippedItems = [];
 
-        foreach ($csvData as $row) {
+        $total = count($csvData);
+
+        foreach ($csvData as $index => $row) {
             $id = trim($row[0]);
             $bp_code = trim($row[1]);
             $item_code = trim($row[2]);
@@ -72,7 +75,11 @@ class SalesQuantityController extends Controller
                     $updatedItems[] = "{$bp_code} - {$item_code}";
                 }
             }
+            $progress = intval(($index + 1) / $total * 100);
+            Cache::put('import-progress-sq', $progress, now()->addMinutes(5));
         }
+        Cache::put('import-progress-sq', 100, now()->addMinutes(5));
+
 
         return redirect()->route('pc.master')->with([
             'success' => 'CSV file imported successfully.',

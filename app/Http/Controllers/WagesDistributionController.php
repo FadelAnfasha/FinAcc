@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\WagesDistribution;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class WagesDistributionController extends Controller
 {
@@ -23,6 +24,8 @@ class WagesDistributionController extends Controller
 
         // Ambil data CSV (asumsi hanya 1 baris)
         $row = $csvData[0];
+        Cache::put('import-progress-wd', 10, now()->addMinutes(2)); // Simulasi start 10%
+
 
         if (count($row) < 18) {
             return back()->withErrors(['file' => 'Format CSV tidak valid. Kolom tidak lengkap.']);
@@ -72,6 +75,8 @@ class WagesDistributionController extends Controller
                 $addedItems[] = $field . ' - ' . $importedData[$field];
             }
         }
+
+        Cache::put('import-progress-wd', 100, now()->addMinutes(2)); // Final progress
 
         return redirect()->route('pc.master')
             ->with('addedItems', $addedItems)

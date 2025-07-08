@@ -648,11 +648,11 @@ const formatCurrency = (value: number) => {
 
                         <p>
                             Import
-                            <strong class="text-blue-500">Finish</strong>, it's safe to close window.
+                            <strong class="text-green-500">Finish</strong>, it's safe to close window.
                         </p>
                         <div class="flex justify-end gap-3 pt-4">
                             <Button
-                                label="close"
+                                label="Close"
                                 icon="pi pi-times"
                                 severity="secondary"
                                 :disabled="isUploading"

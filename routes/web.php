@@ -167,6 +167,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/bp/import', [BusinessPartnerController::class, 'import'])->name('bp.import');
     Route::post('/bp/store', [BusinessPartnerController::class, 'store'])->name('bp.store');
+    Route::get('/bp/import-progress', function () {
+        return response()->json([
+            'progress' => Cache::get('import-progress-bp', 0),
+        ]);
+    });
 });
 
 
@@ -176,6 +181,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/ct/import', [CycleTimeController::class, 'import'])->name('ct.import');
+    Route::get('/ct/import-progress', function () {
+        return response()->json([
+            'progress' => Cache::get('import-progress-ct', 0),
+        ]);
+    });
 });
 
 #=============================
@@ -186,6 +196,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/sq/import', [SalesQuantityController::class, 'import'])->name('sq.import');
     Route::put('/sq/update/{id}', [SalesQuantityController::class, 'update'])->name('sq.update');
     Route::delete('/sq/destroy/{id}', [SalesQuantity::class, 'destroy'])->name('sq.destroy');
+    Route::get('/sq/import-progress', function () {
+        return response()->json([
+            'progress' => Cache::get('import-progress-sq', 0),
+        ]);
+    });
 });
 
 #=============================
@@ -195,6 +210,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/wd/import', [WagesDistributionController::class, 'import'])->name('wd.import');
     Route::put('/wd/update', [WagesDistributionController::class, 'update'])->name('wd.update');
+    Route::get('/wd/import-progress', function () {
+        return response()->json([
+            'progress' => Cache::get('import-progress-wd', 0),
+        ]);
+    });
 });
 
 #==========================

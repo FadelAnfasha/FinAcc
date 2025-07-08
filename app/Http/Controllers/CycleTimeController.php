@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CycleTime;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class CycleTimeController extends Controller
 {
@@ -26,12 +27,15 @@ class CycleTimeController extends Controller
 
         // Hitung duplikasi di CSV
         $codeCounts = [];
+
+        $total = count($csvData);
+
         foreach ($csvData as $row) {
             $itemCode = trim($row[0]);
             $codeCounts[$itemCode] = ($codeCounts[$itemCode] ?? 0) + 1;
         }
 
-        foreach ($csvData as $row) {
+        foreach ($csvData as $index => $row) {
             $itemCode = trim($row[0]);
 
             // Cek duplikat dalam file
@@ -114,7 +118,10 @@ class CycleTimeController extends Controller
                     $updatedItems[] = $itemCode;
                 }
             }
+            $progress = intval(($index + 1) / $total * 100);
+            Cache::put('import-progress-ct', $progress, now()->addMinutes(5));
         }
+        Cache::put('import-progress-ct', 100, now()->addMinutes(5));
 
         return redirect()->route('pc.master')->with([
             'success' => 'CSV file imported successfully',

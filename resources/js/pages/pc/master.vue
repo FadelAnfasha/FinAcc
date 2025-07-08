@@ -2,6 +2,7 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { FilterMatchMode } from '@primevue/core/api';
+import axios from 'axios';
 import dayjs from 'dayjs';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
@@ -352,6 +353,7 @@ const fileUploaderCT = ref<any>(null);
 const fileUploaderSQ = ref<any>(null);
 const fileUploaderWD = ref<any>(null);
 const uploadProgress = ref(0);
+const notImported = ref(true);
 const isUploading = ref(false);
 
 function handleCSVImport(event: FileUploadUploaderEvent, type: 'bp' | 'ct' | 'sq' | 'wd') {
@@ -421,12 +423,6 @@ function confirmUpload(type: 'bp' | 'ct' | 'sq' | 'wd') {
     const formData = new FormData();
     formData.append('file', selectedFile.value);
 
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-    if (!csrfToken) {
-        console.error('CSRF token not found');
-        return;
-    }
-
     const routes = {
         bp: 'bp.import',
         ct: 'ct.import',
@@ -436,18 +432,15 @@ function confirmUpload(type: 'bp' | 'ct' | 'sq' | 'wd') {
 
     isUploading.value = true;
     uploadProgress.value = 0;
+    startPollingProgress(type);
 
     router.post(route(routes[importType.value]), formData, {
         preserveScroll: true,
         preserveState: true,
-        onProgress: (e) => {
-            if (e && e.lengthComputable && typeof e.total === 'number' && e.total > 0) {
-                const percent = Math.round((e.loaded * 100) / e.total);
-                uploadProgress.value = percent;
-            }
-        },
+
         onSuccess: () => {
             isUploading.value = false;
+
             toast.add({
                 severity: 'success',
                 summary: 'Import Success',
@@ -456,11 +449,9 @@ function confirmUpload(type: 'bp' | 'ct' | 'sq' | 'wd') {
                 group: 'br',
             });
 
-            if (importType.value === 'wd') {
+            if (type == 'wd') {
                 updateChartData();
             }
-
-            showImportDialog.value = false;
             selectedFile.value = null;
 
             nextTick(() => {
@@ -470,8 +461,11 @@ function confirmUpload(type: 'bp' | 'ct' | 'sq' | 'wd') {
                 if (type === 'wd') fileUploaderWD.value?.clear();
             });
         },
+
         onError: () => {
             isUploading.value = false;
+            showImportDialog.value = false;
+
             toast.add({
                 severity: 'error',
                 summary: 'Import Failed',
@@ -480,7 +474,6 @@ function confirmUpload(type: 'bp' | 'ct' | 'sq' | 'wd') {
                 group: 'br',
             });
 
-            showImportDialog.value = false;
             selectedFile.value = null;
 
             nextTick(() => {
@@ -491,6 +484,40 @@ function confirmUpload(type: 'bp' | 'ct' | 'sq' | 'wd') {
             });
         },
     });
+}
+
+function resetImportState() {
+    uploadProgress.value = 0;
+    selectedFile.value = null;
+    notImported.value = true;
+}
+
+function startPollingProgress(type: 'bp' | 'ct' | 'sq' | 'wd') {
+    uploadProgress.value = 0;
+
+    const endpointMap = {
+        bp: '/bp/import-progress',
+        ct: '/ct/import-progress',
+        sq: '/sq/import-progress',
+        wd: '/wd/import-progress',
+    };
+
+    const interval = setInterval(async () => {
+        try {
+            const res = await axios.get(endpointMap[type]);
+            uploadProgress.value = res.data.progress;
+
+            console.log(`Real ${type} progress:`, uploadProgress.value + '%');
+
+            if (uploadProgress.value >= 100) {
+                clearInterval(interval);
+                notImported.value = false; // ✅ sekarang bisa ganti tombol menjadi "Close"
+            }
+        } catch (err) {
+            console.error(`Error polling ${type} import progress:`, err);
+            clearInterval(interval);
+        }
+    }, 1000);
 }
 
 function exportCSV(type: 'bp' | 'ct' | 'sq' | 'wd') {
@@ -693,7 +720,7 @@ function handleDestroy() {
         <div class="m-6">
             <div class="flex flex-col gap-1">
                 <h2 class="mb-2 text-start text-3xl font-bold text-gray-900 dark:text-white">Process Cost Calculation</h2>
-                <p class="text-start text-gray-600 dark:text-gray-400">Calculation for each process for all product</p>
+                <p class="text-start text-gray-600 dark:text-gray-400">Unit cost product calculation.</p>
             </div>
             <!-- Header Section -->
             <div class="mt-4 mb-8">
@@ -703,8 +730,22 @@ function handleDestroy() {
                     </h1>
                     <hr class="absolute top-1/2 left-0 z-0 w-full -translate-y-1/2 border-gray-300 dark:border-gray-600" />
                 </div>
-                <Dialog v-model:visible="showImportDialog" header="Import Confirmation" modal class="w-[30rem]" :closable="false">
-                    <div class="space-y-4">
+                <Dialog
+                    v-model:visible="showImportDialog"
+                    header="Import Confirmation"
+                    modal
+                    class="w-[30rem]"
+                    :closable="false"
+                    @hide="resetImportState"
+                >
+                    <Transition name="fade" class="mb-3">
+                        <div v-if="uploadProgress > 0" class="pt-2">
+                            <span>Progress : </span>
+                            <ProgressBar :value="uploadProgress" showValue />
+                        </div>
+                    </Transition>
+
+                    <div class="space-y-4" v-if="notImported">
                         <p>
                             Hi <span class="text-red-400">{{ userName }}</span
                             >,
@@ -715,10 +756,6 @@ function handleDestroy() {
                             <strong class="text-blue-500">{{ importName }}</strong
                             >?
                         </p>
-
-                        <div v-if="isUploading" class="pt-2">
-                            <ProgressBar :value="uploadProgress" showValue />
-                        </div>
 
                         <div class="flex justify-end gap-3 pt-4">
                             <Button
@@ -734,6 +771,32 @@ function handleDestroy() {
                                 severity="success"
                                 :loading="isUploading"
                                 @click="() => confirmUpload(importType!)"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="space-y-4" v-if="!notImported">
+                        <p>
+                            Hi <span class="text-red-400">{{ userName }}</span
+                            >,
+                        </p>
+
+                        <p>
+                            Import
+                            <strong class="text-green-500">Finish</strong>, it's safe to close window.
+                        </p>
+                        <div class="flex justify-end gap-3 pt-4">
+                            <Button
+                                label="Close"
+                                icon="pi pi-times"
+                                severity="secondary"
+                                :disabled="isUploading"
+                                @click="
+                                    () => {
+                                        showImportDialog = false;
+                                        resetImportState();
+                                    }
+                                "
                             />
                         </div>
                     </div>
@@ -1189,6 +1252,7 @@ function handleDestroy() {
                                     tableStyle="min-width: 50rem"
                                     paginator
                                     :rows="10"
+                                    :rowsPerPageOptions="[10, 20, 50, 100]"
                                     resizableColumns
                                     columnResizeMode="expand"
                                     showGridlines
@@ -1279,6 +1343,7 @@ function handleDestroy() {
                                     tableStyle="min-width: 50rem"
                                     paginator
                                     :rows="10"
+                                    :rowsPerPageOptions="[10, 20, 50, 100]"
                                     resizableColumns
                                     columnResizeMode="expand"
                                     showGridlines
@@ -1431,6 +1496,7 @@ function handleDestroy() {
                                     tableStyle="min-width: 50rem"
                                     paginator
                                     :rows="10"
+                                    :rowsPerPageOptions="[10, 20, 50, 100]"
                                     resizableColumns
                                     columnResizeMode="expand"
                                     showGridlines

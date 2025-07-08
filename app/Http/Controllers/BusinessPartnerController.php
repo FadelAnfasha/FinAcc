@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\BusinessPartner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
+
 
 class BusinessPartnerController extends Controller
 {
@@ -27,6 +29,8 @@ class BusinessPartnerController extends Controller
         $codeCounts = [];
         $nameCounts = [];
 
+        $total = count($csvData);
+
         // Loop pertama: Hitung jumlah masing-masing kode & nama di file
         foreach ($csvData as $row) {
             $bpCode = trim($row[0]);
@@ -37,7 +41,7 @@ class BusinessPartnerController extends Controller
         }
 
         // Loop kedua: Proses data
-        foreach ($csvData as $row) {
+        foreach ($csvData as $index => $row) {
             $bpCode = trim($row[0]);
             $bpName = trim($row[1]);
 
@@ -84,7 +88,10 @@ class BusinessPartnerController extends Controller
                     $updatedItems[] = $bpCode;
                 }
             }
+            $progress = intval(($index + 1) / $total * 100);
+            Cache::put('import-progress-bp', $progress, now()->addMinutes(5));
         }
+        Cache::put('import-progress-bp', 100, now()->addMinutes(5));
 
         return redirect()->route('pc.master')->with([
             'success' => 'CSV file imported successfully',
