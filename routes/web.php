@@ -158,6 +158,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Report page
     Route::get('/pc/report', [ProcessCostController::class, 'report'])
         ->name('pc.report');
+
+    Route::post('pc/update/CTxSQ', [ProcessCostController::class, 'updateCTxSQ'])->name('pc.updateCTxSQ');
+    Route::post('pc/update/BaseCost', [ProcessCostController::class, 'updateBaseCost'])->name('pc.updateBaseCost');
+    Route::post('pc/update/CPP', [ProcessCostController::class, 'updateCPP'])->name('pc.updateCPP');
 });
 
 #=============================

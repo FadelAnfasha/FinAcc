@@ -78,4 +78,19 @@ class CycleTime extends Model
     {
         return $this->hasMany(SalesQuantity::class, 'item_code', 'item_code');
     }
+
+    public function CTxSQ()
+    {
+        return $this->hasMany(CTxSQ::class, 'item_code', 'item_code');
+    }
+
+    public function baseCost()
+    {
+        return $this->hasMany(baseCost::class, 'item_code', 'item_code');
+    }
+
+    public function costPerProcess()
+    {
+        return $this->hasMany(costPerProcess::class, 'item_code', 'item_code');
+    }
 }

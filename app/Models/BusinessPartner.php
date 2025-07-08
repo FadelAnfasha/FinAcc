@@ -20,4 +20,19 @@ class BusinessPartner extends Model
     {
         return $this->hasMany(SalesQuantity::class, 'bp_code', 'bp_code');
     }
+
+    public function CTxSQ()
+    {
+        return $this->hasMany(CTxSQ::class, 'bp_code', 'bp_code');
+    }
+
+    public function baseCost()
+    {
+        return $this->hasMany(baseCost::class, 'bp_code', 'bp_code');
+    }
+
+    public function costPerProcess()
+    {
+        return $this->hasMany(costPerProcess::class, 'bp_code', 'bp_code');
+    }
 }

@@ -507,8 +507,6 @@ function startPollingProgress(type: 'bp' | 'ct' | 'sq' | 'wd') {
             const res = await axios.get(endpointMap[type]);
             uploadProgress.value = res.data.progress;
 
-            console.log(`Real ${type} progress:`, uploadProgress.value + '%');
-
             if (uploadProgress.value >= 100) {
                 clearInterval(interval);
                 notImported.value = false; // ✅ sekarang bisa ganti tombol menjadi "Close"

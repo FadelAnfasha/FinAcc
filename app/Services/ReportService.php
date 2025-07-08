@@ -134,9 +134,19 @@ class ReportService
         return $baseCostData->map(function ($item) {
             $cpp = [];
 
+            // Proses atomik dulu
             foreach (array_keys($item->basecost) as $proc) {
-                $value = $item->quantity > 0 ? ($item->basecost[$proc] ?? 0) / $item->quantity : 0;
-                $cpp[$proc] = ceil($value * 100) / 100; // Bulatkan ke atas 2 desimal
+                $isGroup = str_starts_with($proc, 'Total'); // Flag
+                $value = $item->quantity > 0 && !$isGroup
+                    ? ($item->basecost[$proc] ?? 0) / $item->quantity
+                    : $item->basecost[$proc] ?? 0;
+
+                $cpp[$proc] = ceil($value * 100) / 100;
+            }
+
+            // Hitung ulang semua grup berdasarkan komponennya
+            foreach ($this->groupings as $group => $components) {
+                $cpp[$group] = ceil(array_sum(array_map(fn($c) => $cpp[$c] ?? 0, $components)) * 100) / 100;
             }
 
             return (object)[
@@ -149,7 +159,6 @@ class ReportService
             ];
         });
     }
-
 
     public function calculateProcessCost($cppData)
     {
