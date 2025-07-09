@@ -32,7 +32,6 @@ class ProcessCostController extends Controller
         ]);
     }
 
-
     public function report()
     {
         $ctxsq = CTxSQ::with(['bp', 'item'])->get();
@@ -56,8 +55,6 @@ class ProcessCostController extends Controller
     public function updateCTxSQ(ReportService $service)
     {
         $ctxsq = $service->calculateCTxSQ();
-        CTxSQ::truncate();
-
         CTxSQ::truncate();
 
         foreach ($ctxsq as $index => $item) {
@@ -195,83 +192,65 @@ class ProcessCostController extends Controller
         redirect()->route('pc.master');
     }
 
-    // public function updatePC(ReportService $service)
-    // {
-    //     $ctxsq = $service->calculateCTxSQ();
-    //     $processes = $service->getProcessList();
-    //     $base = $service->calculateBaseCost($ctxsq);
-    //     $cpp = $service->calculateCostPerProcess($base);
+    public function updatePC(ReportService $service)
+    {
+        $ctxsq = $service->calculateCTxSQ();
+        $base = $service->calculateBaseCost($ctxsq);
+        $cpp = $service->calculateCostPerProcess($base);
+        $processCost = $service->calculateProcessCost($cpp);
 
-    //     $total_ctxsq = [];
-    //     $total_base = [];
-    //     $total_cpp = [];
 
-    //     foreach ($processes as $proc) {
-    //         $total_ctxsq[$proc] = $ctxsq->sum(fn($d) => $d->ctxsq[$proc] ?? 0);
-    //     }
+        // Group by item_code
+        $grouped = $processCost->groupBy('item_code');
 
-    //     foreach ($processes as $proc) {
-    //         $total_base[$proc] = round($base->sum(fn($d) => $d->basecost[$proc] ?? 0), 2);
-    //     }
+        // Ambil nilai maksimum untuk setiap proses dari item yang sama
+        $maxProcessCost = $grouped->map(function ($items) {
+            $first = $items->first(); // untuk info umum seperti bp_code, type, dll
 
-    //     foreach ($processes as $proc) {
-    //         $total_cpp[$proc] = round($cpp->sum(fn($d) => $d->cpp[$proc] ?? 0), 2);
-    //     }
+            // Ambil semua nama proses (misal "Total Disc", dll)
+            $allProcessKeys = collect($items)->flatMap(fn($i) => array_keys($i->process_cost))->unique();
 
-    //     // Group by item_code
-    //     $grouped = $processCost->groupBy('item_code');
+            // Hitung max untuk masing-masing proses
+            $maxCosts = [];
 
-    //     // Ambil nilai maksimum untuk setiap proses dari item yang sama
-    //     $maxProcessCost = $grouped->map(function ($items) {
-    //         $first = $items->first(); // untuk info umum seperti bp_code, type, dll
+            // hasil tanpa desimal
+            foreach ($allProcessKeys as $key) {
+                $maxValue = collect($items)->max(fn($i) => $i->process_cost[$key] ?? 0);
 
-    //         // Ambil semua nama proses (misal "Total Disc", dll)
-    //         $allProcessKeys = collect($items)->flatMap(fn($i) => array_keys($i->process_cost))->unique();
+                // Bulatkan ke atas tanpa desimal
+                $rounded = ceil($maxValue);
 
-    //         // Hitung max untuk masing-masing proses
-    //         $maxCosts = [];
+                $maxCosts[$key] = $rounded;
+            }
 
-    //         // hasil tanpa desimal
-    //         foreach ($allProcessKeys as $key) {
-    //             $maxValue = collect($items)->max(fn($i) => $i->process_cost[$key] ?? 0);
+            return (object)[
+                'bp_code' => $first->bp_code,
+                'bp_name' => $first->bp_name,
+                'item_code' => $first->item_code,
+                'type' => $first->type,
+                'quantity' => $first->quantity, // bisa disesuaikan: sum atau ambil max/first
+                'process_cost' => $maxCosts,
+            ];
+        })->values();
 
-    //             // Bulatkan ke atas tanpa desimal
-    //             $rounded = ceil($maxValue);
+        foreach ($maxProcessCost as $item) {
+            ProcessCost::updateOrCreate(
+                ['item_code' => $item->item_code],
+                [
+                    'max_of_disc'      => $item->process_cost['Max of Disc'] ?? 0,
+                    'max_of_rim'       => $item->process_cost['Max of Rim'] ?? 0,
+                    'max_of_sidering'  => $item->process_cost['Max of Sidering'] ?? 0,
+                    'max_of_assy'      => $item->process_cost['Max of Assy'] ?? 0,
+                    'max_of_ced'       => $item->process_cost['Max of CED'] ?? 0,
+                    'max_of_topcoat'   => $item->process_cost['Max of Topcoat'] ?? 0,
+                    'max_of_packaging' => $item->process_cost['Max of Packaging'] ?? 0,
+                    'max_of_total'     => $item->process_cost['Max of Total'] ?? 0,
+                ]
+            );
+        }
 
-    //             $maxCosts[$key] = $rounded;
-    //         }
+        $footerMaxValues = [];
 
-    //         return (object)[
-    //             'bp_code' => $first->bp_code,
-    //             'bp_name' => $first->bp_name,
-    //             'item_code' => $first->item_code,
-    //             'type' => $first->type,
-    //             'quantity' => $first->quantity, // bisa disesuaikan: sum atau ambil max/first
-    //             'process_cost' => $maxCosts,
-    //         ];
-    //     })->values();
-
-    //     foreach ($maxProcessCost as $item) {
-    //         ProcessCost::updateOrCreate(
-    //             ['item_code' => $item->item_code],
-    //             [
-    //                 'max_of_disc'      => $item->process_cost['Max of Disc'] ?? 0,
-    //                 'max_of_rim'       => $item->process_cost['Max of Rim'] ?? 0,
-    //                 'max_of_sidering'  => $item->process_cost['Max of Sidering'] ?? 0,
-    //                 'max_of_assy'      => $item->process_cost['Max of Assy'] ?? 0,
-    //                 'max_of_ced'       => $item->process_cost['Max of CED'] ?? 0,
-    //                 'max_of_topcoat'   => $item->process_cost['Max of Topcoat'] ?? 0,
-    //                 'max_of_packaging' => $item->process_cost['Max of Packaging'] ?? 0,
-    //                 'max_of_total'     => $item->process_cost['Max of Total'] ?? 0,
-    //             ]
-    //         );
-    //     }
-
-    //     $footerMaxValues = [];
-
-    //     foreach ($service->getLine() as $group) {
-    //         // Langsung gunakan nama key sesuai array: "Max of Disc", dst
-    //         $footerMaxValues[$group] = $maxProcessCost->max(fn($item) => $item->process_cost[$group] ?? 0);
-    //     }
-    // }
+        redirect()->route('pc.master');
+    }
 }

@@ -108,20 +108,18 @@ const lastUpdate = computed(() => {
     const CPP_update = ((page.props.cpp as any[]) ?? []).map((CPP) => new Date(CPP.updated_at));
     const Max_CPPUpdate = CPP_update.length ? new Date(Math.max(...CPP_update.map((d) => d.getTime()))) : null;
 
-    // Wages Distribution
-    const wagesDistribution = page.props.wagesDistribution as { updated_at?: string } | null;
-    const Max_wdUpdate = wagesDistribution?.updated_at ? new Date(wagesDistribution.updated_at) : null;
+    // Sales Quantities
+    const PC_update = ((page.props.processCost as any[]) ?? []).map((PC) => new Date(PC.updated_at));
+    const Max_PCUpdate = PC_update.length ? new Date(Math.max(...PC_update.map((d) => d.getTime()))) : null;
 
-    return [Max_CTxSQUpdate, Max_BaseCostUpdate, Max_CPPUpdate, Max_wdUpdate];
+    return [Max_CTxSQUpdate, Max_BaseCostUpdate, Max_CPPUpdate, Max_PCUpdate];
 });
-
-console.log(lastUpdate.value[2]);
 
 function formatlastUpdate(date: Date | string) {
     return dayjs(date).format('DD MMM YYYY HH:mm:ss');
 }
 
-function updateReport(type: 'ctxsq' | 'base' | 'cpp') {
+function updateReport(type: 'ctxsq' | 'base' | 'cpp' | 'pc') {
     if (type == 'ctxsq') {
         router.post(
             route('pc.updateCTxSQ'),
@@ -179,6 +177,33 @@ function updateReport(type: 'ctxsq' | 'base' | 'cpp') {
     } else if (type == 'cpp') {
         router.post(
             route('pc.updateCPP'),
+            {},
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => {
+                    toast.add({
+                        severity: 'success',
+                        summary: 'Success',
+                        group: 'br',
+                        detail: `Cost per Process Report updated successfully`,
+                        life: 3000,
+                    });
+                },
+                onError: () => {
+                    toast.add({
+                        severity: 'warn',
+                        summary: 'Error',
+                        group: 'br',
+                        // detail: `Failed to delete data with ${editedData.value.bp_code} and ${editedData.value.item_code}`,
+                        life: 3000,
+                    });
+                },
+            },
+        );
+    } else if (type == 'pc') {
+        router.post(
+            route('pc.updatePC'),
             {},
             {
                 preserveScroll: true,
@@ -1004,7 +1029,32 @@ function updateReport(type: 'ctxsq' | 'base' | 'cpp') {
                             <section ref="processCost" class="p-2">
                                 <div class="mb-4 flex items-center justify-between">
                                     <h2 class="text-3xl font-semibold hover:text-indigo-500">Process Cost</h2>
-                                    <Button icon="pi pi-download" class="text-end" label="Export" @click="exportCSV('pc')" />
+                                    <div class="flex gap-4">
+                                        <div>
+                                            <div class="flex flex-col items-center gap-3">
+                                                Last Update :
+                                                <span class="text-red-300">{{ lastUpdate[3] ? formatlastUpdate(lastUpdate[3]) : '-' }}</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex flex-col items-center gap-3">
+                                            <Button
+                                                icon="pi pi-sync
+"
+                                                label=" Update Report?"
+                                                unstyled
+                                                class="w-28 cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900"
+                                                @click="updateReport('pc')"
+                                            />
+                                            <Button
+                                                icon="pi pi-download"
+                                                label=" Export"
+                                                unstyled
+                                                class="w-28 cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900"
+                                                @click="exportCSV('pc')"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <DataTable

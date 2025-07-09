@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, usePage } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import { FilterMatchMode } from '@primevue/core/api';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
@@ -13,12 +13,21 @@ import TabPanel from 'primevue/tabpanel';
 import TabPanels from 'primevue/tabpanels';
 import Tabs from 'primevue/tabs';
 import { useToast } from 'primevue/usetoast';
-import { onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 
 const toast = useToast();
 const page = usePage();
 const dtBOM = ref();
 const loading = ref(false);
+
+const bom = computed(() =>
+    (page.props.bom as any[]).map((bom, index) => ({
+        ...bom,
+        no: index + 1,
+    })),
+);
+
+console.log(bom.value);
 
 const filters = ref({
     'main.item_code': { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -40,8 +49,7 @@ function tbStyle(section: 'main' | 'rm' | 'pr' | 'wip' | 'fg') {
     };
 }
 
-const bom = ref<any[]>([]);
-console.log(bom);
+// const bom = ref<any[]>([]);
 
 const type = ['All', 'Disc', 'Side Ring', 'Wheel'];
 
@@ -64,87 +72,125 @@ function capitalize(text: string): string {
     return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-onMounted(() => {
-    bom.value = (page.props.bom as any[]).map((bom, index) => {
-        const getQty = (item: any, field: string) => Number(item?.[field] ?? 0);
-        const ceil2 = (val: number) => Math.ceil(val * 100) / 100;
-        const pc = bom.main?.process_cost ?? {};
+// onMounted(() => {
+//     bom.value = (page.props.bom as any[]).map((bom, index) => {
+//         const getQty = (item: any, field: string) => Number(item?.[field] ?? 0);
+//         const ceil2 = (val: number) => Math.ceil(val * 100) / 100;
+//         const pc = bom.main?.process_cost ?? {};
 
-        const disc_qty = getQty(bom.disc, 'quantity');
-        const disc_price = getQty(bom, 'disc_price');
-        const discXqty = ceil2(disc_qty * disc_price);
+//         const disc_qty = getQty(bom.disc, 'quantity');
+//         const disc_price = getQty(bom, 'disc_price');
+//         const discXqty = ceil2(disc_qty * disc_price);
 
-        const rim_qty = getQty(bom.rim, 'quantity');
-        const rim_price = getQty(bom, 'rim_price');
-        const rimXqty = ceil2(rim_qty * rim_price);
+//         const rim_qty = getQty(bom.rim, 'quantity');
+//         const rim_price = getQty(bom, 'rim_price');
+//         const rimXqty = ceil2(rim_qty * rim_price);
 
-        const sr_qty = getQty(bom.sidering, 'quantity');
-        const sr_price = getQty(bom, 'sr_price');
-        const srXqty = ceil2(sr_qty * sr_price);
+//         const sr_qty = getQty(bom.sidering, 'quantity');
+//         const sr_price = getQty(bom, 'sr_price');
+//         const srXqty = ceil2(sr_qty * sr_price);
 
-        const pr_disc = Number(pc.max_of_disc ?? 0);
-        const pr_rim = Number(pc.max_of_rim ?? 0);
-        const pr_sr = Number(pc.max_of_sidering ?? 0);
-        const pr_assy = Number(pc.max_of_assy ?? 0);
-        const pr_ced = Number(pc.max_of_ced ?? 0);
-        const pr_tc = Number(pc.max_of_topcoat ?? 0);
-        const pr_packaging = Number(pc.max_of_packaging ?? 0);
+//         const pr_disc = Number(pc.max_of_disc ?? 0);
+//         const pr_rim = Number(pc.max_of_rim ?? 0);
+//         const pr_sr = Number(pc.max_of_sidering ?? 0);
+//         const pr_assy = Number(pc.max_of_assy ?? 0);
+//         const pr_ced = Number(pc.max_of_ced ?? 0);
+//         const pr_tc = Number(pc.max_of_topcoat ?? 0);
+//         const pr_packaging = Number(pc.max_of_packaging ?? 0);
 
-        const pr_cedW = ceil2((pr_ced * 5) / 7);
-        const pr_cedSR = ceil2((pr_ced * 2) / 7);
-        const pr_tcW = ceil2((pr_tc * 5) / 7);
-        const pr_tcSR = ceil2((pr_tc * 2) / 7);
+//         const pr_cedW = ceil2((pr_ced * 5) / 7);
+//         const pr_cedSR = ceil2((pr_ced * 2) / 7);
+//         const pr_tcW = ceil2((pr_tc * 5) / 7);
+//         const pr_tcSR = ceil2((pr_tc * 2) / 7);
 
-        const wip_disc_cost = ceil2(discXqty + pr_disc);
-        const wip_rim_cost = ceil2(rimXqty + pr_rim);
-        const wip_sr_cost = ceil2(srXqty + pr_sr);
-        const wip_assy_cost = ceil2(wip_disc_cost + wip_rim_cost + pr_assy);
-        const wip_cedW_cost = ceil2(wip_assy_cost + pr_cedW);
-        const wip_cedSR_cost = ceil2(wip_sr_cost + pr_cedSR);
-        const wip_tcW_cost = ceil2(wip_cedW_cost + pr_tcW);
-        const wip_tcSR_cost = ceil2(wip_cedSR_cost + pr_tcSR);
+//         const wip_disc_cost = ceil2(discXqty + pr_disc);
+//         const wip_rim_cost = ceil2(rimXqty + pr_rim);
+//         const wip_sr_cost = ceil2(srXqty + pr_sr);
+//         const wip_assy_cost = ceil2(wip_disc_cost + wip_rim_cost + pr_assy);
+//         const wip_cedW_cost = ceil2(wip_assy_cost + pr_cedW);
+//         const wip_cedSR_cost = ceil2(wip_sr_cost + pr_cedSR);
+//         const wip_tcW_cost = ceil2(wip_cedW_cost + pr_tcW);
+//         const wip_tcSR_cost = ceil2(wip_cedSR_cost + pr_tcSR);
 
-        const valveCode = bom.wip_valve?.item_code?.trim();
-        let wip_valve_cost = 0;
-        if (valveCode === 'CGP089') wip_valve_cost = 25815;
-        else if (valveCode === 'CGP064') wip_valve_cost = 14985;
-        else if (valveCode === 'CGP064/CGP118') wip_valve_cost = 5099850;
+//         const valveCode = bom.wip_valve?.item_code?.trim();
+//         let wip_valve_cost = 0;
+//         if (valveCode === 'CGP089') wip_valve_cost = 25815;
+//         else if (valveCode === 'CGP064') wip_valve_cost = 14985;
+//         else if (valveCode === 'CGP064/CGP118') wip_valve_cost = 5099850;
 
-        const total_rm = ceil2(discXqty + rimXqty + srXqty);
-        const total_pr = ceil2(pr_disc + pr_rim + pr_sr + pr_assy + pr_cedW + pr_cedSR + pr_tcW + pr_tcSR + pr_packaging + wip_valve_cost);
-        const total = ceil2(total_rm + total_pr);
+//         const total_rm = ceil2(discXqty + rimXqty + srXqty);
+//         const total_pr = ceil2(pr_disc + pr_rim + pr_sr + pr_assy + pr_cedW + pr_cedSR + pr_tcW + pr_tcSR + pr_packaging + wip_valve_cost);
+//         const total = ceil2(total_rm + total_pr);
 
-        return {
-            ...bom,
-            no: index + 1,
-            discXqty,
-            rimXqty,
-            srXqty,
-            max_of_cedW: pr_cedW,
-            max_of_cedSR: pr_cedSR,
-            max_of_tcW: pr_tcW,
-            max_of_tcSR: pr_tcSR,
-            wip_disc_cost,
-            wip_rim_cost,
-            wip_sr_cost,
-            wip_assy_cost,
-            wip_cedW_cost,
-            wip_cedSR_cost,
-            wip_tcW_cost,
-            wip_tcSR_cost,
-            wip_valve_cost,
-            total_rm,
-            total_pr,
-            total,
-        };
-    });
-});
+//         return {
+//             ...bom,
+//             no: index + 1,
+//             discXqty,
+//             rimXqty,
+//             srXqty,
+//             max_of_cedW: pr_cedW,
+//             max_of_cedSR: pr_cedSR,
+//             max_of_tcW: pr_tcW,
+//             max_of_tcSR: pr_tcSR,
+//             wip_disc_cost,
+//             wip_rim_cost,
+//             wip_sr_cost,
+//             wip_assy_cost,
+//             wip_cedW_cost,
+//             wip_cedSR_cost,
+//             wip_tcW_cost,
+//             wip_tcSR_cost,
+//             wip_valve_cost,
+//             total_rm,
+//             total_pr,
+//             total,
+//         };
+//     });
+// });
 
 function exportCSV(type: 'bom') {
     if (type !== 'bom' || !dtBOM.value) return;
     const exportFilename = `Bill-of-Material-${new Date().toISOString().slice(0, 10)}.csv`;
     dtBOM.value.exportCSV({ selectionOnly: false, filename: exportFilename });
 }
+
+function updateReport(type: 'bom') {
+    if (type == 'bom') {
+        router.post(
+            route('pc.updateBOM'),
+            {},
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => {
+                    toast.add({
+                        severity: 'success',
+                        summary: 'Success',
+                        group: 'br',
+                        detail: `BOM Report updated successfully`,
+                        life: 3000,
+                    });
+                },
+                onError: () => {
+                    toast.add({
+                        severity: 'warn',
+                        summary: 'Error',
+                        group: 'br',
+                        // detail: `Failed to delete data with ${editedData.value.bp_code} and ${editedData.value.item_code}`,
+                        life: 3000,
+                    });
+                },
+            },
+        );
+    }
+}
+
+const lastUpdate = computed(() => {
+    const BOM_update = ((page.props.bom as any[]) ?? []).map((BOM) => new Date(BOM.updated_at));
+    const Max_BOMUpdate = BOM_update.length ? new Date(Math.max(...BOM_update.map((d) => d.getTime()))) : null;
+
+    return [Max_BOMUpdate];
+});
 </script>
 
 <template>
@@ -175,7 +221,32 @@ function exportCSV(type: 'bom') {
                             <section class="p-2">
                                 <div class="mb-4 flex items-center justify-between">
                                     <h2 class="text-3xl font-semibold hover:text-indigo-500">Bill of Material</h2>
-                                    <Button icon="pi pi-download" class="text-end" label="Export" @click="exportCSV('bom')" />
+                                    <div class="flex gap-4">
+                                        <div>
+                                            <div class="flex flex-col items-center gap-3">
+                                                Last Update :
+                                                <!-- <span class="text-red-300">{{ lastUpdate[3] ? formatlastUpdate(lastUpdate[3]) : '-' }}</span> -->
+                                            </div>
+                                        </div>
+
+                                        <div class="flex flex-col items-center gap-3">
+                                            <Button
+                                                icon="pi pi-sync
+"
+                                                label=" Update Report?"
+                                                unstyled
+                                                class="w-28 cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900"
+                                                @click="updateReport('bom')"
+                                            />
+                                            <Button
+                                                icon="pi pi-download"
+                                                label=" Export"
+                                                unstyled
+                                                class="w-28 cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900"
+                                                @click="exportCSV('bom')"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <DataTable

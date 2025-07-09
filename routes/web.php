@@ -69,10 +69,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 #======= BOM Route ========
 #==========================
 Route::middleware(['auth', 'verified'])->group(function () {
-    // Main Process Cost page
-    // Route::get('/pc', [ProcessCostController::class, 'index'])
-    //     ->name('pc.index');
-
     // Master Data page
     Route::get('/bom/master', [BOMController::class, 'master'])
         ->name('bom.master');
@@ -81,6 +77,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Report page
     Route::get('/bom/report', [BOMController::class, 'report'])
         ->name('bom.report');
+
+    Route::post('/bom/update/BOM', [BOMController::class, 'updateBOM'])->name('pc.updateBOM');
 });
 
 #=============================
@@ -159,9 +157,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/pc/report', [ProcessCostController::class, 'report'])
         ->name('pc.report');
 
-    Route::post('pc/update/CTxSQ', [ProcessCostController::class, 'updateCTxSQ'])->name('pc.updateCTxSQ');
-    Route::post('pc/update/BaseCost', [ProcessCostController::class, 'updateBaseCost'])->name('pc.updateBaseCost');
-    Route::post('pc/update/CPP', [ProcessCostController::class, 'updateCPP'])->name('pc.updateCPP');
+    Route::post('/pc/update/CTxSQ', [ProcessCostController::class, 'updateCTxSQ'])->name('pc.updateCTxSQ');
+    Route::post('/pc/update/BaseCost', [ProcessCostController::class, 'updateBaseCost'])->name('pc.updateBaseCost');
+    Route::post('/pc/update/CPP', [ProcessCostController::class, 'updateCPP'])->name('pc.updateCPP');
+    Route::post('/pc/update/PC', [ProcessCostController::class, 'updatePC'])->name('pc.updatePC');
 });
 
 #=============================

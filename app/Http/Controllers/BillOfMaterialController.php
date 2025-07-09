@@ -97,7 +97,6 @@ class BillOfMaterialController extends Controller
         }
 
         $finishGood = $all[$mainIndex];
-
         return redirect()->route('bom.master', ['component_id' => $id]);
     }
 }

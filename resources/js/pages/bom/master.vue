@@ -111,14 +111,28 @@ function formatlastUpdate(date: Date | string) {
 const componentItems = ref((page.props.component as ComponentItem[]) ?? []);
 const showComponent = ref(componentItems.value.length > 0);
 
+interface FinishGood {
+    item_code?: string;
+    [key: string]: any;
+}
+const finishGood = ref<FinishGood>(page.props.finish_good ?? {});
+
 watch(
     () => page.props.component,
     (newVal) => {
         componentItems.value = (newVal as ComponentItem[]) ?? [];
         showComponent.value = componentItems.value.length > 0;
+
+        finishGood.value = page.props.finish_good ?? {};
     },
     { immediate: true },
 );
+
+function closeComponentDialog() {
+    showComponent.value = false;
+    componentItems.value = [];
+    finishGood.value = {}; // ✅ kosongkan dengan objek kosong
+}
 
 const headerStyle = { backgroundColor: '#758596', color: 'white' };
 const bodyStyle = { backgroundColor: '#c8cccc', color: 'black' };
@@ -667,7 +681,7 @@ const formatCurrency = (value: number) => {
                     </div>
                 </Dialog>
 
-                <Dialog v-model:visible="showComponent" :header="`Component`" modal class="w-[60rem]">
+                <Dialog v-model:visible="showComponent" :header="`Components of ${finishGood.item_code}`" modal class="w-[60rem]" :closable="false">
                     <DataTable :value="componentItems" responsiveLayout="scroll">
                         <Column header="#" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                             <template #body="{ index }">
@@ -682,6 +696,9 @@ const formatCurrency = (value: number) => {
                         <Column field="depth" header="Depth" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
                         <Column field="bom_type" header="Bom Type" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
                     </DataTable>
+                    <div class="mt-2 mr-2 flex justify-end">
+                        <Button label="Close" severity="warn" @click="closeComponentDialog" />
+                    </div>
                 </Dialog>
 
                 <Dialog v-model:visible="showDialog" :header="headerType" modal :style="{ width: dialogWidth }" :closable="false">
