@@ -19,11 +19,9 @@ class BusinessPartnerController extends Controller
         $file = $request->file('file');
         $csvData = array_map('str_getcsv', file($file));
 
-        // Lewati baris pertama (header)
-        $header = array_shift($csvData);
+        $header = array_shift($csvData); // Skip header
 
         $addedItems = [];
-        $updatedItems = [];
         $invalidItems = [];
 
         $codeCounts = [];
@@ -31,7 +29,7 @@ class BusinessPartnerController extends Controller
 
         $total = count($csvData);
 
-        // Loop pertama: Hitung jumlah masing-masing kode & nama di file
+        // Hitung duplikat di file
         foreach ($csvData as $row) {
             $bpCode = trim($row[0]);
             $bpName = trim($row[1]);
@@ -40,18 +38,17 @@ class BusinessPartnerController extends Controller
             $nameCounts[$bpName] = ($nameCounts[$bpName] ?? 0) + 1;
         }
 
-        // Loop kedua: Proses data
         foreach ($csvData as $index => $row) {
             $bpCode = trim($row[0]);
             $bpName = trim($row[1]);
 
             // Duplikat dalam file
             if ($codeCounts[$bpCode] > 1 || $nameCounts[$bpName] > 1) {
-                $invalidItems[] = "{$bpCode} - {$bpName} (Duplicate BP Code or Name in file)";
+                $invalidItems[] = "{$bpCode} - {$bpName} (Duplicate in file)";
                 continue;
             }
 
-            // Validasi format kode
+            // Validasi format kode & inisial huruf
             $isValid = preg_match('/^C[A-Z]\d{4}$/', $bpCode);
             $matchesNameInitial = (
                 strlen($bpCode) >= 2 &&
@@ -64,39 +61,35 @@ class BusinessPartnerController extends Controller
                 continue;
             }
 
-            // Cek apakah nama sudah ada di database (terlepas dari kode)
-            $nameExists = BusinessPartner::where('bp_name', $bpName)->exists();
-
-            if ($nameExists) {
-                $invalidItems[] = "{$bpCode} - {$bpName} (BP Name already exists in database)";
+            // ✅ CEK 1: Kode sudah ada di database?
+            if (BusinessPartner::where('bp_code', $bpCode)->exists()) {
+                $invalidItems[] = "{$bpCode} - {$bpName} (BP Code already exists)";
                 continue;
             }
 
-            // Cek ke database berdasarkan kode
-            $existing = BusinessPartner::where('bp_code', $bpCode)->first();
-            $newData = ['bp_name' => $bpName];
-
-            if (!$existing) {
-                BusinessPartner::create([
-                    'bp_code' => $bpCode,
-                    'bp_name' => $bpName
-                ]);
-                $addedItems[] = $bpCode;
-            } else {
-                if ($existing->bp_name != $bpName) {
-                    $existing->update($newData);
-                    $updatedItems[] = $bpCode;
-                }
+            // ✅ CEK 2: Nama sudah ada di database?
+            if (BusinessPartner::where('bp_name', $bpName)->exists()) {
+                $invalidItems[] = "{$bpCode} - {$bpName} (BP Name already exists)";
+                continue;
             }
+
+            // ✅ Data valid → simpan
+            BusinessPartner::create([
+                'bp_code' => $bpCode,
+                'bp_name' => $bpName
+            ]);
+            $addedItems[] = $bpCode;
+
+            // Progress (optional)
             $progress = intval(($index + 1) / $total * 100);
             Cache::put('import-progress-bp', $progress, now()->addMinutes(5));
         }
+
         Cache::put('import-progress-bp', 100, now()->addMinutes(5));
 
         return redirect()->route('pc.master')->with([
             'success' => 'CSV file imported successfully',
             'addedItems' => $addedItems,
-            'updatedItems' => $updatedItems,
             'invalidItems' => $invalidItems
         ]);
     }

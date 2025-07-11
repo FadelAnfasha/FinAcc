@@ -21,7 +21,7 @@ const data = ref({
     type: 'person',
     styleClass: 'rounded-xl w-3xs !bg-slate-500',
     data: {
-        image: 'https://primefaces.org/cdn/primevue/images/avatar/amyelsner.png',
+        image: '/storage/profilepic/Tuti.png',
         name: 'Tuti Pustikasari',
         title: 'Finance Director',
     },
@@ -31,7 +31,7 @@ const data = ref({
             type: 'person',
             styleClass: '!bg-slate-500 text-white rounded-xl w-3xs',
             data: {
-                image: 'https://primefaces.org/cdn/primevue/images/avatar/annafali.png',
+                image: '/storage/profilepic/Matsuyama.png',
                 name: 'Akinori Matsuyama',
                 title: 'Deputy Division',
             },
@@ -41,7 +41,7 @@ const data = ref({
                     type: 'person',
                     styleClass: '!bg-slate-500 text-white rounded-xl w-3xs',
                     data: {
-                        image: 'https://primefaces.org/cdn/primevue/images/avatar/annafali.png',
+                        image: '/storage/profilepic/Inge.png',
                         name: 'Inge William',
                         title: 'Deputy Department',
                     },
@@ -51,7 +51,7 @@ const data = ref({
                             type: 'person',
                             styleClass: '!bg-slate-500 text-white rounded-xl w-3xs',
                             data: {
-                                image: 'https://primefaces.org/cdn/primevue/images/avatar/annafali.png',
+                                image: '/storage/profilepic/Rudi.png',
                                 name: 'Rudi Juniarto',
                                 title: 'Staff',
                             },
@@ -61,7 +61,7 @@ const data = ref({
                             type: 'person',
                             styleClass: '!bg-slate-500 text-white rounded-xl w-3xs',
                             data: {
-                                image: 'https://primefaces.org/cdn/primevue/images/avatar/annafali.png',
+                                image: '/storage/profilepic/Setyaningsih.png',
                                 name: 'Setyaningsih',
                                 title: 'Staff',
                             },
@@ -71,7 +71,7 @@ const data = ref({
                             type: 'person',
                             styleClass: '!bg-slate-500 text-white rounded-xl w-3xs',
                             data: {
-                                image: 'https://primefaces.org/cdn/primevue/images/avatar/annafali.png',
+                                image: '/storage/profilepic/Ayu.png',
                                 name: 'Ayu Lestari',
                                 title: 'Staff',
                             },
@@ -81,7 +81,7 @@ const data = ref({
                             type: 'person',
                             styleClass: '!bg-slate-500 text-white rounded-xl w-3xs',
                             data: {
-                                image: 'https://primefaces.org/cdn/primevue/images/avatar/annafali.png',
+                                image: '/storage/profilepic/Fadel.png',
                                 name: 'Fadel Anfasha Putra',
                                 title: 'Staff',
                             },
@@ -110,7 +110,11 @@ const data = ref({
                     <template #person="slotProps">
                         <div class="flex flex-col">
                             <div class="flex flex-col items-center">
-                                <img :alt="slotProps.node.data.name" :src="slotProps.node.data.image" class="mb-4 h-12 w-12" />
+                                <img
+                                    :alt="slotProps.node.data.name"
+                                    :src="slotProps.node.data.image"
+                                    class="mb-4 h-48 w-36 rounded-md object-cover shadow"
+                                />
                                 <span class="mb-2 font-bold">{{ slotProps.node.data.name }}</span>
                                 <span>{{ slotProps.node.data.title }}</span>
                             </div>

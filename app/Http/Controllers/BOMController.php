@@ -214,18 +214,9 @@ class BOMController extends Controller
             $main = $group->first(); // FG
             $main->load(['processCost', 'materialInfo']);
 
-            $disc_price = $group->disc
-                ? ceil(($group->disc->materialInfo->price ?? 0) * ($group->disc->quantity ?? 0) * 100) / 100
-                : 0;
-
-            $rim_price = $group->rim
-                ? ceil(($group->rim->materialInfo->price ?? 0) * ($group->rim->quantity ?? 0) * 100) / 100
-                : 0;
-
-            $sidering_price = $group->sidering
-                ? ceil(($group->sidering->materialInfo->price ?? 0) * ($group->sidering->quantity ?? 0) * 100) / 100
-                : 0;
-
+            $disc_price = $group->disc->materialInfo->price ?? 0;
+            $rim_price = $group->rim->materialInfo->price ?? 0;
+            $sidering_price = $group->sidering->materialInfo->price ?? 0;
 
             $pr_cedW_price = ceil(((($main->processCost->max_of_ced ?? null) * 5) / 7) * 100) / 100;
             $pr_cedSR_price = ceil(((($main->processCost->max_of_ced ?? null) * 2) / 7) * 100) / 100;
@@ -241,6 +232,7 @@ class BOMController extends Controller
             $wip_cedSR_price = ceil((($pr_cedSR_price ?? 0) +  ($wip_sidering_price ?? 0)) * 100) / 100;
             $wip_tcW_price = ceil((($wip_cedW_price ?? 0) + ($pr_tcW_price ?? 0)) * 100) / 100;
             $wip_tcSR_price = ceil((($wip_cedSR_price ?? 0) + ($pr_tcSR_price ?? 0)) * 100) / 100;
+
             if (isset($group->wip_valve) && $group->wip_valve->item_code === 'CGP089') {
                 $wip_valve_price = 25815;
             } elseif (isset($group->wip_valve) && $group->wip_valve->item_code === 'CGP064') {
