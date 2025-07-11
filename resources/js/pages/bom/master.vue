@@ -108,9 +108,9 @@ const lastUpdate = computed(() => {
 
 const dataSource = [
     'Share Others/Finacc/Bill of Material/Material Price (MP)/mat_master.csv',
-    'Share Others/Finacc/Bill of Material/Packing Price (MP)/pack_master.csv',
+    'Share Others/Finacc/Bill of Material/Packing Price (PP)/pack_master.csv',
     'Share Others/Finacc/Bill of Material/Valve Price (VP)/vp_master.csv',
-    'Share Others/Finacc/Bill of Material/Process Price (MP)/proc_master.csv',
+    // 'Share Others/Finacc/Bill of Material/Process Price (MP)/proc_master.csv',
     'Share Others/Finacc/Bill of Material/Bill of Material (BOM)/bom_master.csv',
 ];
 
@@ -1063,8 +1063,8 @@ const formatCurrency = (value: number) => {
                         <Tab value="0">Material</Tab>
                         <Tab value="1">Packing</Tab>
                         <Tab value="2">Valve</Tab>
-                        <Tab value="3">Process</Tab>
-                        <Tab value="4">Bill of Material</Tab>
+                        <!-- <Tab value="3">Process</Tab> -->
+                        <Tab value="3">Bill of Material</Tab>
                     </TabList>
 
                     <!-- Process Items Grid -->
@@ -1426,8 +1426,8 @@ const formatCurrency = (value: number) => {
                             </section>
                         </TabPanel>
 
-                        <TabPanel value="3">
-                            <section ref="valveSection" class="p-2">
+                        <!-- <TabPanel value="3">
+                            <section ref="procSection" class="p-2">
                                 <div class="mb-4 flex items-center justify-between">
                                     <h2 class="text-3xl font-semibold hover:text-indigo-500">Process Price</h2>
                                     <div class="flex gap-4">
@@ -1556,9 +1556,9 @@ const formatCurrency = (value: number) => {
                                     ></Column>
                                 </DataTable>
                             </section>
-                        </TabPanel>
+                        </TabPanel> -->
 
-                        <TabPanel value="4">
+                        <TabPanel value="3">
                             <section ref="bomSection" class="p-2">
                                 <div class="mb-4 flex items-center justify-between">
                                     <h2 class="text-3xl font-semibold hover:text-indigo-500">Bill of Material</h2>
