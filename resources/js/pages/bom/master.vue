@@ -1569,7 +1569,7 @@ const formatCurrency = (value: number) => {
                                                 <span class="text-red-300">{{ lastUpdate[4] ? formatlastUpdate(lastUpdate[4]) : '-' }}</span>
                                             </div>
                                             <div>
-                                                Data source From : <span class="text-cyan-400">{{ dataSource[4] }}</span>
+                                                Data source From : <span class="text-cyan-400">{{ dataSource[3] }}</span>
                                             </div>
                                         </div>
                                         <div class="flex flex-col items-center gap-3">
