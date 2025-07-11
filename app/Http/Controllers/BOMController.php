@@ -9,6 +9,8 @@ use Inertia\Inertia;
 use App\Models\Material;
 use App\Models\Process;
 use App\Models\Packing;
+use App\Models\Valve;
+
 use App\Models\BOM_Report;
 use Illuminate\Support\Str;
 
@@ -19,6 +21,8 @@ class BOMController extends Controller
         $materials = Material::with('bom')->get();
         $bom = BillOfMaterial::where('depth', 1)->get();
         $packings = Packing::all();
+        $valve = Valve::all();
+
         $processes = Process::all();
 
         $componentItems = collect();
@@ -42,6 +46,7 @@ class BOMController extends Controller
         return Inertia::render("bom/master", [
             'materials' => $materials,
             'packings' => $packings,
+            'valve' => $valve,
             'billOfMaterials' => $bom,
             'processes' => $processes,
             'finish_good' => $finishGood,
@@ -51,8 +56,9 @@ class BOMController extends Controller
 
     public function report(Request $request)
     {
-        $bom = BOM_Report::take('10')->get();
-        // dd($bom);
+        // $bom = BOM_Report::take('10')->get();
+        $bom = BOM_Report::with('bom')->get();
+
 
         return Inertia::render("bom/report", [
             'bom' => $bom
@@ -87,13 +93,6 @@ class BOMController extends Controller
         foreach ($groups as $group) {
             $main = $group->first();
             $typeChar = substr($main->item_code, 3, 1);
-            $main->type_name = match ($typeChar) {
-                'D' => 'Disc',
-                'N' => 'Side Ring',
-                'W' => 'Wheel',
-                'R' => 'Rim',
-                default => $main->item_code,
-            };
 
             // Komponen lain ...
             $group->disc = $group->first(function ($item) {
@@ -209,9 +208,24 @@ class BOMController extends Controller
             });
         }
 
+        BOM_Report::truncate();
+
         foreach ($groups as $group) {
             $main = $group->first(); // FG
             $main->load(['processCost', 'materialInfo']);
+
+            $disc_price = $group->disc
+                ? ceil(($group->disc->materialInfo->price ?? 0) * ($group->disc->quantity ?? 0) * 100) / 100
+                : 0;
+
+            $rim_price = $group->rim
+                ? ceil(($group->rim->materialInfo->price ?? 0) * ($group->rim->quantity ?? 0) * 100) / 100
+                : 0;
+
+            $sidering_price = $group->sidering
+                ? ceil(($group->sidering->materialInfo->price ?? 0) * ($group->sidering->quantity ?? 0) * 100) / 100
+                : 0;
+
 
             $pr_cedW_price = ceil(((($main->processCost->max_of_ced ?? null) * 5) / 7) * 100) / 100;
             $pr_cedSR_price = ceil(((($main->processCost->max_of_ced ?? null) * 2) / 7) * 100) / 100;
@@ -219,9 +233,9 @@ class BOMController extends Controller
             $pr_tcSR_price = ceil(((($main->processCost->max_of_topcoat ?? null) * 2) / 7) * 100) / 100;
 
 
-            $wip_disc_price = ceil((($main->processCost->max_of_disc ?? 0) + ($group->disc->materialInfo->price ?? 0)) * 100) / 100;
-            $wip_rim_price = ceil((($main->processCost->max_of_rim ?? 0) + ($group->rim->materialInfo->price ?? 0)) * 100) / 100;
-            $wip_sidering_price = ceil((($main->processCost->max_of_sidering ?? 0) + ($group->sidering->materialInfo->price ?? 0)) * 100) / 100;
+            $wip_disc_price = ceil((($main->processCost->max_of_disc ?? 0) + ($disc_price ?? 0)) * 100) / 100;
+            $wip_rim_price = ceil((($main->processCost->max_of_rim ?? 0) + ($rim_price ?? 0)) * 100) / 100;
+            $wip_sidering_price = ceil((($main->processCost->max_of_sidering ?? 0) + ($sidering_price ?? 0)) * 100) / 100;
             $wip_assy_price = ceil((($main->processCost->max_of_assy ?? 0) + ($wip_disc_price ?? 0) + ($wip_rim_price ?? 0)) * 100) / 100;
             $wip_cedW_price = ceil((($pr_cedW_price ?? 0) +  ($wip_assy_price ?? 0)) * 100) / 100;
             $wip_cedSR_price = ceil((($pr_cedSR_price ?? 0) +  ($wip_sidering_price ?? 0)) * 100) / 100;
@@ -241,19 +255,19 @@ class BOMController extends Controller
                 'item_code' => $main->item_code,
 
                 // Disc
-                'disc_qty' => $group->disc->qty ?? 0,
+                'disc_qty' => $group->disc->quantity ?? 0,
                 'disc_code' => $group->disc->item_code ?? null,
-                'disc_price' => $group->disc->materialInfo->price ?? null,
+                'disc_price' => $disc_price ?? null,
 
                 // Rim
-                'rim_qty' => $group->rim->qty ?? 0,
+                'rim_qty' => $group->rim->quantity ?? 0,
                 'rim_code' => $group->rim->item_code ?? null,
-                'rim_price' => $group->rim->materialInfo->price ?? null,
+                'rim_price' => $rim_price ?? null,
 
                 // Sidering
-                'sidering_qty' => $group->sidering->qty ?? 0,
+                'sidering_qty' => $group->sidering->quantity ?? 0,
                 'sidering_code' => $group->sidering->item_code ?? null,
-                'sidering_price' => $group->sidering->materialInfo->price ?? null,
+                'sidering_price' => $sidering_price ?? null,
 
                 // pr_*
                 'pr_disc' => $group->pr_disc->item_code ?? null,
@@ -308,15 +322,16 @@ class BOMController extends Controller
                 'wip_tcSR_price' => $wip_tcSR_price ?? null,
 
                 'wip_valve' => $group->wip_valve->item_code ?? null,
-                'wip_valve_price' => $wip_valve_price,
+                'wip_valve_price' => $group->wip_valve->valveInfo->price ?? null,
             ];
 
             // Hitung total cost
             $totalRawMaterial = collect([
-                $data['disc_qty'] * $data['disc_price'],
-                $data['rim_qty'] * $data['rim_price'],
-                $data['sidering_qty'] * $data['sidering_price'],
+                $data['disc_price'],
+                $data['rim_price'],
+                $data['sidering_price'],
             ])->sum();
+
 
             $totalProcess = collect([
                 $data['pr_disc_price'],
@@ -328,6 +343,7 @@ class BOMController extends Controller
                 $data['pr_tcW_price'],
                 $data['pr_tcSR_price'],
                 $data['pack_price'],
+                $data['wip_valve_price']
             ])->sum();
 
             $data['total_raw_material'] = ceil($totalRawMaterial * 100) / 100;

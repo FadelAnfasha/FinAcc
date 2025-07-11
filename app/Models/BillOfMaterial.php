@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Http\Controllers\BOMController;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class BillOfMaterial extends Model
 {
@@ -38,8 +40,18 @@ class BillOfMaterial extends Model
         return $this->hasOne(Packing::class, 'item_code', 'item_code');
     }
 
+    public function valveInfo()
+    {
+        return $this->hasOne(Valve::class, 'item_code', 'item_code');
+    }
+
     public function processCost()
     {
         return $this->hasOne(ProcessCost::class, 'item_code', 'item_code');
+    }
+
+    public function bomReport(): HasOne
+    {
+        return $this->hasOne(BOM_Report::class, 'item_code', 'item_code');
     }
 }

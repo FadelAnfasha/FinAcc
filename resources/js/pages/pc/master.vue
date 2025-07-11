@@ -87,8 +87,6 @@ const lastUpdate = computed(() => {
     return [Max_bpUpdate, Max_ctUpdate, Max_sqUpdate, Max_wdUpdate];
 });
 
-const userName = computed(() => page.props.auth?.user?.name ?? '');
-
 const dataSource = [
     'Share Others/Finacc/Process Cost/Business Partner(BP)/bp_master.csv',
     'Share Others/Finacc/Process Cost/Cycle Time (CT)/ct_master.csv',
@@ -355,6 +353,7 @@ const fileUploaderWD = ref<any>(null);
 const uploadProgress = ref(0);
 const notImported = ref(true);
 const isUploading = ref(false);
+const userName = computed(() => page.props.auth?.user?.name ?? '');
 
 function handleCSVImport(event: FileUploadUploaderEvent, type: 'bp' | 'ct' | 'sq' | 'wd') {
     let file: File | undefined;

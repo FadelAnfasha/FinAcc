@@ -70,6 +70,15 @@ const processes = computed(() =>
     })),
 );
 
+const valves = computed(() =>
+    (page.props.valve as any[]).map((valves, index) => ({
+        ...valves,
+        no: index + 1,
+        created_at_formatted: formatDate(valves.created_at),
+        updated_at_formatted: formatDate(valves.updated_at),
+    })),
+);
+
 const userName = computed(() => page.props.auth?.user?.name ?? '');
 
 interface ComponentItem {
@@ -79,27 +88,28 @@ interface ComponentItem {
 }
 
 const lastUpdate = computed(() => {
-    // Business Partners
     const mat_update = ((page.props.materials as any[]) ?? []).map((mat) => new Date(mat.updated_at));
     const Max_matUpdate = mat_update.length ? new Date(Math.max(...mat_update.map((d) => d.getTime()))) : null;
 
-    // Cycle Times
     const pack_update = ((page.props.packings as any[]) ?? []).map((pack) => new Date(pack.updated_at));
     const Max_packUpdate = pack_update.length ? new Date(Math.max(...pack_update.map((d) => d.getTime()))) : null;
 
-    // Sales Quantities
     const proc_update = ((page.props.processes as any[]) ?? []).map((proc) => new Date(proc.updated_at));
     const Max_procUpdate = proc_update.length ? new Date(Math.max(...proc_update.map((d) => d.getTime()))) : null;
+
+    const valve_update = ((page.props.valve as any[]) ?? []).map((valve) => new Date(valve.updated_at));
+    const Max_valveUpdate = valve_update.length ? new Date(Math.max(...valve_update.map((d) => d.getTime()))) : null;
 
     const bom_update = ((page.props.billOfMaterials as any[]) ?? []).map((bom) => new Date(bom.updated_at));
     const Max_bomUpdate = bom_update.length ? new Date(Math.max(...bom_update.map((d) => d.getTime()))) : null;
 
-    return [Max_matUpdate, Max_packUpdate, Max_procUpdate, Max_bomUpdate];
+    return [Max_matUpdate, Max_packUpdate, Max_valveUpdate, Max_procUpdate, Max_bomUpdate];
 });
 
 const dataSource = [
     'Share Others/Finacc/Bill of Material/Material Price (MP)/mat_master.csv',
     'Share Others/Finacc/Bill of Material/Packing Price (MP)/pack_master.csv',
+    'Share Others/Finacc/Bill of Material/Valve Price (VP)/vp_master.csv',
     'Share Others/Finacc/Bill of Material/Process Price (MP)/proc_master.csv',
     'Share Others/Finacc/Bill of Material/Bill of Material (BOM)/bom_master.csv',
 ];
@@ -139,8 +149,8 @@ const bodyStyle = { backgroundColor: '#c8cccc', color: 'black' };
 
 const showDialog = ref(false);
 const dialogWidth = ref('40rem');
-const editType = ref<'mat' | 'pack' | 'proc' | null>(null);
-const destroyType = ref<'mat' | 'pack' | 'proc' | 'bom' | null>(null);
+const editType = ref<'mat' | 'pack' | 'proc' | 'valve' | null>(null);
+const destroyType = ref<'mat' | 'pack' | 'proc' | 'bom' | 'valve' | null>(null);
 const headerType = ref<any>({});
 const editedData = ref<any>({});
 const destroyedData = ref<any>({});
@@ -159,16 +169,17 @@ const manufacturer = ref([
 const showImportDialog: Ref<boolean> = ref(false);
 const importName = ref<any>({});
 const selectedFile = ref<File | null>(null);
-const importType = ref<'mat' | 'pack' | 'proc' | 'bom' | null>(null);
+const importType = ref<'mat' | 'pack' | 'proc' | 'valve' | 'bom' | null>(null);
 const notImported = ref(true);
 const fileUploaderMAT = ref<any>(null);
 const fileUploaderPACK = ref<any>(null);
+const fileUploaderVALVE = ref<any>(null);
 const fileUploaderPROC = ref<any>(null);
 const fileUploaderBOM = ref<any>(null);
 const uploadProgress = ref(0);
 const isUploading = ref(false);
 
-function handleCSVImport(event: FileUploadUploaderEvent, type: 'mat' | 'pack' | 'proc' | 'bom') {
+function handleCSVImport(event: FileUploadUploaderEvent, type: 'mat' | 'pack' | 'proc' | 'valve' | 'bom') {
     let file: File | undefined;
 
     if (Array.isArray(event.files)) {
@@ -183,6 +194,7 @@ function handleCSVImport(event: FileUploadUploaderEvent, type: 'mat' | 'pack' | 
         mat: 'mat_master.csv',
         pack: 'pack_master.csv',
         proc: 'proc_master.csv',
+        valve: 'valve_master.csv',
         bom: 'bom_master.csv',
     };
 
@@ -201,6 +213,7 @@ function handleCSVImport(event: FileUploadUploaderEvent, type: 'mat' | 'pack' | 
         nextTick(() => {
             if (type === 'mat') fileUploaderMAT.value?.clear();
             if (type === 'pack') fileUploaderPACK.value?.clear();
+            if (type === 'valve') fileUploaderVALVE.value?.clear();
             if (type === 'proc') fileUploaderPROC.value?.clear();
             if (type === 'bom') fileUploaderBOM.value?.clear();
         });
@@ -217,19 +230,20 @@ function handleCSVImport(event: FileUploadUploaderEvent, type: 'mat' | 'pack' | 
     });
 }
 
-function cancelCSVimport(type: 'mat' | 'pack' | 'proc' | 'bom') {
+function cancelCSVimport(type: 'mat' | 'pack' | 'proc' | 'valve' | 'bom') {
     showImportDialog.value = false;
     selectedFile.value = null;
 
     nextTick(() => {
         if (type === 'mat') fileUploaderMAT.value?.clear();
         if (type === 'pack') fileUploaderPACK.value?.clear();
+        if (type === 'valve') fileUploaderVALVE.value?.clear();
         if (type === 'proc') fileUploaderPROC.value?.clear();
         if (type === 'bom') fileUploaderBOM.value?.clear();
     });
 }
 
-function confirmUpload(type: 'mat' | 'pack' | 'proc' | 'bom') {
+function confirmUpload(type: 'mat' | 'pack' | 'proc' | 'valve' | 'bom') {
     if (!selectedFile.value || !importType.value) return;
 
     const formData = new FormData();
@@ -239,6 +253,7 @@ function confirmUpload(type: 'mat' | 'pack' | 'proc' | 'bom') {
         mat: 'mat.import',
         pack: 'pack.import',
         proc: 'proc.import',
+        valve: 'valve.import',
         bom: 'bom.import',
     };
 
@@ -266,6 +281,7 @@ function confirmUpload(type: 'mat' | 'pack' | 'proc' | 'bom') {
             nextTick(() => {
                 if (type === 'mat') fileUploaderMAT.value?.clear();
                 if (type === 'pack') fileUploaderPACK.value?.clear();
+                if (type === 'valve') fileUploaderVALVE.value?.clear();
                 if (type === 'proc') fileUploaderPROC.value?.clear();
                 if (type === 'bom') fileUploaderBOM.value?.clear();
             });
@@ -288,6 +304,7 @@ function confirmUpload(type: 'mat' | 'pack' | 'proc' | 'bom') {
             nextTick(() => {
                 if (type === 'mat') fileUploaderMAT.value?.clear();
                 if (type === 'pack') fileUploaderPACK.value?.clear();
+                if (type === 'valve') fileUploaderVALVE.value?.clear();
                 if (type === 'proc') fileUploaderPROC.value?.clear();
                 if (type === 'bom') fileUploaderBOM.value?.clear();
             });
@@ -301,13 +318,15 @@ function resetImportState() {
     notImported.value = true;
 }
 
-function startPollingProgress(type: 'mat' | 'pack' | 'proc' | 'bom') {
+function startPollingProgress(type: 'mat' | 'pack' | 'proc' | 'valve' | 'bom') {
     uploadProgress.value = 0;
 
     const endpointMap = {
         mat: '/mat/import-progress',
         pack: '/pack/import-progress',
         proc: '/proc/import-progress',
+        valve: '/valve/import-progress',
+
         bom: '/bom/import-progress',
     };
 
@@ -315,8 +334,6 @@ function startPollingProgress(type: 'mat' | 'pack' | 'proc' | 'bom') {
         try {
             const res = await axios.get(endpointMap[type]);
             uploadProgress.value = res.data.progress;
-
-            console.log(`Real ${type} progress:`, uploadProgress.value + '%');
 
             if (uploadProgress.value >= 100) {
                 clearInterval(interval);
@@ -329,7 +346,7 @@ function startPollingProgress(type: 'mat' | 'pack' | 'proc' | 'bom') {
     }, 1000);
 }
 
-function exportCSV(type: 'mat' | 'bom' | 'pack' | 'proc') {
+function exportCSV(type: 'mat' | 'bom' | 'pack' | 'proc' | 'valve') {
     let $type = null;
     let $filename = null;
     if (type === 'mat') {
@@ -364,8 +381,7 @@ function formatDate(dateStr: string): string {
     return `${yy}-${mm}-${dd}`;
 }
 
-function editData(data: any, type: 'mat' | 'pack' | 'proc') {
-    console.log('Edit', data);
+function editData(data: any, type: 'mat' | 'pack' | 'proc' | 'valve') {
     editedData.value = { ...data };
     editType.value = type;
     headerType.value = 'Edit data';
@@ -375,6 +391,8 @@ function editData(data: any, type: 'mat' | 'pack' | 'proc') {
     } else if (type === 'pack') {
         dialogWidth.value = '40rem';
     } else if (type === 'proc') {
+        dialogWidth.value = '40rem';
+    } else if (type === 'valve') {
         dialogWidth.value = '40rem';
     }
     showDialog.value = true;
@@ -462,10 +480,37 @@ function handleSave() {
                 });
             },
         });
+    } else if (editType.value === 'valve') {
+        const item_code = editedData.value.item_code;
+        if (!item_code) return;
+
+        router.put(route('valve.update', item_code), editedData.value, {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                toast.add({
+                    severity: 'success',
+                    summary: 'Success',
+                    group: 'br',
+                    detail: `Data ${editedData.value.item_code} updated successfully`,
+                    life: 3000,
+                });
+                showDialog.value = false;
+            },
+            onError: () => {
+                toast.add({
+                    severity: 'warn',
+                    summary: 'Error',
+                    group: 'br',
+                    detail: `Failed to delete data with ${editedData.value.bp_code}`,
+                    life: 3000,
+                });
+            },
+        });
     }
 }
 
-function destroyData(data: any, type: 'mat' | 'pack' | 'proc' | 'bom') {
+function destroyData(data: any, type: 'mat' | 'pack' | 'proc' | 'bom' | 'valve') {
     destroyedData.value = { ...data };
     destroyType.value = type;
     headerType.value = 'Delete data';
@@ -543,6 +588,34 @@ function handleDestroy() {
         if (!item_code) return;
 
         router.delete(route('proc.destroy', item_code), {
+            data: destroyedData.value,
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                toast.add({
+                    severity: 'error',
+                    summary: 'Success',
+                    detail: `Data ${destroyedData.value.item_code} deleted successfully`,
+                    group: 'br',
+                    life: 3000,
+                });
+                showDialog.value = false;
+            },
+            onError: () => {
+                toast.add({
+                    severity: 'warn',
+                    summary: 'Error',
+                    group: 'br',
+                    detail: `Failed to delete this  ${destroyedData.value.item_code} data`,
+                    life: 3000,
+                });
+            },
+        });
+    } else if (destroyType.value === 'valve') {
+        const item_code = destroyedData.value.item_code;
+        if (!item_code) return;
+
+        router.delete(route('valve.destroy', item_code), {
             data: destroyedData.value,
             preserveScroll: true,
             preserveState: true,
@@ -802,6 +875,43 @@ const formatCurrency = (value: number) => {
                         </div>
                     </div>
 
+                    <div v-if="editType === 'valve'" class="space-y-6">
+                        <div class="mb-4 flex items-center gap-4">
+                            <label for="item_code" class="w-24 font-semibold">Item Code</label>
+                            <InputText id="item_code" class="flex-auto" v-model="editedData.item_code" autocomplete="off" :disabled="true" />
+                        </div>
+                        <div class="mb-4 flex items-center gap-4">
+                            <label for="price" class="w-24 font-semibold">Price</label>
+                            <InputNumber
+                                id="price"
+                                class="flex-auto"
+                                inputId="currency-indonesia"
+                                mode="currency"
+                                currency="IDR"
+                                locale="id-ID"
+                                :maxFractionDigits="2"
+                                v-model="editedData.price"
+                                autocomplete="off"
+                                :min="0"
+                            />
+                        </div>
+
+                        <div class="mt-6 flex justify-end gap-2">
+                            <Button
+                                type="button"
+                                label="Cancel"
+                                severity="secondary"
+                                @click="
+                                    () => {
+                                        showDialog = false;
+                                        editType = null;
+                                    }
+                                "
+                            ></Button>
+                            <Button type="button" label="Save" @click="handleSave()"></Button>
+                        </div>
+                    </div>
+
                     <div v-if="editType === 'proc'" class="space-y-6">
                         <div class="mb-4 flex items-center gap-4">
                             <label for="item_code" class="w-24 font-semibold">Item Code</label>
@@ -899,6 +1009,29 @@ const formatCurrency = (value: number) => {
                         </div>
                     </div>
 
+                    <div v-if="destroyType === 'valve'" class="space-y-6">
+                        <span>
+                            Are you sure want to delete Valve data with item code
+                            <span class="font-semibold text-red-600">{{ destroyedData.item_code }} </span> and description
+                            <span class="font-semibold text-red-600">{{ destroyedData.bom?.description || '-' }}</span> ?
+                        </span>
+                        <!-- Action buttons -->
+                        <div class="mt-6 flex justify-end gap-2">
+                            <Button
+                                type="button"
+                                label="Cancel"
+                                severity="secondary"
+                                @click="
+                                    () => {
+                                        showDialog = false;
+                                        destroyType = null;
+                                    }
+                                "
+                            ></Button>
+                            <Button type="button" label="Delete" severity="danger" @click="handleDestroy()"></Button>
+                        </div>
+                    </div>
+
                     <div v-if="destroyType === 'proc'" class="space-y-6">
                         <span>
                             Are you sure want to delete Process data with item code
@@ -929,8 +1062,9 @@ const formatCurrency = (value: number) => {
                     <TabList>
                         <Tab value="0">Material</Tab>
                         <Tab value="1">Packing</Tab>
-                        <Tab value="2">Process</Tab>
-                        <Tab value="3">Bill of Material</Tab>
+                        <Tab value="2">Valve</Tab>
+                        <Tab value="3">Process</Tab>
+                        <Tab value="4">Bill of Material</Tab>
                     </TabList>
 
                     <!-- Process Items Grid -->
@@ -987,7 +1121,7 @@ const formatCurrency = (value: number) => {
                                     :loading="loading"
                                     :globalFilterFields="['item_code']"
                                     class="text-md"
-                                    ref="dtBP"
+                                    ref="dtMAT"
                                 >
                                     <Column
                                         field="item_code"
@@ -1112,7 +1246,7 @@ const formatCurrency = (value: number) => {
                                     :loading="loading"
                                     :globalFilterFields="['item_code']"
                                     class="text-md"
-                                    ref="dtBP"
+                                    ref="dtPACK"
                                 >
                                     <Column
                                         field="item_code"
@@ -1178,7 +1312,7 @@ const formatCurrency = (value: number) => {
                         <TabPanel value="2">
                             <section ref="packSection" class="p-2">
                                 <div class="mb-4 flex items-center justify-between">
-                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Process Price</h2>
+                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Valve Price</h2>
                                     <div class="flex gap-4">
                                         <div>
                                             <div>
@@ -1187,6 +1321,123 @@ const formatCurrency = (value: number) => {
                                             </div>
                                             <div>
                                                 Data source From : <span class="text-cyan-400">{{ dataSource[2] }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="flex flex-col items-center gap-3">
+                                            <FileUpload
+                                                ref="fileUploaderVALVE"
+                                                mode="basic"
+                                                name="file"
+                                                :customUpload="true"
+                                                accept=".csv"
+                                                chooseLabel="Import CSV"
+                                                chooseIcon="pi pi-upload"
+                                                @select="(event) => handleCSVImport(event, 'valve')"
+                                            />
+                                        </div>
+                                        <div class="flex flex-col items-center gap-3">
+                                            <Button
+                                                icon="pi pi-download"
+                                                label=" Export"
+                                                unstyled
+                                                class="w-28 cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900"
+                                                @click="exportCSV('valve')"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <DataTable
+                                    :value="valves"
+                                    tableStyle="min-width: 50rem"
+                                    paginator
+                                    :rows="10"
+                                    resizableColumns
+                                    columnResizeMode="expand"
+                                    showGridlines
+                                    removableSort
+                                    v-model:filters="filters"
+                                    filterDisplay="row"
+                                    :loading="loading"
+                                    :globalFilterFields="['item_code']"
+                                    class="text-md"
+                                    ref="dtVP"
+                                >
+                                    <Column
+                                        field="item_code"
+                                        header="Item Code"
+                                        :showFilterMenu="false"
+                                        sortable
+                                        :headerStyle="headerStyle"
+                                        :bodyStyle="bodyStyle"
+                                        ><template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search item code"
+                                                class="w-full"
+                                            /> </template
+                                    ></Column>
+
+                                    <Column field="price" header="Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ formatCurrency(data.price) }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="created_at_formatted" sortable header="Added at" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="slotProps">
+                                            {{ formatDate(slotProps.data.created_at) }}
+                                        </template>
+                                    </Column>
+
+                                    <Column
+                                        field="updated_at_formatted"
+                                        sortable
+                                        header="Updated at"
+                                        :headerStyle="headerStyle"
+                                        :bodyStyle="bodyStyle"
+                                    >
+                                        <template #body="slotProps">
+                                            {{ formatDate(slotProps.data.updated_at) }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="action" header="Action" :exportable="false" :headerStyle="headerStyle" :bodyStyle="bodyStyle"
+                                        ><template #body="slotProps">
+                                            <div class="flex gap-2">
+                                                <Button
+                                                    icon="pi pi-pencil"
+                                                    severity="warning"
+                                                    rounded
+                                                    text
+                                                    @click="editData(slotProps.data, 'valve')"
+                                                />
+                                                <Button
+                                                    icon="pi pi-trash"
+                                                    severity="danger"
+                                                    rounded
+                                                    text
+                                                    @click="destroyData(slotProps.data, 'valve')"
+                                                />
+                                            </div> </template
+                                    ></Column>
+                                </DataTable>
+                            </section>
+                        </TabPanel>
+
+                        <TabPanel value="3">
+                            <section ref="valveSection" class="p-2">
+                                <div class="mb-4 flex items-center justify-between">
+                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Process Price</h2>
+                                    <div class="flex gap-4">
+                                        <div>
+                                            <div>
+                                                Last Update :
+                                                <span class="text-red-300">{{ lastUpdate[3] ? formatlastUpdate(lastUpdate[3]) : '-' }}</span>
+                                            </div>
+                                            <div>
+                                                Data source From : <span class="text-cyan-400">{{ dataSource[3] }}</span>
                                             </div>
                                         </div>
                                         <div class="flex flex-col items-center gap-3">
@@ -1227,7 +1478,7 @@ const formatCurrency = (value: number) => {
                                     :loading="loading"
                                     :globalFilterFields="['item_code']"
                                     class="text-md"
-                                    ref="dtBP"
+                                    ref="dtPROC"
                                 >
                                     <Column
                                         field="item_code"
@@ -1307,7 +1558,7 @@ const formatCurrency = (value: number) => {
                             </section>
                         </TabPanel>
 
-                        <TabPanel value="3">
+                        <TabPanel value="4">
                             <section ref="bomSection" class="p-2">
                                 <div class="mb-4 flex items-center justify-between">
                                     <h2 class="text-3xl font-semibold hover:text-indigo-500">Bill of Material</h2>
@@ -1315,10 +1566,10 @@ const formatCurrency = (value: number) => {
                                         <div>
                                             <div>
                                                 Last Update :
-                                                <span class="text-red-300">{{ lastUpdate[3] ? formatlastUpdate(lastUpdate[3]) : '-' }}</span>
+                                                <span class="text-red-300">{{ lastUpdate[4] ? formatlastUpdate(lastUpdate[4]) : '-' }}</span>
                                             </div>
                                             <div>
-                                                Data source From : <span class="text-cyan-400">{{ dataSource[3] }}</span>
+                                                Data source From : <span class="text-cyan-400">{{ dataSource[4] }}</span>
                                             </div>
                                         </div>
                                         <div class="flex flex-col items-center gap-3">
@@ -1358,7 +1609,7 @@ const formatCurrency = (value: number) => {
                                     :loading="loading"
                                     :globalFilterFields="['item_code']"
                                     class="text-md"
-                                    ref="dtCT"
+                                    ref="dtBOM"
                                 >
                                     <Column
                                         field="item_code"

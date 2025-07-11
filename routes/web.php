@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\SalesQuantityController;
+use App\Http\Controllers\ValveController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -110,6 +111,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ]);
     });
 });
+
+
+#=============================
+#=========> Valves <==========
+#=============================
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/valve/import', [ValveController::class, 'import'])->name('valve.import');
+    Route::put('/valve/update/{id}', [ValveController::class, 'update'])->name('valve.update');
+    Route::delete('/valve/destroy/{id}', [ValveController::class, 'destroy'])->name('valve.destroy');
+    Route::get('/valve/import-progress', function () {
+        return response()->json([
+            'progress' => Cache::get('import-progress-valve', 0),
+        ]);
+    });
+});
+
 
 #=============================
 #=======> Processes <=========

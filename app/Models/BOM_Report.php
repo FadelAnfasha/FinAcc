@@ -60,4 +60,9 @@ class BOM_Report extends Model
         'total_process',
         'total'
     ];
+
+    public function bom()
+    {
+        return $this->hasOne(BillOfMaterial::class, 'item_code', 'item_code');
+    }
 }

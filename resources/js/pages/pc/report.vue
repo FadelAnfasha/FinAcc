@@ -6,6 +6,7 @@ import dayjs from 'dayjs';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
+import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import Tab from 'primevue/tab';
 import TabList from 'primevue/tablist';
@@ -14,7 +15,7 @@ import TabPanels from 'primevue/tabpanels';
 import Tabs from 'primevue/tabs';
 import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
-import { computed, ref } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 
 const headerStyle = { backgroundColor: '#758596', color: 'white' };
 const bodyStyle = { backgroundColor: '#c8cccc', color: 'black' };
@@ -119,116 +120,74 @@ function formatlastUpdate(date: Date | string) {
     return dayjs(date).format('DD MMM YYYY HH:mm:ss');
 }
 
-function updateReport(type: 'ctxsq' | 'base' | 'cpp' | 'pc') {
-    if (type == 'ctxsq') {
-        router.post(
-            route('pc.updateCTxSQ'),
-            {},
-            {
-                preserveScroll: true,
-                preserveState: true,
-                onSuccess: () => {
-                    toast.add({
-                        severity: 'success',
-                        summary: 'Success',
-                        group: 'br',
-                        detail: `CT x SQ Report updated successfully`,
-                        life: 3000,
-                    });
-                },
-                onError: () => {
-                    toast.add({
-                        severity: 'warn',
-                        summary: 'Error',
-                        group: 'br',
-                        // detail: `Failed to delete data with ${editedData.value.bp_code} and ${editedData.value.item_code}`,
-                        life: 3000,
-                    });
-                },
+const updateReportDialog = ref(false);
+type UpdateStatus = 'idle' | 'updating' | 'done';
+const updateStatus = ref<UpdateStatus>('idle');
+const userName = computed(() => page.props.auth?.user?.name ?? '');
+const updateType = ref<'ctxsq' | 'base' | 'cpp' | 'pc' | null>(null);
+
+function showUpdateDialog(type: 'ctxsq' | 'base' | 'cpp' | 'pc') {
+    updateType.value = type;
+    updateStatus.value = 'idle';
+    nextTick(() => {
+        updateReportDialog.value = true;
+    });
+}
+
+function confirmUpdate() {
+    if (!updateType.value) return;
+
+    updateStatus.value = 'updating';
+    const type = updateType.value;
+
+    const routes = {
+        ctxsq: 'pc.updateCTxSQ',
+        base: 'pc.updateBaseCost',
+        cpp: 'pc.updateCPP',
+        pc: 'pc.updatePC',
+    };
+
+    const messages = {
+        ctxsq: 'CT x SQ Report',
+        base: 'Base Cost Report',
+        cpp: 'Cost per Process Report',
+        pc: 'Cost per Component Report',
+    };
+
+    router.post(
+        route(routes[type]),
+        {},
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                updateStatus.value = 'done';
+                toast.add({
+                    severity: 'success',
+                    summary: 'Success',
+                    group: 'br',
+                    detail: `${messages[type]} updated successfully`,
+                    life: 3000,
+                });
             },
-        );
-    } else if (type == 'base') {
-        router.post(
-            route('pc.updateBaseCost'),
-            {},
-            {
-                preserveScroll: true,
-                preserveState: true,
-                onSuccess: () => {
-                    toast.add({
-                        severity: 'success',
-                        summary: 'Success',
-                        group: 'br',
-                        detail: `Base Cost Report updated successfully`,
-                        life: 3000,
-                    });
-                },
-                onError: () => {
-                    toast.add({
-                        severity: 'warn',
-                        summary: 'Error',
-                        group: 'br',
-                        // detail: `Failed to delete data with ${editedData.value.bp_code} and ${editedData.value.item_code}`,
-                        life: 3000,
-                    });
-                },
+            onError: () => {
+                updateStatus.value = 'idle';
+                toast.add({
+                    severity: 'warn',
+                    summary: 'Error',
+                    group: 'br',
+                    detail: `Failed to update ${messages[type]}`,
+                    life: 3000,
+                });
             },
-        );
-    } else if (type == 'cpp') {
-        router.post(
-            route('pc.updateCPP'),
-            {},
-            {
-                preserveScroll: true,
-                preserveState: true,
-                onSuccess: () => {
-                    toast.add({
-                        severity: 'success',
-                        summary: 'Success',
-                        group: 'br',
-                        detail: `Cost per Process Report updated successfully`,
-                        life: 3000,
-                    });
-                },
-                onError: () => {
-                    toast.add({
-                        severity: 'warn',
-                        summary: 'Error',
-                        group: 'br',
-                        // detail: `Failed to delete data with ${editedData.value.bp_code} and ${editedData.value.item_code}`,
-                        life: 3000,
-                    });
-                },
-            },
-        );
-    } else if (type == 'pc') {
-        router.post(
-            route('pc.updatePC'),
-            {},
-            {
-                preserveScroll: true,
-                preserveState: true,
-                onSuccess: () => {
-                    toast.add({
-                        severity: 'success',
-                        summary: 'Success',
-                        group: 'br',
-                        detail: `Cost per Process Report updated successfully`,
-                        life: 3000,
-                    });
-                },
-                onError: () => {
-                    toast.add({
-                        severity: 'warn',
-                        summary: 'Error',
-                        group: 'br',
-                        // detail: `Failed to delete data with ${editedData.value.bp_code} and ${editedData.value.item_code}`,
-                        life: 3000,
-                    });
-                },
-            },
-        );
-    }
+        },
+    );
+}
+
+function closeDialog() {
+    updateReportDialog.value = false;
+    updateStatus.value = 'idle';
+    updateType.value = null;
 }
 </script>
 
@@ -251,6 +210,56 @@ function updateReport(type: 'ctxsq' | 'base' | 'cpp' | 'pc') {
                     <hr class="absolute top-1/2 left-0 z-0 w-full -translate-y-1/2 border-gray-300 dark:border-gray-600" />
                 </div>
             </div>
+
+            <Dialog v-model:visible="updateReportDialog" header="Update Confirmation" modal class="w-[30rem]" :closable="false" @hide="closeDialog">
+                <!-- Idle state -->
+                <template v-if="updateStatus === 'idle'">
+                    <div class="space-y-4">
+                        <p>
+                            Hi <span class="text-red-400">{{ userName }}</span
+                            >,
+                        </p>
+                        <p>Are you sure you want to update the report?</p>
+
+                        <div class="flex justify-end gap-3 pt-4">
+                            <Button label="Cancel" icon="pi pi-times" severity="secondary" @click="closeDialog" />
+                            <Button
+                                label="Yes, Update"
+                                icon="pi pi-check"
+                                severity="success"
+                                :loading="updateStatus.value === 'updating'"
+                                @click="confirmUpdate"
+                            />
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Done state -->
+                <template v-else-if="updateStatus === 'done'">
+                    <div class="space-y-4">
+                        <p>
+                            Hi <span class="text-red-400">{{ userName }}</span
+                            >,
+                        </p>
+                        <p>
+                            <strong class="text-green-500">Finished</strong> updating the report.<br />
+                            It’s now safe to close this window.
+                        </p>
+
+                        <div class="flex justify-end pt-4">
+                            <Button label="Close" icon="pi pi-times" @click="closeDialog" />
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Updating state (optional animation) -->
+                <template v-else>
+                    <div class="flex flex-col items-center space-y-4 text-center">
+                        <i class="pi pi-spin pi-spinner text-4xl text-primary" />
+                        <p class="font-medium">Updating report...</p>
+                    </div>
+                </template>
+            </Dialog>
 
             <!-- Process Items Grid -->
             <div class="mx-26 mb-26">
@@ -282,7 +291,7 @@ function updateReport(type: 'ctxsq' | 'base' | 'cpp' | 'pc') {
                                                 label=" Update Report?"
                                                 unstyled
                                                 class="w-28 cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900"
-                                                @click="updateReport('ctxsq')"
+                                                @click="showUpdateDialog('ctxsq')"
                                             />
                                             <Button
                                                 icon="pi pi-download"
@@ -536,7 +545,7 @@ function updateReport(type: 'ctxsq' | 'base' | 'cpp' | 'pc') {
                                                 label=" Update Report?"
                                                 unstyled
                                                 class="w-28 cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900"
-                                                @click="updateReport('base')"
+                                                @click="showUpdateDialog('base')"
                                             />
                                             <Button
                                                 icon="pi pi-download"
@@ -790,7 +799,7 @@ function updateReport(type: 'ctxsq' | 'base' | 'cpp' | 'pc') {
                                                 label=" Update Report?"
                                                 unstyled
                                                 class="w-28 cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900"
-                                                @click="updateReport('cpp')"
+                                                @click="showUpdateDialog('cpp')"
                                             />
                                             <Button
                                                 icon="pi pi-download"
@@ -1044,7 +1053,7 @@ function updateReport(type: 'ctxsq' | 'base' | 'cpp' | 'pc') {
                                                 label=" Update Report?"
                                                 unstyled
                                                 class="w-28 cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900"
-                                                @click="updateReport('pc')"
+                                                @click="showUpdateDialog('pc')"
                                             />
                                             <Button
                                                 icon="pi pi-download"
