@@ -106,7 +106,7 @@ const data = ref({
         </div>
         <template class="flex h-full flex-1 items-center justify-center rounded-xl p-4">
             <div class="card overflow-x-auto">
-                <OrganizationChart :value="data">
+                <OrganizationChart :value="data" layout="horizontal">
                     <template #person="slotProps">
                         <div class="flex flex-col">
                             <div class="flex flex-col items-center">
@@ -119,9 +119,6 @@ const data = ref({
                                 <span>{{ slotProps.node.data.title }}</span>
                             </div>
                         </div>
-                    </template>
-                    <template #default="slotProps">
-                        <span>{{ slotProps.node.label }}</span>
                     </template>
                 </OrganizationChart>
             </div>
