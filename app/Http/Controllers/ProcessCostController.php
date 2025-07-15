@@ -32,23 +32,76 @@ class ProcessCostController extends Controller
         ]);
     }
 
-    public function report()
+    public function report(ReportService $service)
     {
         $ctxsq = CTxSQ::with(['bp', 'item'])->get();
-        $base = BaseCost::with(['bp', 'item'])->take('10')->get();
-        $cpp = costPerProcess::with(['bp', 'item'])->take('10')->get();
+        $base = BaseCost::with(['bp', 'item'])->get();
+        $cpp = costPerProcess::with(['bp', 'item'])->get();
         $pc = ProcessCost::all();
 
+        $NumericFields = [
+            'blanking',
+            'spinDisc',
+            'autoDisc',
+            'manualDisc',
+            'discLathe',
+            'total_disc',
+            'rim1',
+            'rim2',
+            'rim3',
+            'total_rim',
+            'coiler',
+            'forming',
+            'total_sidering',
+            'assy1',
+            'assy2',
+            'machining',
+            'shotPeening',
+            'total_assy',
+            'ced',
+            'topcoat',
+            'total_painting',
+            'packing_dom',
+            'packing_exp',
+            'total_packaging',
+            'total'
+        ];
 
-        // dd($pc);
-        // dd($base);
-        // dd($cpp);
+        $ProCostFields = [
+            'max_of_disc',
+            'max_of_rim',
+            'max_of_sidering',
+            'max_of_assy',
+            'max_of_ced',
+            'max_of_topcoat',
+            'max_of_packaging',
+            'max_of_total',
+        ];
 
-        return Inertia::render("pc/report", [
+        // Hitung total tiap kolom
+        $ctxsqTotals = [];
+        $baseTotals = [];
+        $cppTotals = [];
+        foreach ($NumericFields as $field) {
+            $ctxsqTotals[$field] = $ctxsq->sum($field);
+            $baseTotals[$field] = $base->sum($field);
+            $cppTotals[$field] = $cpp->sum($field);
+        }
+
+        $pcTotals = [];
+        foreach ($ProCostFields as $field) {
+            $pcTotals[$field] = $pc->max($field);
+        }
+
+        return Inertia::render('pc/report', [
             'ctxsq' => $ctxsq,
+            'ctxsqTotal' => $ctxsqTotals,
             'base' => $base,
+            'baseTotal' => $baseTotals,
             'cpp' => $cpp,
-            'processCost' => $pc
+            'cppTotal' => $cppTotals,
+            'processCost' => $pc,
+            'pcTotal' => $pcTotals
         ]);
     }
 
@@ -57,43 +110,37 @@ class ProcessCostController extends Controller
         $ctxsq = $service->calculateCTxSQ();
         CTxSQ::truncate();
 
-        foreach ($ctxsq as $index => $item) {
-            CTxSQ::updateOrCreate(
-                [
-                    'id' => $index,
-                    'bp_code' => $item->bp_code,
-                    'item_code' => $item->item_code,
-                ],
-                [
-                    'blanking' => $item->ctxsq['blanking'] ?? 0,
-                    'spinDisc' => $item->ctxsq['spinDisc'] ?? 0,
-                    'autoDisc' => $item->ctxsq['autoDisc'] ?? 0,
-                    'manualDisc' => $item->ctxsq['manualDisc'] ?? 0,
-                    'discLathe' => $item->ctxsq['discLathe'] ?? 0,
-                    'total_disc' => $item->ctxsq['Total Disc'] ?? 0,
-                    'rim1' => $item->ctxsq['rim1'] ?? 0,
-                    'rim2' => $item->ctxsq['rim2'] ?? 0,
-                    'rim3' => $item->ctxsq['rim3'] ?? 0,
-                    'total_rim' => $item->ctxsq['Total Rim'] ?? 0,
-                    'coiler' => $item->ctxsq['coiler'] ?? 0,
-                    'forming' => $item->ctxsq['forming'] ?? 0,
-                    'total_sidering' => $item->ctxsq['Total Sidering'] ?? 0,
-                    'assy1' => $item->ctxsq['assy1'] ?? 0,
-                    'assy2' => $item->ctxsq['assy2'] ?? 0,
-                    'machining' => $item->ctxsq['machining'] ?? 0,
-                    'shotPeening' => $item->ctxsq['shotPeening'] ?? 0,
-                    'total_assy' => $item->ctxsq['Total Assy'] ?? 0,
-                    'ced' => $item->ctxsq['ced'] ?? 0,
-                    'topcoat' => $item->ctxsq['topcoat'] ?? 0,
-                    'total_painting' => $item->ctxsq['Total Painting'] ?? 0,
-                    'packing_dom' => $item->ctxsq['packing_dom'] ?? 0,
-                    'packing_exp' => $item->ctxsq['packing_exp'] ?? 0,
-                    'total_packaging' => $item->ctxsq['Total Packaging'] ?? 0,
-                    'total' => $item->ctxsq['Total'] ?? 0,
-                ]
-            );
+        foreach ($ctxsq as $item) {
+            CTxSQ::create([
+                'bp_code' => $item->bp_code,
+                'item_code' => $item->item_code,
+                'blanking' => $item->ctxsq['blanking'] ?? 0,
+                'spinDisc' => $item->ctxsq['spinDisc'] ?? 0,
+                'autoDisc' => $item->ctxsq['autoDisc'] ?? 0,
+                'manualDisc' => $item->ctxsq['manualDisc'] ?? 0,
+                'discLathe' => $item->ctxsq['discLathe'] ?? 0,
+                'total_disc' => $item->ctxsq['Total Disc'] ?? 0,
+                'rim1' => $item->ctxsq['rim1'] ?? 0,
+                'rim2' => $item->ctxsq['rim2'] ?? 0,
+                'rim3' => $item->ctxsq['rim3'] ?? 0,
+                'total_rim' => $item->ctxsq['Total Rim'] ?? 0,
+                'coiler' => $item->ctxsq['coiler'] ?? 0,
+                'forming' => $item->ctxsq['forming'] ?? 0,
+                'total_sidering' => $item->ctxsq['Total Sidering'] ?? 0,
+                'assy1' => $item->ctxsq['assy1'] ?? 0,
+                'assy2' => $item->ctxsq['assy2'] ?? 0,
+                'machining' => $item->ctxsq['machining'] ?? 0,
+                'shotPeening' => $item->ctxsq['shotPeening'] ?? 0,
+                'total_assy' => $item->ctxsq['Total Assy'] ?? 0,
+                'ced' => $item->ctxsq['ced'] ?? 0,
+                'topcoat' => $item->ctxsq['topcoat'] ?? 0,
+                'total_painting' => $item->ctxsq['Total Painting'] ?? 0,
+                'packing_dom' => $item->ctxsq['packing_dom'] ?? 0,
+                'packing_exp' => $item->ctxsq['packing_exp'] ?? 0,
+                'total_packaging' => $item->ctxsq['Total Packaging'] ?? 0,
+                'total' => $item->ctxsq['Total'] ?? 0,
+            ]);
         }
-
         redirect()->route('pc.master');
     }
 
@@ -104,13 +151,9 @@ class ProcessCostController extends Controller
 
         BaseCost::truncate();
 
+        dd($base);
         foreach ($base as $index => $item) {
-            BaseCost::updateOrCreate(
-                [
-                    'id' => $index,
-                    'bp_code' => $item->bp_code,
-                    'item_code' => $item->item_code,
-                ],
+            BaseCost::create(
                 [
                     'blanking' => $item->basecost['blanking'] ?? 0,
                     'spinDisc' => $item->basecost['spinDisc'] ?? 0,

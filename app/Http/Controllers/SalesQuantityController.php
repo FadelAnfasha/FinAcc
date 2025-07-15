@@ -80,7 +80,6 @@ class SalesQuantityController extends Controller
         }
         Cache::put('import-progress-sq', 100, now()->addMinutes(5));
 
-
         return redirect()->route('pc.master')->with([
             'success' => 'CSV file imported successfully.',
             'addedItems' => $addedItems,

@@ -781,7 +781,7 @@ function handleDestroy() {
 
                         <p>
                             Import
-                            <strong class="text-green-500">Finish</strong>, it's safe to close window.
+                            <strong class="text-green-500">Finished</strong>, it's safe to close window.
                         </p>
                         <div class="flex justify-end gap-3 pt-4">
                             <Button
@@ -1371,65 +1371,567 @@ function handleDestroy() {
                                     <Column field="size" header="Size" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
                                     <Column field="type" header="Type" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
 
-                                    <Column field="blanking" header="Blanking" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="blanking_eff" header="Blanking Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="blanking" header="Blanking" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.blanking || Number(data.blanking) === 0"> - </template>
+                                            <template v-else>
+                                                {{
+                                                    Number.isInteger(Number(data.blanking))
+                                                        ? Number(data.blanking)
+                                                        : Number(data.blanking).toString().split('.')[1]?.length <= 2
+                                                          ? Number(data.blanking)
+                                                          : (Math.ceil(Number(data.blanking) * 100) / 100).toFixed(2)
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
 
-                                    <Column field="spinDisc" header="Spin Disc" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="spinDisc_eff" header="Spin Disc Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="blanking_eff" header="Blanking Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.blanking_eff || Number(data.blanking_eff) === 0"> 0% </template>
+                                            <template v-else>
+                                                {{
+                                                    (Number(data.blanking_eff) * 100) % 1 === 0
+                                                        ? (Number(data.blanking_eff) * 100).toFixed(0) + '%'
+                                                        : (Number(data.blanking_eff) * 100).toFixed(1) + '%'
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
 
-                                    <Column field="autoDisc" header="Auto Disc" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="autoDisc_eff" header="Auto Disc Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="spinDisc" header="Spinning Disc" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.spinDisc || Number(data.spinDisc) === 0"> - </template>
+                                            <template v-else>
+                                                {{
+                                                    Number.isInteger(Number(data.spinDisc))
+                                                        ? Number(data.spinDisc)
+                                                        : Number(data.spinDisc).toString().split('.')[1]?.length <= 2
+                                                          ? Number(data.spinDisc)
+                                                          : (Math.ceil(Number(data.spinDisc) * 100) / 100).toFixed(2)
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
 
-                                    <Column field="manualDisc" header="Manual Disc" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="manualDisc_eff" header="Manual Disc Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="spinDisc_eff" header="Disc Spinning Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.spinDisc_eff || Number(data.spinDisc_eff) === 0"> 0% </template>
+                                            <template v-else>
+                                                {{
+                                                    (Number(data.spinDisc_eff) * 100) % 1 === 0
+                                                        ? (Number(data.spinDisc_eff) * 100).toFixed(0) + '%'
+                                                        : (Number(data.spinDisc_eff) * 100).toFixed(1) + '%'
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
 
-                                    <Column field="c3_sn" header="C3/SN" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="c3_sn_eff" header="C3/SN Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="autoDisc" header="Disc Auto" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.autoDisc || Number(data.autoDisc) === 0"> - </template>
+                                            <template v-else>
+                                                {{
+                                                    Number.isInteger(Number(data.autoDisc))
+                                                        ? Number(data.autoDisc)
+                                                        : Number(data.autoDisc).toString().split('.')[1]?.length <= 2
+                                                          ? Number(data.autoDisc)
+                                                          : (Math.ceil(Number(data.autoDisc) * 100) / 100).toFixed(2)
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
 
-                                    <Column field="repairC3" header="Repair C3" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="repairC3_eff" header="Repair C3 Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="autoDisc_eff" header="Disc Auto Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.autoDisc_eff || Number(data.autoDisc_eff) === 0"> 0% </template>
+                                            <template v-else>
+                                                {{
+                                                    (Number(data.autoDisc_eff) * 100) % 1 === 0
+                                                        ? (Number(data.autoDisc_eff) * 100).toFixed(0) + '%'
+                                                        : (Number(data.autoDisc_eff) * 100).toFixed(1) + '%'
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
 
-                                    <Column field="discLathe" header="Disc Lathe" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="discLathe_eff" header="Disc Lathe Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="manualDisc" header="Disc Manual" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.manualDisc || Number(data.manualDisc) === 0"> - </template>
+                                            <template v-else>
+                                                {{
+                                                    Number.isInteger(Number(data.manualDisc))
+                                                        ? Number(data.manualDisc)
+                                                        : Number(data.manualDisc).toString().split('.')[1]?.length <= 2
+                                                          ? Number(data.manualDisc)
+                                                          : (Math.ceil(Number(data.manualDisc) * 100) / 100).toFixed(2)
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
 
-                                    <Column field="rim1" header="Rim 1" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="rim1_eff" header="Rim 1 Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="manualDisc_eff" header="Disc Manual Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.manualDisc_eff || Number(data.manualDisc_eff) === 0"> 0% </template>
+                                            <template v-else>
+                                                {{
+                                                    (Number(data.manualDisc_eff) * 100) % 1 === 0
+                                                        ? (Number(data.manualDisc_eff) * 100).toFixed(0) + '%'
+                                                        : (Number(data.manualDisc_eff) * 100).toFixed(1) + '%'
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
 
-                                    <Column field="rim2" header="Rim 2" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="rim2_eff" header="Rim 2 Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="c3_sn" header="C3/SN" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.c3_sn || Number(data.c3_sn) === 0"> - </template>
+                                            <template v-else>
+                                                {{
+                                                    Number.isInteger(Number(data.c3_sn))
+                                                        ? Number(data.c3_sn)
+                                                        : Number(data.c3_sn).toString().split('.')[1]?.length <= 2
+                                                          ? Number(data.c3_sn)
+                                                          : (Math.ceil(Number(data.c3_sn) * 100) / 100).toFixed(2)
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
 
-                                    <Column field="rim2insp" header="Rim 2 Insp." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="rim2insp_eff" header="Rim 2 Insp. Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="c3_sn_eff" header="C3/SN Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.c3_sn_eff || Number(data.c3_sn_eff) === 0"> 0% </template>
+                                            <template v-else>
+                                                {{
+                                                    (Number(data.c3_sn_eff) * 100) % 1 === 0
+                                                        ? (Number(data.c3_sn_eff) * 100).toFixed(0) + '%'
+                                                        : (Number(data.c3_sn_eff) * 100).toFixed(1) + '%'
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
 
-                                    <Column field="rim3" header="Rim 3" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="rim3_eff" header="Rim 3 Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="repairC3" header="Repair C3" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.repairC3 || Number(data.repairC3) === 0"> - </template>
+                                            <template v-else>
+                                                {{
+                                                    Number.isInteger(Number(data.repairC3))
+                                                        ? Number(data.repairC3)
+                                                        : Number(data.repairC3).toString().split('.')[1]?.length <= 2
+                                                          ? Number(data.repairC3)
+                                                          : (Math.ceil(Number(data.repairC3) * 100) / 100).toFixed(2)
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
 
-                                    <Column field="coiler" header="Coiler" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="coiler_eff" header="Coiler Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="repairC3_eff" header="Repair C3 Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.repairC3_eff || Number(data.repairC3_eff) === 0"> 0% </template>
+                                            <template v-else>
+                                                {{
+                                                    (Number(data.repairC3_eff) * 100) % 1 === 0
+                                                        ? (Number(data.repairC3_eff) * 100).toFixed(0) + '%'
+                                                        : (Number(data.repairC3_eff) * 100).toFixed(1) + '%'
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
 
-                                    <Column field="forming" header="Forming" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="forming_eff" header="Forming Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="discLathe" header="Disc Lathe" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.discLathe || Number(data.discLathe) === 0"> - </template>
+                                            <template v-else>
+                                                {{
+                                                    Number.isInteger(Number(data.discLathe))
+                                                        ? Number(data.discLathe)
+                                                        : Number(data.discLathe).toString().split('.')[1]?.length <= 2
+                                                          ? Number(data.discLathe)
+                                                          : (Math.ceil(Number(data.discLathe) * 100) / 100).toFixed(2)
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
 
-                                    <Column field="assy1" header="Assy 1" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="assy1_eff" header="Assy 1 Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="discLathe_eff" header="Disc Lathe Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.discLathe_eff || Number(data.discLathe_eff) === 0"> 0% </template>
+                                            <template v-else>
+                                                {{
+                                                    (Number(data.discLathe_eff) * 100) % 1 === 0
+                                                        ? (Number(data.discLathe_eff) * 100).toFixed(0) + '%'
+                                                        : (Number(data.discLathe_eff) * 100).toFixed(1) + '%'
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
 
-                                    <Column field="assy2" header="Assy 2" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="assy2_eff" header="Assy 2 Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="rim1" header="Rim1 " :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.rim1 || Number(data.rim1) === 0"> - </template>
+                                            <template v-else>
+                                                {{
+                                                    Number.isInteger(Number(data.rim1))
+                                                        ? Number(data.rim1)
+                                                        : Number(data.rim1).toString().split('.')[1]?.length <= 2
+                                                          ? Number(data.rim1)
+                                                          : (Math.ceil(Number(data.rim1) * 100) / 100).toFixed(2)
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
 
-                                    <Column field="machining" header="Machining" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="machining_eff" header="Machining Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="rim1_eff" header="Rim 1 Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.rim1_eff || Number(data.rim1_eff) === 0"> 0% </template>
+                                            <template v-else>
+                                                {{
+                                                    (Number(data.rim1_eff) * 100) % 1 === 0
+                                                        ? (Number(data.rim1_eff) * 100).toFixed(0) + '%'
+                                                        : (Number(data.rim1_eff) * 100).toFixed(1) + '%'
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
 
-                                    <Column field="shotPeening" header="Shotpeening" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="shotPeening_eff" header="Shotpeening Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="rim2" header="Rim 2" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.rim2 || Number(data.rim2) === 0"> - </template>
+                                            <template v-else>
+                                                {{
+                                                    Number.isInteger(Number(data.rim2))
+                                                        ? Number(data.rim2)
+                                                        : Number(data.rim2).toString().split('.')[1]?.length <= 2
+                                                          ? Number(data.rim2)
+                                                          : (Math.ceil(Number(data.rim2) * 100) / 100).toFixed(2)
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
 
-                                    <Column field="ced" header="CED" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="ced_eff" header="CED Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="rim2_eff" header="Rim 2 Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.rim2_eff || Number(data.rim2_eff) === 0"> 0% </template>
+                                            <template v-else>
+                                                {{
+                                                    (Number(data.rim2_eff) * 100) % 1 === 0
+                                                        ? (Number(data.rim2_eff) * 100).toFixed(0) + '%'
+                                                        : (Number(data.rim2_eff) * 100).toFixed(1) + '%'
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
 
-                                    <Column field="topcoat" header="Topcoat" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="topcoat_eff" header="Topcoat Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="rim2insp" header="Rim 2 Insp" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.rim2insp || Number(data.rim2insp) === 0"> - </template>
+                                            <template v-else>
+                                                {{
+                                                    Number.isInteger(Number(data.rim2insp))
+                                                        ? Number(data.rim2insp)
+                                                        : Number(data.rim2insp).toString().split('.')[1]?.length <= 2
+                                                          ? Number(data.rim2insp)
+                                                          : (Math.ceil(Number(data.rim2insp) * 100) / 100).toFixed(2)
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
 
-                                    <Column field="packing_dom" header="Packing DOM" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="packing_exp" header="Packing EXP" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="rim2insp_eff" header="Rim 2 Insp Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.rim2insp_eff || Number(data.rim2insp_eff) === 0"> 0% </template>
+                                            <template v-else>
+                                                {{
+                                                    (Number(data.rim2insp_eff) * 100) % 1 === 0
+                                                        ? (Number(data.rim2insp_eff) * 100).toFixed(0) + '%'
+                                                        : (Number(data.rim2insp_eff) * 100).toFixed(1) + '%'
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="rim3" header="Rim 3" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.rim3 || Number(data.rim3) === 0"> - </template>
+                                            <template v-else>
+                                                {{
+                                                    Number.isInteger(Number(data.rim3))
+                                                        ? Number(data.rim3)
+                                                        : Number(data.rim3).toString().split('.')[1]?.length <= 2
+                                                          ? Number(data.rim3)
+                                                          : (Math.ceil(Number(data.rim3) * 100) / 100).toFixed(2)
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="rim3_eff" header="Rim 3 Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.rim3_eff || Number(data.rim3_eff) === 0"> 0% </template>
+                                            <template v-else>
+                                                {{
+                                                    (Number(data.rim3_eff) * 100) % 1 === 0
+                                                        ? (Number(data.rim3_eff) * 100).toFixed(0) + '%'
+                                                        : (Number(data.rim3_eff) * 100).toFixed(1) + '%'
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="coiler" header="Coiler" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.coiler || Number(data.coiler) === 0"> - </template>
+                                            <template v-else>
+                                                {{
+                                                    Number.isInteger(Number(data.coiler))
+                                                        ? Number(data.coiler)
+                                                        : Number(data.coiler).toString().split('.')[1]?.length <= 2
+                                                          ? Number(data.coiler)
+                                                          : (Math.ceil(Number(data.coiler) * 100) / 100).toFixed(2)
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="coiler_eff" header="Coiler Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.coiler_eff || Number(data.coiler_eff) === 0"> 0% </template>
+                                            <template v-else>
+                                                {{
+                                                    (Number(data.coiler_eff) * 100) % 1 === 0
+                                                        ? (Number(data.coiler_eff) * 100).toFixed(0) + '%'
+                                                        : (Number(data.coiler_eff) * 100).toFixed(1) + '%'
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="forming" header="Forming" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.forming || Number(data.forming) === 0"> - </template>
+                                            <template v-else>
+                                                {{
+                                                    Number.isInteger(Number(data.forming))
+                                                        ? Number(data.forming)
+                                                        : Number(data.forming).toString().split('.')[1]?.length <= 2
+                                                          ? Number(data.forming)
+                                                          : (Math.ceil(Number(data.forming) * 100) / 100).toFixed(2)
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="forming_eff" header="Forming Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.forming_eff || Number(data.forming_eff) === 0"> 0% </template>
+                                            <template v-else>
+                                                {{
+                                                    (Number(data.forming_eff) * 100) % 1 === 0
+                                                        ? (Number(data.forming_eff) * 100).toFixed(0) + '%'
+                                                        : (Number(data.forming_eff) * 100).toFixed(1) + '%'
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="assy1" header="Assy 1" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.assy1 || Number(data.assy1) === 0"> - </template>
+                                            <template v-else>
+                                                {{
+                                                    Number.isInteger(Number(data.assy1))
+                                                        ? Number(data.assy1)
+                                                        : Number(data.assy1).toString().split('.')[1]?.length <= 2
+                                                          ? Number(data.assy1)
+                                                          : (Math.ceil(Number(data.assy1) * 100) / 100).toFixed(2)
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="assy1_eff" header="Assy 1 Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.assy1_eff || Number(data.assy1_eff) === 0"> 0% </template>
+                                            <template v-else>
+                                                {{
+                                                    (Number(data.assy1_eff) * 100) % 1 === 0
+                                                        ? (Number(data.assy1_eff) * 100).toFixed(0) + '%'
+                                                        : (Number(data.assy1_eff) * 100).toFixed(1) + '%'
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="assy2" header="Assy 2" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.assy2 || Number(data.assy2) === 0"> - </template>
+                                            <template v-else>
+                                                {{
+                                                    Number.isInteger(Number(data.assy2))
+                                                        ? Number(data.assy2)
+                                                        : Number(data.assy2).toString().split('.')[1]?.length <= 2
+                                                          ? Number(data.assy2)
+                                                          : (Math.ceil(Number(data.assy2) * 100) / 100).toFixed(2)
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="assy2_eff" header="Assy 2 Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.assy2_eff || Number(data.assy2_eff) === 0"> 0% </template>
+                                            <template v-else>
+                                                {{
+                                                    (Number(data.assy2_eff) * 100) % 1 === 0
+                                                        ? (Number(data.assy2_eff) * 100).toFixed(0) + '%'
+                                                        : (Number(data.assy2_eff) * 100).toFixed(1) + '%'
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="machining" header="Machining" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.machining || Number(data.machining) === 0"> - </template>
+                                            <template v-else>
+                                                {{
+                                                    Number.isInteger(Number(data.machining))
+                                                        ? Number(data.machining)
+                                                        : Number(data.machining).toString().split('.')[1]?.length <= 2
+                                                          ? Number(data.machining)
+                                                          : (Math.ceil(Number(data.machining) * 100) / 100).toFixed(2)
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="machining_eff" header="Machining Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.machining_eff || Number(data.machining_eff) === 0"> 0% </template>
+                                            <template v-else>
+                                                {{
+                                                    (Number(data.machining_eff) * 100) % 1 === 0
+                                                        ? (Number(data.machining_eff) * 100).toFixed(0) + '%'
+                                                        : (Number(data.machining_eff) * 100).toFixed(1) + '%'
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="shotPeening" header="Shotpeening" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.shotPeening || Number(data.shotPeening) === 0"> - </template>
+                                            <template v-else>
+                                                {{
+                                                    Number.isInteger(Number(data.shotPeening))
+                                                        ? Number(data.shotPeening)
+                                                        : Number(data.shotPeening).toString().split('.')[1]?.length <= 2
+                                                          ? Number(data.shotPeening)
+                                                          : (Math.ceil(Number(data.shotPeening) * 100) / 100).toFixed(2)
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="shotPeening_eff" header="Shotpeening Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.shotPeening_eff || Number(data.shotPeening_eff) === 0"> 0% </template>
+                                            <template v-else>
+                                                {{
+                                                    (Number(data.shotPeening_eff) * 100) % 1 === 0
+                                                        ? (Number(data.shotPeening_eff) * 100).toFixed(0) + '%'
+                                                        : (Number(data.shotPeening_eff) * 100).toFixed(1) + '%'
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="ced" header="CED" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.ced || Number(data.ced) === 0"> - </template>
+                                            <template v-else>
+                                                {{
+                                                    Number.isInteger(Number(data.ced))
+                                                        ? Number(data.ced)
+                                                        : Number(data.ced).toString().split('.')[1]?.length <= 2
+                                                          ? Number(data.ced)
+                                                          : (Math.ceil(Number(data.ced) * 100) / 100).toFixed(2)
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="ced_eff" header="CED Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.ced_eff || Number(data.ced_eff) === 0"> 0% </template>
+                                            <template v-else>
+                                                {{
+                                                    (Number(data.ced_eff) * 100) % 1 === 0
+                                                        ? (Number(data.ced_eff) * 100).toFixed(0) + '%'
+                                                        : (Number(data.ced_eff) * 100).toFixed(1) + '%'
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="topcoat" header="Topcoat" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.topcoat || Number(data.topcoat) === 0"> - </template>
+                                            <template v-else>
+                                                {{
+                                                    Number.isInteger(Number(data.topcoat))
+                                                        ? Number(data.topcoat)
+                                                        : Number(data.topcoat).toString().split('.')[1]?.length <= 2
+                                                          ? Number(data.topcoat)
+                                                          : (Math.ceil(Number(data.topcoat) * 100) / 100).toFixed(2)
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="topcoat_eff" header="Topcoat Eff." :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.topcoat_eff || Number(data.topcoat_eff) === 0"> 0% </template>
+                                            <template v-else>
+                                                {{
+                                                    (Number(data.topcoat_eff) * 100) % 1 === 0
+                                                        ? (Number(data.topcoat_eff) * 100).toFixed(0) + '%'
+                                                        : (Number(data.topcoat_eff) * 100).toFixed(1) + '%'
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="packing_dom" header="Packing Domestic" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.packing_dom || Number(data.packing_dom) === 0"> - </template>
+                                            <template v-else>
+                                                {{
+                                                    Number.isInteger(Number(data.packing_dom))
+                                                        ? Number(data.packing_dom)
+                                                        : Number(data.packing_dom).toString().split('.')[1]?.length <= 2
+                                                          ? Number(data.packing_dom)
+                                                          : (Math.ceil(Number(data.packing_dom) * 100) / 100).toFixed(2)
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="packing_exp" header="Packing Export" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            <template v-if="!data.packing_exp || Number(data.packing_exp) === 0"> - </template>
+                                            <template v-else>
+                                                {{
+                                                    Number.isInteger(Number(data.packing_exp))
+                                                        ? Number(data.packing_exp)
+                                                        : Number(data.packing_exp).toString().split('.')[1]?.length <= 2
+                                                          ? Number(data.packing_exp)
+                                                          : (Math.ceil(Number(data.packing_exp) * 100) / 100).toFixed(2)
+                                                }}
+                                            </template>
+                                        </template>
+                                    </Column>
 
                                     <Column field="created_at_formatted" sortable header="Added at" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="slotProps">
@@ -1549,7 +2051,11 @@ function handleDestroy() {
                                         </template>
                                     </Column>
 
-                                    <Column field="item.type" sortable header="Type" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
+                                    <Column field="item.type" sortable header="Type" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ data.item?.type ? data.item.type : '-' }}
+                                        </template>
+                                    </Column>
 
                                     <Column field="quantity" sortable header="Quantity" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
                                     <Column field="created_at_formatted" sortable header="Added at" :headerStyle="headerStyle" :bodyStyle="bodyStyle">

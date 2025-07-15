@@ -213,10 +213,10 @@ const resetForm = () => {
     <Head title="RFS" />
     <AppLayout>
         <!-- Data Table Section -->
-        <section ref="dataSection" class="mx-24 my-8 scroll-mt-8">
-            <div class="mb-8 flex items-center justify-between">
-                <div class="flex flex-col gap-1">
-                    <h2 class="mb-2 text-start text-3xl font-bold text-gray-900 dark:text-white">Request Data</h2>
+        <section ref="dataSection" class="mb-4 scroll-mt-8 p-6">
+            <div class="mb-4 flex items-center justify-between">
+                <div class="flex flex-col">
+                    <h2 class="text-start text-3xl font-bold text-gray-900 dark:text-white">Request Data</h2>
                     <p class="text-start text-gray-600 dark:text-gray-400">Display all request, create request, and approving request.</p>
                 </div>
                 <Button

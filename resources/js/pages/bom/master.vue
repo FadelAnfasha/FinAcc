@@ -761,7 +761,7 @@ const formatCurrency = (value: number) => {
                                 {{ index + 1 }}
                             </template>
                         </Column>
-                        <Column field="item_code" header="Item Code" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="item_code" header="Item Code" style="white-space: nowrap" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
                         <Column field="description" header="Description" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
                         <Column field="uom" header="Unit of Material" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
                         <Column field="quantity" header="Quantity" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />

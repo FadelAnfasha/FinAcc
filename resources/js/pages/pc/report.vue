@@ -40,6 +40,36 @@ const ctxsq = computed(() =>
     })),
 );
 
+interface Total {
+    blanking: number;
+    spinDisc: number;
+    autoDisc: number;
+    manualDisc: number;
+    discLathe: number;
+    total_disc: number;
+    rim1: number;
+    rim2: number;
+    rim3: number;
+    total_rim: number;
+    coiler: number;
+    forming: number;
+    total_sidering: number;
+    assy1: number;
+    assy2: number;
+    machining: number;
+    shotPeening: number;
+    total_assy: number;
+    ced: number;
+    topcoat: number;
+    total_painting: number;
+    packing_dom: number;
+    packing_exp: number;
+    total_packaging: number;
+    total: number;
+}
+
+const ctxsqTotal = computed(() => page.props.ctxsqTotal as Total);
+
 const base = computed(() =>
     (page.props.base as any[]).map((base, index) => ({
         ...base,
@@ -47,12 +77,15 @@ const base = computed(() =>
     })),
 );
 
+const baseTotal = computed(() => page.props.baseTotal as Total);
+
 const cpp = computed(() =>
     (page.props.cpp as any[]).map((cpp, index) => ({
         ...cpp,
         no: index + 1,
     })),
 );
+const cppTotal = computed(() => page.props.cppTotal as Total);
 
 const pc = computed(() =>
     (page.props.processCost as any[]).map((pc, index) => ({
@@ -68,6 +101,21 @@ const pc = computed(() =>
         max_of_total: pc.max_of_total, // ← perbaikan di sini
     })),
 );
+
+interface pcTotal {
+    max_of_disc: number;
+    max_of_rim: number;
+    max_of_sidering: number;
+    max_of_assy: number;
+    max_of_ced: number;
+    max_of_topcoat: number;
+    max_of_packaging: number;
+    max_of_total: number;
+}
+
+const pcTotal = computed(() => page.props.pcTotal as pcTotal);
+
+const isUpdating = computed(() => updateStatus.value === 'updating');
 
 function exportCSV(type: 'ctxsq' | 'base' | 'cpp' | 'pc') {
     let $type = null;
@@ -223,13 +271,7 @@ function closeDialog() {
 
                         <div class="flex justify-end gap-3 pt-4">
                             <Button label="Cancel" icon="pi pi-times" severity="secondary" @click="closeDialog" />
-                            <Button
-                                label="Yes, Update"
-                                icon="pi pi-check"
-                                severity="success"
-                                :loading="updateStatus.value === 'updating'"
-                                @click="confirmUpdate"
-                            />
+                            <Button label="Yes, Update" icon="pi pi-check" severity="success" :loading="isUpdating" @click="confirmUpdate" />
                         </div>
                     </div>
                 </template>
@@ -265,8 +307,8 @@ function closeDialog() {
             <div class="mx-26 mb-26">
                 <Tabs value="0">
                     <TabList>
-                        <Tab value="0">Cycle Time x Sales Quantity</Tab>
-                        <Tab value="1">Base Cost</Tab>
+                        <Tab value="0">Activity Quantity</Tab>
+                        <Tab value="1">Convertion Cost</Tab>
                         <Tab value="2">Cost per Process</Tab>
                         <Tab value="3">Process Cost</Tab>
                     </TabList>
@@ -319,6 +361,7 @@ function closeDialog() {
                                     :loading="loading"
                                     :globalFilterFields="['bp_code', 'item_code']"
                                     ref="dtCTXSQ"
+                                    showFooter
                                 >
                                     <Column field="no" sortable header="No" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
 
@@ -340,7 +383,7 @@ function closeDialog() {
 
                                     <Column field="bp_name" header="BP Name" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
-                                            {{ data.bp.bp_name.length > 20 ? data.bp.bp_name.slice(0, 20) + '…' : data.bp_name }}
+                                            {{ data.bp?.bp_name?.length > 20 ? data.bp.bp_name.slice(0, 20) + '…' : data.bp?.bp_name || '-' }}
                                         </template>
                                     </Column>
 
@@ -361,15 +404,24 @@ function closeDialog() {
                                         </template>
                                     </Column>
 
-                                    <Column field="type" header="Type" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="type" sortable header="Type" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
-                                            {{ data.item.type.length > 20 ? data.item.type.slice(0, 20) + '…' : data.type }}
+                                            {{
+                                                data.item?.type
+                                                    ? data.item.type.length > 20
+                                                        ? data.item.type.slice(0, 20) + '…'
+                                                        : data.item.type
+                                                    : '-'
+                                            }}
                                         </template>
                                     </Column>
 
-                                    <Column field="blanking" sortable header="Blanking" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="blanking" header="Blanking" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.blanking).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ ctxsqTotal ? Number(ctxsqTotal.blanking).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -377,11 +429,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.spinDisc).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ ctxsqTotal ? Number(ctxsqTotal.spinDisc).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="autoDisc" sortable header="Auto Disc" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.autoDisc).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ ctxsqTotal ? Number(ctxsqTotal.autoDisc).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -389,11 +447,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.manualDisc).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ ctxsqTotal ? Number(ctxsqTotal.manualDisc).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="discLathe" sortable header="Disc Lathe" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.discLathe).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ ctxsqTotal ? Number(ctxsqTotal.discLathe).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -401,11 +465,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.total_disc).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ ctxsqTotal ? Number(ctxsqTotal.total_disc).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="rim1" sortable header="Rim 1" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.rim1).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ ctxsqTotal ? Number(ctxsqTotal.rim1).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -413,11 +483,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.rim2).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ ctxsqTotal ? Number(ctxsqTotal.rim2).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="rim3" sortable header="Rim 3" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.rim3).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ ctxsqTotal ? Number(ctxsqTotal.rim3).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -425,11 +501,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.total_rim).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ ctxsqTotal ? Number(ctxsqTotal.total_rim).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="coiler" sortable header="Coiler" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.coiler).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ ctxsqTotal ? Number(ctxsqTotal.coiler).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -437,11 +519,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.forming).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ ctxsqTotal ? Number(ctxsqTotal.forming).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="total_sidering" sortable header="Total Sidering" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.total_sidering).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ ctxsqTotal ? Number(ctxsqTotal.total_sidering).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -449,11 +537,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.assy1).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ ctxsqTotal ? Number(ctxsqTotal.assy1).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="assy2" sortable header="Assy 2" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.assy2).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ ctxsqTotal ? Number(ctxsqTotal.assy2).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -461,11 +555,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.machining).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ ctxsqTotal ? Number(ctxsqTotal.machining).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="shotPeening" sortable header="Shotpeening" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.shotPeening).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ ctxsqTotal ? Number(ctxsqTotal.shotPeening).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -473,11 +573,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.total_assy).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ ctxsqTotal ? Number(ctxsqTotal.total_assy).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="ced" sortable header="CED" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.ced).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ ctxsqTotal ? Number(ctxsqTotal.ced).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -485,11 +591,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.topcoat).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ ctxsqTotal ? Number(ctxsqTotal.topcoat).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="total_painting" sortable header="Total Painting" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.total_painting).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ ctxsqTotal ? Number(ctxsqTotal.total_painting).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -497,11 +609,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.packing_dom).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ ctxsqTotal ? Number(ctxsqTotal.packing_dom).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="packing_exp" sortable header="Packing Export" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.packing_exp).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ ctxsqTotal ? Number(ctxsqTotal.packing_exp).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -515,11 +633,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.total_packaging).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ ctxsqTotal ? Number(ctxsqTotal.total_packaging).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="total" sortable header="Total" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.total).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ ctxsqTotal ? Number(ctxsqTotal.total).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
                                 </DataTable>
@@ -529,7 +653,7 @@ function closeDialog() {
                         <TabPanel value="1">
                             <section ref="baseSection" class="p-2">
                                 <div class="mb-4 flex items-center justify-between">
-                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Base Cost</h2>
+                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Convertion Cost / Product</h2>
                                     <div class="flex gap-4">
                                         <div>
                                             <div class="flex flex-col items-center gap-3">
@@ -625,11 +749,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.blanking).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ baseTotal ? Number(baseTotal.blanking).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="spinDisc" sortable header="Spinning Disc" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.spinDisc).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ baseTotal ? Number(baseTotal.spinDisc).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -637,11 +767,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.autoDisc).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ baseTotal ? Number(baseTotal.autoDisc).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="manualDisc" sortable header="Manual Disc" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.manualDisc).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ baseTotal ? Number(baseTotal.manualDisc).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -649,11 +785,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.discLathe).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ baseTotal ? Number(baseTotal.discLathe).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="total_disc" sortable header="Total Disc" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.total_disc).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ baseTotal ? Number(baseTotal.total_disc).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -661,11 +803,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.rim1).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ baseTotal ? Number(baseTotal.rim1).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="rim2" sortable header="Rim 2" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.rim2).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ baseTotal ? Number(baseTotal.rim2).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -673,11 +821,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.rim3).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ baseTotal ? Number(baseTotal.rim3).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="total_rim" sortable header="Total Rim" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.total_rim).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ baseTotal ? Number(baseTotal.total_rim).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -685,11 +839,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.coiler).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ baseTotal ? Number(baseTotal.coiler).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="forming" sortable header="Forming" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.forming).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ baseTotal ? Number(baseTotal.forming).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -697,11 +857,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.total_sidering).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ baseTotal ? Number(baseTotal.total_sidering).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="assy1" sortable header="Assy 1" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.assy1).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ baseTotal ? Number(baseTotal.assy1).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -709,11 +875,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.assy2).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ baseTotal ? Number(baseTotal.assy2).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="machining" sortable header="Machining" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.machining).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ baseTotal ? Number(baseTotal.machining).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -721,11 +893,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.shotPeening).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ baseTotal ? Number(baseTotal.shotPeening).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="total_assy" sortable header="Total Assy" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.total_assy).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ baseTotal ? Number(baseTotal.total_assy).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -733,11 +911,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.ced).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ baseTotal ? Number(baseTotal.ced).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="topcoat" sortable header="Topcoat" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.topcoat).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ baseTotal ? Number(baseTotal.topcoat).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -745,17 +929,26 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.total_painting).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ baseTotal ? Number(baseTotal.total_painting).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="packing_dom" sortable header="Packing Domestic" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.packing_dom).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ baseTotal ? Number(baseTotal.packing_dom).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="packing_exp" sortable header="Packing Export" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.packing_exp).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ baseTotal ? Number(baseTotal.packing_exp).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -769,11 +962,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.total_packaging).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ baseTotal ? Number(baseTotal.total_packaging).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="total" sortable header="Total" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.total).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ baseTotal ? Number(baseTotal.total).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
                                 </DataTable>
@@ -783,7 +982,7 @@ function closeDialog() {
                         <TabPanel value="2">
                             <section ref="cppSection" class="p-2">
                                 <div class="mb-4 flex items-center justify-between">
-                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Cost per Process</h2>
+                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Total Convertion Cost / Unit</h2>
                                     <div class="flex gap-4">
                                         <div>
                                             <div class="flex flex-col items-center gap-3">
@@ -879,11 +1078,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.blanking).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ cppTotal ? Number(cppTotal.blanking).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="spinDisc" sortable header="Spinning Disc" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.spinDisc).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ cppTotal ? Number(cppTotal.spinDisc).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -891,11 +1096,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.autoDisc).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ cppTotal ? Number(cppTotal.autoDisc).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="manualDisc" sortable header="Manual Disc" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.manualDisc).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ cppTotal ? Number(cppTotal.manualDisc).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -903,11 +1114,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.discLathe).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ cppTotal ? Number(cppTotal.discLathe).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="total_disc" sortable header="Total Disc" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.total_disc).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ cppTotal ? Number(cppTotal.total_disc).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -915,11 +1132,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.rim1).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ cppTotal ? Number(cppTotal.rim1).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="rim2" sortable header="Rim 2" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.rim2).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ cppTotal ? Number(cppTotal.rim2).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -927,11 +1150,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.rim3).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ cppTotal ? Number(cppTotal.rim3).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="total_rim" sortable header="Total Rim" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.total_rim).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ cppTotal ? Number(cppTotal.total_rim).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -939,11 +1168,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.coiler).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ cppTotal ? Number(cppTotal.coiler).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="forming" sortable header="Forming" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.forming).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ cppTotal ? Number(cppTotal.forming).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -951,11 +1186,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.total_sidering).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ cppTotal ? Number(cppTotal.total_sidering).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="assy1" sortable header="Assy 1" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.assy1).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ cppTotal ? Number(cppTotal.assy1).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -963,11 +1204,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.assy2).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ cppTotal ? Number(cppTotal.assy2).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="machining" sortable header="Machining" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.machining).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ cppTotal ? Number(cppTotal.machining).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -975,11 +1222,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.shotPeening).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ cppTotal ? Number(cppTotal.shotPeening).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="total_assy" sortable header="Total Assy" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.total_assy).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ cppTotal ? Number(cppTotal.total_assy).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -987,11 +1240,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.ced).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ cppTotal ? Number(cppTotal.ced).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="topcoat" sortable header="Topcoat" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.topcoat).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ cppTotal ? Number(cppTotal.topcoat).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -999,17 +1258,26 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.total_painting).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ cppTotal ? Number(cppTotal.total_painting).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="packing_dom" sortable header="Packing Domestic" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.packing_dom).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ cppTotal ? Number(cppTotal.packing_dom).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="packing_exp" sortable header="Packing Export" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.packing_exp).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ cppTotal ? Number(cppTotal.packing_exp).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -1023,11 +1291,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.total_packaging).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ cppTotal ? Number(cppTotal.total_packaging).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="total" sortable header="Total" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.total).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ cppTotal ? Number(cppTotal.total).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
                                 </DataTable>
@@ -1037,7 +1311,7 @@ function closeDialog() {
                         <TabPanel value="3">
                             <section ref="processCost" class="p-2">
                                 <div class="mb-4 flex items-center justify-between">
-                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Process Cost</h2>
+                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Process Cost / Product</h2>
                                     <div class="flex gap-4">
                                         <div>
                                             <div class="flex flex-col items-center gap-3">
@@ -1104,11 +1378,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.max_of_disc).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ pcTotal ? Number(pcTotal.max_of_disc).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="max_of_rim" sortable header="Max of Rim" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.max_of_rim).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ pcTotal ? Number(pcTotal.max_of_rim).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -1122,11 +1402,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.max_of_sidering).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ pcTotal ? Number(pcTotal.max_of_sidering).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="max_of_assy" sortable header="Max of Assy" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.max_of_assy).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ pcTotal ? Number(pcTotal.max_of_assy).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -1134,11 +1420,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.max_of_ced).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ pcTotal ? Number(pcTotal.max_of_ced).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="max_of_topcoat" sortable header="Max of Topcoat" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.max_of_topcoat).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ pcTotal ? Number(pcTotal.max_of_topcoat).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
 
@@ -1152,11 +1444,17 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             {{ Number(data.max_of_packaging).toLocaleString('id-ID') }}
                                         </template>
+                                        <template #footer>
+                                            <strong>{{ pcTotal ? Number(pcTotal.max_of_packaging).toLocaleString('id-ID') : '-' }}</strong>
+                                        </template>
                                     </Column>
 
                                     <Column field="max_of_total" sortable header="Max of Total" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.max_of_total).toLocaleString('id-ID') }}
+                                        </template>
+                                        <template #footer>
+                                            <strong>{{ pcTotal ? Number(pcTotal.max_of_total).toLocaleString('id-ID') : '-' }}</strong>
                                         </template>
                                     </Column>
                                 </DataTable>

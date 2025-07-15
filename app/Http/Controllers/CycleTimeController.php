@@ -34,7 +34,7 @@ class CycleTimeController extends Controller
             $itemCode = trim($row[0]);
             $codeCounts[$itemCode] = ($codeCounts[$itemCode] ?? 0) + 1;
         }
-
+        CycleTime::query()->delete();
         foreach ($csvData as $index => $row) {
             $itemCode = trim($row[0]);
 

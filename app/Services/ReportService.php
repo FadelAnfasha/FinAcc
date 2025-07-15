@@ -72,8 +72,9 @@ class ReportService
 
             foreach ($this->processes as $proc) {
                 $field = str_replace(['/', ' '], '', $proc);
-                $value = optional($data->item)->{$field} * $data->quantity;
-                $calc[$proc] = ceil($value * 100) / 100; // dibulatkan ke atas 2 angka desimal
+                $cycleTime = optional($data->item)->{$field};
+                $value = $cycleTime * $data->quantity;
+                $calc[$proc] = $value;
             }
 
 
@@ -99,6 +100,7 @@ class ReportService
         $totals = [];
         foreach ($this->processes as $proc) {
             $totals[$proc] = $ctxsqData->sum(fn($item) => $item->ctxsq[$proc] ?? 0);
+            // dump("Process :  $proc", 'Totals : ', $totals);
         }
 
         return $ctxsqData->map(function ($item) use ($totals, $wages) {
@@ -109,10 +111,19 @@ class ReportService
                 $total = $totals[$proc] ?: 1;
                 $weight = $wages->{$proc} ?? 0;
                 $raw = ($value / $total) * $weight;
-                $base[$proc] = ceil($raw * 100) / 100;
+                $base[$proc] = $raw;
+
+                // if ($item->item_code === 'F16W08') {
+                //     dump("PROC: $proc", [
+                //         'value' => $value,
+                //         'total' => $total,
+                //         'weight' => $weight,
+                //         'raw' => $raw,
+                //         'base' => $base[$proc],
+                //     ]);
+                // }
                 // dump($proc,$value, $total, $weight, $raw, $base);
             }
-
 
             foreach ($this->groupings as $group => $members) {
                 $groupSum = array_sum(array_map(fn($p) => $base[$p] ?? 0, $members));
@@ -128,6 +139,7 @@ class ReportService
             ];
         });
     }
+
 
     public function calculateCostPerProcess($baseCostData)
     {
