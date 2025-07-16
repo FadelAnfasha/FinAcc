@@ -9,8 +9,8 @@ export interface Auth {
 export interface NavItem {
     key?: string; // 👈 ditambahkan agar bisa dipakai PrimeVue Tree
     title: string;
-    href: string | null;
-    icon: string;
+    href: string;
+    icon: any | null;
     isActive?: boolean;
     onlyFor?: string[]; // 👈 role access
     children?: NavItem[]; // 👈 submenu

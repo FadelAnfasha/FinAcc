@@ -549,7 +549,7 @@ function closeDialog() {
                                         </template>
                                     </Column>
 
-                                    <Column field="pack_price" sortable header="Price" v-bind="tbStyle('pr')">
+                                    <Column field="pack_price" sortable header="Packing Price" v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
                                             {{ Number(data.pack_price).toLocaleString('id-ID') }}
                                         </template>

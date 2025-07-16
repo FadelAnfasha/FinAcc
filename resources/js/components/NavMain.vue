@@ -29,8 +29,8 @@ function isExpanded(key: string) {
 </script>
 
 <template>
-    <SidebarGroup class="px-2 py-0">
-        <SidebarGroupLabel>Menu</SidebarGroupLabel>
+    <SidebarGroup>
+        <SidebarGroupLabel class="my-4">Menu</SidebarGroupLabel>
         <SidebarMenu>
             <template v-for="item in items" :key="item.key">
                 <!-- Parent menu (with children) -->

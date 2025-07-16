@@ -151,10 +151,11 @@ class ProcessCostController extends Controller
 
         BaseCost::truncate();
 
-        dd($base);
         foreach ($base as $index => $item) {
             BaseCost::create(
                 [
+                    'bp_code' => $item->bp_code,
+                    'item_code' => $item->item_code,
                     'blanking' => $item->basecost['blanking'] ?? 0,
                     'spinDisc' => $item->basecost['spinDisc'] ?? 0,
                     'autoDisc' => $item->basecost['autoDisc'] ?? 0,

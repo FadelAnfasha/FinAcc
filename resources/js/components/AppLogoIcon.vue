@@ -13,5 +13,5 @@ defineProps<Props>();
 </script>
 
 <template>
-    <img src="/finacc/storage/images/finacc.png" alt="Logo" class="h-10 w-auto" />
+    <img src="/finacc/storage/images/topy.png" alt="Logo" class="h-30 w-full object-contain" />
 </template>

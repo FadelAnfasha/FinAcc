@@ -1061,10 +1061,10 @@ const formatCurrency = (value: number) => {
                 <Tabs value="0">
                     <TabList>
                         <Tab value="0">Material</Tab>
-                        <Tab value="1">Packing</Tab>
-                        <Tab value="2">Valve</Tab>
+                        <!-- <Tab value="1">Packing</Tab> -->
+                        <Tab value="1">Valve</Tab>
                         <!-- <Tab value="3">Process</Tab> -->
-                        <Tab value="3">Bill of Material</Tab>
+                        <Tab value="2">Bill of Material</Tab>
                     </TabList>
 
                     <!-- Process Items Grid -->
@@ -1193,7 +1193,7 @@ const formatCurrency = (value: number) => {
                                 </DataTable>
                             </section>
                         </TabPanel>
-
+                        <!-- 
                         <TabPanel value="1">
                             <section ref="packSection" class="p-2">
                                 <div class="mb-4 flex items-center justify-between">
@@ -1307,9 +1307,9 @@ const formatCurrency = (value: number) => {
                                     ></Column>
                                 </DataTable>
                             </section>
-                        </TabPanel>
+                        </TabPanel> -->
 
-                        <TabPanel value="2">
+                        <TabPanel value="1">
                             <section ref="packSection" class="p-2">
                                 <div class="mb-4 flex items-center justify-between">
                                     <h2 class="text-3xl font-semibold hover:text-indigo-500">Valve Price</h2>
@@ -1558,7 +1558,7 @@ const formatCurrency = (value: number) => {
                             </section>
                         </TabPanel> -->
 
-                        <TabPanel value="3">
+                        <TabPanel value="2">
                             <section ref="bomSection" class="p-2">
                                 <div class="mb-4 flex items-center justify-between">
                                     <h2 class="text-3xl font-semibold hover:text-indigo-500">Bill of Material</h2>

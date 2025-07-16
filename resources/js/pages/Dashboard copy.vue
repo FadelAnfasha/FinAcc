@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { mainNavItems } from '@/constants/nav'; // ✅ Ambil dari constants
+import CustomPersonNode from '@/components/CustomPersonNode.vue';
+import { mainNavItems } from '@/constants/nav';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, usePage } from '@inertiajs/vue3';
-import OrganizationChart from 'primevue/organizationchart';
-import { ref } from 'vue';
+import { Position, VueFlow } from '@vue-flow/core';
+import { shallowRef } from 'vue';
+// Import CSS Vue Flow
+import '@vue-flow/core/dist/style.css';
+import '@vue-flow/core/dist/theme-default.css';
 
 const page = usePage();
 const currentPath = new URL(page.props.ziggy.location).pathname;
@@ -16,110 +20,164 @@ const breadcrumbs: BreadcrumbItem[] = mainNavItems
         href: item.href,
     }));
 
-const data = ref({
-    key: '0',
-    type: 'person',
-    styleClass: 'rounded-xl w-3xs !bg-slate-500',
-    data: {
-        image: '/storage/profilepic/Tuti.png',
-        name: 'Tuti Pustikasari',
-        title: 'Finance Director',
-    },
-    children: [
-        {
-            key: '0_0',
-            type: 'person',
-            styleClass: '!bg-slate-500 text-white rounded-xl w-3xs',
-            data: {
-                image: '/storage/profilepic/Matsuyama.png',
-                name: 'Akinori Matsuyama',
-                title: 'Deputy Division',
-            },
-            children: [
-                {
-                    key: '0_0_0',
-                    type: 'person',
-                    styleClass: '!bg-slate-500 text-white rounded-xl w-3xs',
-                    data: {
-                        image: '/storage/profilepic/Inge.png',
-                        name: 'Inge William',
-                        title: 'Deputy Department',
-                    },
-                    children: [
-                        {
-                            key: '0_0_0_0',
-                            type: 'person',
-                            styleClass: '!bg-slate-500 text-white rounded-xl w-3xs',
-                            data: {
-                                image: '/storage/profilepic/Rudi.png',
-                                name: 'Rudi Juniarto',
-                                title: 'Staff',
-                            },
-                        },
-                        {
-                            key: '0_0_0_1',
-                            type: 'person',
-                            styleClass: '!bg-slate-500 text-white rounded-xl w-3xs',
-                            data: {
-                                image: '/storage/profilepic/Setyaningsih.png',
-                                name: 'Setyaningsih',
-                                title: 'Staff',
-                            },
-                        },
-                        {
-                            key: '0_0_0_2',
-                            type: 'person',
-                            styleClass: '!bg-slate-500 text-white rounded-xl w-3xs',
-                            data: {
-                                image: '/storage/profilepic/Ayu.png',
-                                name: 'Ayu Lestari',
-                                title: 'Staff',
-                            },
-                        },
-                        {
-                            key: '0_0_0_3',
-                            type: 'person',
-                            styleClass: '!bg-slate-500 text-white rounded-xl w-3xs',
-                            data: {
-                                image: '/storage/profilepic/Fadel.png',
-                                name: 'Fadel Anfasha Putra',
-                                title: 'Staff',
-                            },
-                        },
-                    ],
-                },
-            ],
+const customNodeTypes = {
+    customPerson: shallowRef(CustomPersonNode),
+};
+
+const nodes = [
+    {
+        id: '1',
+        type: 'customPerson',
+        position: { x: 100, y: 300 },
+        sourcePosition: Position.Right,
+        targetPosition: Position.Left,
+        data: {
+            name: 'Tuti Pustikasari',
+            title: 'Finance Director',
+            npk: '140025',
+            image: '/storage/profilepic/Tuti.png',
         },
-    ],
-});
+    },
+    {
+        id: '2',
+        type: 'customPerson',
+        position: { x: 400, y: 300 },
+        sourcePosition: Position.Right,
+        targetPosition: Position.Left,
+        data: {
+            name: 'Akinori Matsuyama',
+            title: 'Deputy Division',
+            npk: '240458',
+            image: '/storage/profilepic/Matsuyama.png',
+        },
+    },
+    {
+        id: '3',
+        type: 'customPerson',
+        position: { x: 700, y: 300 },
+        sourcePosition: Position.Right,
+        targetPosition: Position.Left,
+        data: {
+            name: 'Inge William',
+            title: 'Deputy Department',
+            npk: '100101',
+            image: '/storage/profilepic/Inge.png',
+        },
+    },
+    {
+        id: '4',
+        type: 'customPerson',
+        position: { x: 1000, y: 0 },
+        sourcePosition: Position.Right,
+        targetPosition: Position.Left,
+        data: {
+            name: 'Rudi Juniarto',
+            title: 'Staff',
+            npk: '140023',
+            image: '/storage/profilepic/Rudi.png',
+        },
+    },
+    {
+        id: '5',
+        type: 'customPerson',
+        position: { x: 1000, y: 200 },
+        sourcePosition: Position.Right,
+        targetPosition: Position.Left,
+        data: {
+            name: 'Setyaningsih',
+            title: 'Staff',
+            npk: '140207',
+            image: '/storage/profilepic/Setyaningsih.png',
+        },
+    },
+    {
+        id: '6',
+        type: 'customPerson',
+        position: { x: 1000, y: 400 },
+        sourcePosition: Position.Right,
+        targetPosition: Position.Left,
+        data: {
+            name: 'Ayu Lestari',
+            title: 'Staff',
+            npk: '190349',
+            image: '/storage/profilepic/Ayu.png',
+        },
+    },
+    {
+        id: '7',
+        type: 'customPerson',
+        position: { x: 1000, y: 600 },
+        sourcePosition: Position.Right,
+        targetPosition: Position.Left,
+        data: {
+            name: 'Fadel Anfasha',
+            title: 'Staff',
+            npk: '240473',
+            image: '/storage/profilepic/Fadel.png',
+        },
+    },
+];
+
+const edges = [
+    {
+        id: 'e1-2',
+        source: '1',
+        target: '2',
+    },
+    {
+        id: 'e2-3',
+        source: '2',
+        target: '3',
+    },
+    {
+        id: 'e3-4',
+        source: '3',
+        target: '4',
+    },
+    {
+        id: 'e3-5',
+        source: '3',
+        target: '5',
+    },
+    {
+        id: 'e3-6',
+        source: '3',
+        target: '6',
+    },
+    {
+        id: 'e3-7',
+        source: '3',
+        target: '7',
+    },
+];
 </script>
 
 <template>
     <Head title="Dashboard" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="relative my-8 text-center">
-            <h1 class="relative z-10 inline-block bg-white px-4 text-4xl font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-                Finance & Accounting Team
-            </h1>
-            <hr class="absolute top-1/2 left-0 z-0 w-full -translate-y-1/2 border-gray-300 dark:border-gray-600" />
-        </div>
-        <template class="flex h-full flex-1 items-center justify-center rounded-xl p-4">
-            <div class="card overflow-x-auto">
-                <OrganizationChart :value="data" layout="horizontal">
-                    <template #person="slotProps">
-                        <div class="flex flex-col items-center text-center">
-                            <img
-                                :alt="slotProps.node.data.name"
-                                :src="slotProps.node.data.image"
-                                class="mb-2 h-36 w-28 rounded-md object-cover shadow"
-                            />
-                            <span class="mb-1 font-bold">{{ slotProps.node.data.name }}</span>
-                            <span class="text-sm">{{ slotProps.node.data.title }}</span>
-                        </div>
-                    </template>
-                </OrganizationChart>
+        <div class="relative min-h-screen">
+            <!-- Gambar sebagai latar belakang -->
+            <div
+                class="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-20"
+                style="background-image: url('/storage/images/topy.png')"
+            ></div>
+
+            <!-- Konten di atas gambar -->
+            <div class="relative z-10 h-screen p-6">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Finance & Accounting Structure</h1>
+                </div>
+                <VueFlow
+                    :nodes="nodes"
+                    :edges="edges"
+                    :node-types="customNodeTypes"
+                    :zoom-on-scroll="false"
+                    :zoom-on-pinch="false"
+                    :zoom-on-double-click="false"
+                    fit-view
+                />
             </div>
-        </template>
+        </div>
     </AppLayout>
 </template>

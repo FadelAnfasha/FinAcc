@@ -112,17 +112,6 @@ class ReportService
                 $weight = $wages->{$proc} ?? 0;
                 $raw = ($value / $total) * $weight;
                 $base[$proc] = $raw;
-
-                // if ($item->item_code === 'F16W08') {
-                //     dump("PROC: $proc", [
-                //         'value' => $value,
-                //         'total' => $total,
-                //         'weight' => $weight,
-                //         'raw' => $raw,
-                //         'base' => $base[$proc],
-                //     ]);
-                // }
-                // dump($proc,$value, $total, $weight, $raw, $base);
             }
 
             foreach ($this->groupings as $group => $members) {
