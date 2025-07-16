@@ -1,15 +1,17 @@
 /node_modules
 /public/build
 /public/hot
-/public/storage
 /vendor
 .env
 .env.*
 /storage/*.key
 /storage/pail
-/storage/*
-!/storage/app/
+# JANGAN GUNAKAN /storage/* jika kamu ingin melacak sebagian besar isinya
+# Hapus atau ubah menjadi lebih spesifik jika kamu hanya ingin mengabaikan beberapa hal di luar app/public
+
+# Contoh: Jika kamu hanya ingin mengabaikan "logs" di dalam "storage"
+# /storage/logs/
+
+# Aturan untuk memastikan SEMUA yang ada di dalam storage/app/public/ tidak diabaikan
 !/storage/app/public/
-# Keep these to explicitly ensure they are not ignored by other rules if they contain other files you want ignored
-!/storage/app/public/images/
-!/storage/app/public/profilepic/
+!/storage/app/public/**
