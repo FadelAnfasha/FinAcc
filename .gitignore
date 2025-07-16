@@ -1,0 +1,15 @@
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/vendor
+.env
+.env.*
+/storage/*.key
+/storage/pail
+/storage/*
+!/storage/app/
+!/storage/app/public/
+# Keep these to explicitly ensure they are not ignored by other rules if they contain other files you want ignored
+!/storage/app/public/images/
+!/storage/app/public/profilepic/
