@@ -156,6 +156,13 @@ const edges = [
 
 const cardData = [
     {
+        img: 'profile',
+        title: 'Profile Configuration',
+        subtitle: 'Profile',
+        content: 'Change profile configuration like account password, delete account, change website theme.',
+        href: 'profile.index',
+    },
+    {
         img: 'rfs',
         title: 'Request for Service',
         subtitle: 'RFS',
@@ -170,6 +177,7 @@ const cardData = [
         content:
             'This menu is used to automatically calculate Process Costs. It requires four types of master data: Business Partner, Cycle Time, Sales Quantity, and Wages Distribution.',
         href: 'pc.master',
+        guideHref: '/storage/guidance/pc.pdf',
     },
     {
         img: 'report_bom',
@@ -178,13 +186,7 @@ const cardData = [
         content:
             'This menu is used to automatically calculate Bill of Material Report. It requires three types of master data: Material Price, Valve Price, BOM raw data.',
         href: 'bom.master',
-    },
-    {
-        img: 'profile',
-        title: 'Profile Configuration',
-        subtitle: 'Profile',
-        content: 'Change profile configuration like account password, delete account, change website theme.',
-        href: 'profile.index',
+        guideHref: '/storage/guidance/bom.pdf',
     },
     {
         img: 'orgChart',
@@ -227,7 +229,12 @@ const scrollToSection = (hash: string) => {
                         style="width: 25rem; height: 30rem; display: flex; flex-direction: column"
                     >
                         <template #header>
-                            <img :alt="card.title + ' header'" class="px-4 pt-4" :src="'/finacc/storage/images/' + card.img + '.png'" />
+                            <img
+                                :alt="card.title + ' header'"
+                                class="px-4 pt-4"
+                                style="height: 200px; width: 500px"
+                                :src="'/finacc/storage/images/' + card.img + '.png'"
+                            />
                         </template>
                         <template #title>
                             <div class="text-center">{{ card.title }}</div>
@@ -245,11 +252,6 @@ const scrollToSection = (hash: string) => {
                                         <Button label="Guidance" severity="info" class="w-20" />
                                     </a>
                                 </template>
-                                <template v-else>
-                                    <!-- Jika tidak ada guideHref, mungkin nonaktifkan atau sembunyikan tombol -->
-                                    <Button label="Guidance" severity="info" class="w-20" disabled />
-                                </template>
-                                <!-- Kondisional untuk tombol "Go" -->
                                 <template v-if="card.href && card.href.startsWith('#')">
                                     <Button label="Go" class="w-20" @click="scrollToSection(card.href)" />
                                 </template>
