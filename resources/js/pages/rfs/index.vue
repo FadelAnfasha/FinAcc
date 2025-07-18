@@ -32,10 +32,11 @@ interface RequestItem {
     id: number;
     name: string;
     priority: string;
-    input_date: string;
+    created_at: Date;
     description: string;
     status: string;
     attachment: File;
+    updated_at: Date;
 }
 
 const acceptRequest = (id: number) => {
@@ -62,9 +63,10 @@ const props = defineProps({
 const filters = ref({
     name: { value: null, matchMode: 'contains' },
     priority: { value: null, matchMode: 'equals' },
-    input_date: { value: null, matchMode: 'contains' },
+    created_at: { value: null, matchMode: 'contains' },
     description: { value: null, matchMode: 'contains' },
     status: { value: null, matchMode: 'equals' },
+    updated_at: { value: null, matchMode: 'contains' },
 });
 
 // Data with proper typing and added status field
@@ -136,10 +138,11 @@ const form = useForm({
     name: (page.props.auth.user as UserWithNPK)?.name || '',
     npk: (page.props.auth.user as UserWithNPK)?.npk || '',
     priority: 'medium',
-    input_date: new Date().toISOString().split('T')[0],
+    created_at: new Date().toISOString().split('T')[0],
     description: '',
     status: 'wait_for_review',
     attachment: null as File | null,
+    updated_at: new Date().toISOString().split('T')[0],
 });
 
 const fileInput = ref<HTMLInputElement | null>(null);
@@ -222,7 +225,7 @@ const resetForm = () => {
                 <Button
                     label=" Create"
                     severity="info"
-                    v-if="auth?.user?.role === 'User' || auth?.user?.role === 'Superior'"
+                    v-if="auth?.user?.role !== 'Admin'"
                     unstyled
                     @click="scrollToCreateForm"
                     icon="pi pi-plus"
@@ -240,10 +243,10 @@ const resetForm = () => {
                 dataKey="id"
                 filterDisplay="row"
                 :loading="loading"
-                :globalFilterFields="['name', 'priority', 'input_date', 'description', 'status']"
+                :globalFilterFields="['name', 'priority', 'created_at', 'description', 'status', 'updated_at']"
                 tableStyle="min-width: 50rem"
                 class="text-sm"
-                sortField="input_date"
+                sortField="created_at"
                 :sortOrder="-1"
             >
                 <Column field="name" header="Name" :showFilterMenu="false" sortable style="width: 20%">
@@ -313,12 +316,12 @@ const resetForm = () => {
                     </template>
                 </Column>
 
-                <Column field="input_date" header="Request Date" :showFilterMenu="false" sortable style="width: 20%">
+                <Column field="created_at" header="Request Date" :showFilterMenu="false" sortable style="width: 20%">
                     <template #filter="{ filterModel, filterCallback }">
                         <DatePicker
                             :modelValue="filterModel.value ? new Date(filterModel.value + 'T00:00:00') : null"
                             @update:modelValue="
-                                (val) => {
+                                (val: Date | null) => {
                                     if (val instanceof Date) {
                                         const formatted =
                                             val.getFullYear() +
@@ -425,11 +428,39 @@ const resetForm = () => {
                     </template>
                 </Column>
 
-                <Column header="Action" v-if="auth?.user?.role === 'Admin'" style="width: 20%">
+                <Column field="updated_at" header="Updated at" :showFilterMenu="false" sortable style="width: 20%">
+                    <template #filter="{ filterModel, filterCallback }">
+                        <DatePicker
+                            :modelValue="filterModel.value ? new Date(filterModel.value + 'T00:00:00') : null"
+                            @update:modelValue="
+                                (val: Date | null) => {
+                                    if (val instanceof Date) {
+                                        const formatted =
+                                            val.getFullYear() +
+                                            '-' +
+                                            String(val.getMonth() + 1).padStart(2, '0') +
+                                            '-' +
+                                            String(val.getDate()).padStart(2, '0');
+                                        filterModel.value = formatted;
+                                    } else {
+                                        filterModel.value = null;
+                                    }
+                                    filterCallback();
+                                }
+                            "
+                            dateFormat="yy-mm-dd"
+                            placeholder="yy-mm-dd"
+                            :maxDate="new Date()"
+                            showIcon
+                        />
+                    </template>
+                </Column>
+
+                <Column header="Action" style="width: 20%">
                     <template #body="{ data }">
-                        <div class="flex gap-2">
+                        <div class="flex gap-4">
                             <!-- Superior actions -->
-                            <template v-if="auth?.user?.role === 'Admin'">
+                            <template v-if="auth?.user?.permission === 'Approve'">
                                 <button
                                     v-if="data.status === 'wait_for_review'"
                                     class="inline-flex cursor-pointer items-center gap-1 rounded bg-green-400 px-3 py-1 text-xs font-semibold text-black hover:bg-green-600 hover:text-white"
@@ -445,8 +476,16 @@ const resetForm = () => {
                                 >
                                     <i class="pi pi-times" /> Reject
                                 </button>
-                                <i class="pi pi-spin pi-cog" style="color: orange" v-if="data.status === 'in_progress'"></i>
-                                <i class="pi pi-spin pi-hourglass" style="color: cyan" v-if="data.status === 'accepted'"></i>
+
+                                <div class="flex h-6 w-6 items-center justify-center">
+                                    <i class="pi pi-spin pi-spinner" style="color: cyan" v-if="data.status === 'in_progress'"></i>
+                                    <i class="pi pi-spin pi-hourglass" style="color: cyan" v-if="data.status === 'accepted'"></i>
+                                    <!-- Status icons -->
+                                    <i class="pi pi-check-circle" style="color: green" v-if="data.status === 'finish'"></i>
+
+                                    <i class="pi pi-times-circle" style="color: red" v-if="data.status === 'rejected'"></i>
+                                </div>
+
                                 <button
                                     v-if="data.status === 'accepted'"
                                     class="inline-flex cursor-pointer items-center gap-1 rounded bg-orange-400 px-3 py-1 text-xs font-semibold text-black hover:bg-orange-600 hover:text-white"
@@ -454,6 +493,7 @@ const resetForm = () => {
                                 >
                                     <i class="pi pi-cog pi-spin" /> Execute
                                 </button>
+
                                 <button
                                     v-if="data.status === 'in_progress'"
                                     class="inline-flex cursor-pointer items-center gap-1 rounded bg-orange-400 px-3 py-1 text-xs font-semibold text-black hover:bg-orange-600 hover:text-white"
@@ -462,11 +502,6 @@ const resetForm = () => {
                                     <i class="pi pi-check-square" /> Finish
                                 </button>
                             </template>
-
-                            <!-- Status icons -->
-                            <i class="pi pi-check-circle" style="color: green" v-if="data.status === 'finish'"></i>
-
-                            <i class="pi pi-times-circle" style="color: red" v-if="data.status === 'rejected'"></i>
                         </div>
                     </template>
                 </Column>
@@ -474,7 +509,7 @@ const resetForm = () => {
         </section>
 
         <!-- Create Form Section -->
-        <section ref="createFormSection" v-if="auth?.user?.role === 'User' || auth?.user?.role === 'Superior'" class="mx-24 my-8 scroll-mt-8">
+        <section ref="createFormSection" v-if="auth?.user?.role !== 'Admin'" class="mx-24 my-8 scroll-mt-8">
             <div class="mb-8 flex items-center justify-between">
                 <h2 class="text-3xl font-semibold">Create Form</h2>
                 <Button
@@ -544,7 +579,7 @@ const resetForm = () => {
                                 <label class="text-sm font-medium text-card-foreground">Submit Date :</label>
                                 <input
                                     type="date"
-                                    v-model="form.input_date"
+                                    v-model="form.created_at"
                                     class="w-full cursor-not-allowed rounded-md border border-border bg-muted px-3 py-2 text-card-foreground"
                                     readonly
                                     disabled

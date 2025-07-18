@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\RequestForService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-
+use Illuminate\Support\Facades\Auth;
 
 class RequestForServiceController extends Controller
 {
@@ -15,17 +15,20 @@ class RequestForServiceController extends Controller
     public function index()
     {
         $services = RequestForService::all();
+        dd(Auth::user()->getPermissionNames());
+
         return Inertia::render('rfs/index', [
             'services' => $services,
             'auth' => [
-                'user' => [
-                    'name' => auth()->user()->name,
-                    'npk' => auth()->user()->npk,
-                    'role' => auth()->user()->getRoleNames()->first(), // Kirim role
-                ],
+                'user' => Auth::check() ? [
+                    'name' => Auth::user()->name,
+                    'npk' => Auth::user()->npk,
+                    'permissions' => Auth::user()->getPermissionNames(),
+                ] : null,
             ],
         ]);
     }
+
 
     public function store(Request $request)
     {
@@ -33,7 +36,6 @@ class RequestForServiceController extends Controller
             'name' => 'required|string|max:255',
             'npk' => 'required|string|max:50',
             'priority' => 'required|in:low,medium,high,urgent',
-            'input_date' => 'required|date',
             'description' => 'required|string',
             'status' => 'required',
             'attachment' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,xlsx,xls|max:10240',
@@ -43,6 +45,8 @@ class RequestForServiceController extends Controller
         if ($request->hasFile('attachment')) {
             $validated['attachment'] = $request->file('attachment')->store('attachment', 'public');
         }
+
+
 
         RequestForService::create($validated);
 

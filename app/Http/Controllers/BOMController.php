@@ -10,6 +10,8 @@ use App\Models\Material;
 use App\Models\Process;
 use App\Models\Packing;
 use App\Models\Valve;
+use Illuminate\Support\Facades\View; // Import Facade View untuk merender Blade ke string
+
 
 use App\Models\BOM_Report;
 use Illuminate\Support\Str;
@@ -240,7 +242,7 @@ class BOMController extends Controller
             } elseif (isset($group->wip_valve) && $group->wip_valve->item_code === 'CGP090') {
                 $wip_valve_price = 10000;
             } else {
-                $wip_valve_price = null;
+                $wip_valve_price = 0;
             };
 
             $data = [
@@ -248,73 +250,73 @@ class BOMController extends Controller
 
                 // Disc
                 'disc_qty' => $group->disc->quantity ?? 0,
-                'disc_code' => $group->disc->item_code ?? null,
-                'disc_price' => $disc_price ?? null,
+                'disc_code' => $group->disc->item_code ?? '-',
+                'disc_price' => $disc_price ?? 0,
 
                 // Rim
                 'rim_qty' => $group->rim->quantity ?? 0,
-                'rim_code' => $group->rim->item_code ?? null,
-                'rim_price' => $rim_price ?? null,
+                'rim_code' => $group->rim->item_code ?? '-',
+                'rim_price' => $rim_price ?? 0,
 
                 // Sidering
                 'sidering_qty' => $group->sidering->quantity ?? 0,
-                'sidering_code' => $group->sidering->item_code ?? null,
-                'sidering_price' => $sidering_price ?? null,
+                'sidering_code' => $group->sidering->item_code ?? '-',
+                'sidering_price' => $sidering_price ?? 0,
 
                 // pr_*
-                'pr_disc' => $group->pr_disc->item_code ?? null,
-                'pr_disc_price' => $main->processCost->max_of_disc ?? null,
+                'pr_disc' => $group->pr_disc->item_code ?? '-',
+                'pr_disc_price' => $main->processCost->max_of_disc ?? 0,
 
-                'pr_rim' => $group->pr_rim->item_code ?? null,
-                'pr_rim_price' => $main->processCost->max_of_rim ?? null,
+                'pr_rim' => $group->pr_rim->item_code ?? '-',
+                'pr_rim_price' => $main->processCost->max_of_rim ?? 0,
 
-                'pr_sidering' => $group->pr_sr->item_code ?? null,
-                'pr_sidering_price' => $main->processCost->max_of_sidering ?? null,
+                'pr_sidering' => $group->pr_sr->item_code ?? '-',
+                'pr_sidering_price' => $main->processCost->max_of_sidering ?? 0,
 
-                'pr_assy' => $group->pr_assy->item_code ?? null,
-                'pr_assy_price' => $main->processCost->max_of_assy ?? null,
+                'pr_assy' => $group->pr_assy->item_code ?? '-',
+                'pr_assy_price' => $main->processCost->max_of_assy ?? 0,
 
-                'pr_cedW' => $group->cedW->item_code ?? null,
-                'pr_cedW_price' => $pr_cedW_price ?? null,
+                'pr_cedW' => $group->cedW->item_code ?? '-',
+                'pr_cedW_price' => $pr_cedW_price ?? 0,
 
-                'pr_cedSR' => $group->cedSR->item_code ?? null,
-                'pr_cedSR_price' => $pr_cedSR_price ?? null,
+                'pr_cedSR' => $group->cedSR->item_code ?? '-',
+                'pr_cedSR_price' => $pr_cedSR_price ?? 0,
 
-                'pr_tcW' => $group->tcW->item_code ?? null,
-                'pr_tcW_price' => $pr_tcW_price ?? null,
+                'pr_tcW' => $group->tcW->item_code ?? '-',
+                'pr_tcW_price' => $pr_tcW_price ?? 0,
 
-                'pr_tcSR' => $group->tcSR->item_code ?? null,
-                'pr_tcSR_price' => $pr_tcSR_price ?? null,
+                'pr_tcSR' => $group->tcSR->item_code ?? '-',
+                'pr_tcSR_price' => $pr_tcSR_price ?? 0,
 
-                'pack_price' => $main->processCost->max_of_packaging ?? null,
+                'pack_price' => $main->processCost->max_of_packaging ?? 0,
 
                 // WIP
-                'wip_disc' => $group->wip_disc->item_code ?? null,
-                'wip_disc_price' => $wip_disc_price,
+                'wip_disc' => $group->wip_disc->item_code ?? '-',
+                'wip_disc_price' => $wip_disc_price ?? 0,
 
-                'wip_rim' => $group->wip_rim->item_code ?? null,
-                'wip_rim_price' => $wip_rim_price,
+                'wip_rim' => $group->wip_rim->item_code ?? '-',
+                'wip_rim_price' => $wip_rim_price ?? 0,
 
-                'wip_sidering' => $group->wip_sr->item_code ?? null,
-                'wip_sidering_price' => $wip_sidering_price,
+                'wip_sidering' => $group->wip_sr->item_code ?? '-',
+                'wip_sidering_price' => $wip_sidering_price ?? 0,
 
-                'wip_assy' => $group->wip_assy->item_code ?? null,
-                'wip_assy_price' => $wip_assy_price,
+                'wip_assy' => $group->wip_assy->item_code ?? '-',
+                'wip_assy_price' => $wip_assy_price ?? 0,
 
-                'wip_cedW' => $group->wip_cedW->item_code ?? null,
-                'wip_cedW_price' => $wip_cedW_price ?? null,
+                'wip_cedW' => $group->wip_cedW->item_code ?? '-',
+                'wip_cedW_price' => $wip_cedW_price ?? 0,
 
-                'wip_cedSR' => $group->wip_cedSR->item_code ?? null,
-                'wip_cedSR_price' => $wip_cedSR_price ?? null,
+                'wip_cedSR' => $group->wip_cedSR->item_code ?? '-',
+                'wip_cedSR_price' => $wip_cedSR_price ?? 0,
 
-                'wip_tcW' => $group->wip_tcW->item_code ?? null,
-                'wip_tcW_price' => $wip_tcW_price ?? null,
+                'wip_tcW' => $group->wip_tcW->item_code ?? '-',
+                'wip_tcW_price' => $wip_tcW_price ?? 0,
 
-                'wip_tcSR' => $group->wip_tcSR->item_code ?? null,
-                'wip_tcSR_price' => $wip_tcSR_price ?? null,
+                'wip_tcSR' => $group->wip_tcSR->item_code ?? '-',
+                'wip_tcSR_price' => $wip_tcSR_price ?? 0,
 
-                'wip_valve' => $group->wip_valve->item_code ?? null,
-                'wip_valve_price' => $group->wip_valve->valveInfo->price ?? null,
+                'wip_valve' => $group->wip_valve->item_code ?? '-',
+                'wip_valve_price' => $group->wip_valve->valveInfo->price ?? 0,
             ];
 
             // Hitung total cost
@@ -350,4 +352,34 @@ class BOMController extends Controller
         }
         return redirect()->route('bom.report');
     }
+
+    public function previewData(Request $request, string $item_code)
+    {
+        $previewData = BOM_Report::where('item_code', $item_code)->with('bom')->first();
+
+        if (!$previewData) {
+            abort(404, 'Data BOM Report tidak ditemukan untuk Item Code: ' . $item_code);
+        }
+
+        $renderedHtmlForPreview = View::make('exports.bom_report_preview', [
+            'data' => $previewData,
+
+        ])->render();
+
+        return Inertia::render('bom/preview', [
+            'itemCode' => $item_code, // Tetap kirim item_code untuk tombol cetak
+            'reportData' => $previewData->toArray(), // Kirim data model juga (opsional, untuk akses terstruktur jika diperlukan)
+            'previewHtml' => $renderedHtmlForPreview, // Kirim HTML yang sudah dirender ke frontend
+        ]);
+    }
+
+    // public function downloadReport(Request $request, string $item_code)
+    // {
+
+    //     $dataToExport = BOM_Report::where('item_code', $item_code)->first();
+
+    //     $exportInstance = new \App\Exports\BomReportExport($dataToExport);
+
+    //     return \Maatwebsite\Excel\Facades\Excel::download($exportInstance, 'report.xlsx');
+    // }
 }

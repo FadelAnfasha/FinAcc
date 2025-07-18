@@ -80,6 +80,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('bom.report');
 
     Route::post('/bom/update/BOM', [BOMController::class, 'updateBOM'])->name('pc.updateBOM');
+
+    Route::get('/bom/preview/{item_code}', action: [BOMController::class, 'previewData'])->name('preview.item');
+    Route::get('/bom/download/{item_code}', [BOMController::class, 'downloadReport'])->name('report.download');
 });
 
 #=============================

@@ -274,6 +274,11 @@ function closeDialog() {
     updateStatus.value = 'idle';
     updateType.value = null;
 }
+
+function openPreviewTab(item_code: string) {
+    const previewUrl = route('preview.item', { item_code: item_code });
+    window.open(previewUrl, '_blank'); // Membuka URL di tab baru
+}
 </script>
 
 <template>
@@ -470,7 +475,11 @@ function closeDialog() {
                                     </Column>
 
                                     <Column field="disc_qty" sortable header="Qty" v-bind="tbStyle('rm')"></Column>
-                                    <Column field="disc_code" sortable header="Disc" v-bind="tbStyle('rm')"></Column>
+                                    <Column field="disc_code" sortable header="Disc" v-bind="tbStyle('rm')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.disc_code || '-' }}
+                                        </template>
+                                    </Column>
                                     <Column field="disc_price" sortable header="Price" v-bind="tbStyle('rm')">
                                         <template #body="{ data }">
                                             {{ Number(data.disc_price).toLocaleString('id-ID') }}
@@ -478,7 +487,11 @@ function closeDialog() {
                                     </Column>
 
                                     <Column field="rim_qty" sortable header="Qty" v-bind="tbStyle('rm')"></Column>
-                                    <Column field="rim_code" sortable header="Rim" v-bind="tbStyle('rm')"></Column>
+                                    <Column field="rim_code" sortable header="Rim" v-bind="tbStyle('rm')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.rim_code || '-' }}
+                                        </template>
+                                    </Column>
                                     <Column field="rim_price" sortable header="Price" v-bind="tbStyle('rm')">
                                         <template #body="{ data }">
                                             {{ Number(data.rim_price).toLocaleString('id-ID') }}
@@ -486,63 +499,100 @@ function closeDialog() {
                                     </Column>
 
                                     <Column field="sidering_qty" sortable header="Qty" v-bind="tbStyle('rm')"></Column>
-                                    <Column field="sidering_code" sortable header="Sidering" v-bind="tbStyle('rm')"></Column>
+                                    <Column field="sidering_code" sortable header="Sidering" v-bind="tbStyle('rm')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.sidering_code || '-' }}
+                                        </template>
+                                    </Column>
                                     <Column field="sidering_price" sortable header="Price" v-bind="tbStyle('rm')">
                                         <template #body="{ data }">
                                             {{ Number(data.sidering_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="pr_disc" sortable header="Pr Disc" v-bind="tbStyle('pr')"></Column>
+                                    <Column field="pr_disc" sortable header="Pr Disc" v-bind="tbStyle('pr')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.pr_disc || '-' }}
+                                        </template>
+                                    </Column>
+
                                     <Column field="pr_disc_price" sortable header="Price" v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
                                             {{ Number(data.pr_disc_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="pr_rim" sortable header="Pr Rim" v-bind="tbStyle('pr')"></Column>
+                                    <Column field="pr_rim" sortable header="Pr Rim" v-bind="tbStyle('pr')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.pr_rim || '-' }}
+                                        </template>
+                                    </Column>
                                     <Column field="pr_rim_price" sortable header="Price" v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
                                             {{ Number(data.pr_rim_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="pr_sidering" sortable header="Pr Sidering" v-bind="tbStyle('pr')"></Column>
+                                    <Column field="pr_sidering" sortable header="Pr Sidering" v-bind="tbStyle('pr')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.pr_sidering || '-' }}
+                                        </template>
+                                    </Column>
                                     <Column field="pr_sidering_price" sortable header="Price" v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
                                             {{ Number(data.pr_sidering_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="pr_assy" sortable header="Pr Assy" v-bind="tbStyle('pr')"></Column>
+                                    <Column field="pr_assy" sortable header="Pr Assy" v-bind="tbStyle('pr')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.pr_assy || '-' }}
+                                        </template>
+                                    </Column>
                                     <Column field="pr_assy_price" sortable header="Price" v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
                                             {{ Number(data.pr_assy_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="pr_cedW" sortable header="Pr CED W" v-bind="tbStyle('pr')"></Column>
+                                    <Column field="pr_cedW" sortable header="Pr CED W" v-bind="tbStyle('pr')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.pr_cedW || '-' }}
+                                        </template>
+                                    </Column>
                                     <Column field="pr_cedW_price" sortable header="Price" v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
                                             {{ Number(data.pr_cedW_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="pr_cedSR" sortable header="Pr CED SR" v-bind="tbStyle('pr')"></Column>
+                                    <Column field="pr_cedSR" sortable header="Pr CED SR" v-bind="tbStyle('pr')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.pr_cedSR || '-' }}
+                                        </template>
+                                    </Column>
                                     <Column field="pr_cedSR_price" sortable header="Price" v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
                                             {{ Number(data.pr_cedSR_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="pr_tcW" sortable header="Pr Topcoat W" v-bind="tbStyle('pr')"></Column>
+                                    <Column field="pr_tcW" sortable header="Pr Topcoat W" v-bind="tbStyle('pr')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.pr_tcW || '-' }}
+                                        </template>
+                                    </Column>
                                     <Column field="pr_tcW_price" sortable header="Price" v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
                                             {{ Number(data.pr_tcW_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="pr_tcSR" sortable header="Pr Topcoat SR" v-bind="tbStyle('pr')"></Column>
+                                    <Column field="pr_tcSR" sortable header="Pr tcSR" v-bind="tbStyle('pr')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.pr_tcSR || '-' }}
+                                        </template>
+                                    </Column>
                                     <Column field="pr_tcSR_price" sortable header="Price" v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
                                             {{ Number(data.pr_tcSR_price).toLocaleString('id-ID') }}
@@ -555,63 +605,99 @@ function closeDialog() {
                                         </template>
                                     </Column>
 
-                                    <Column field="wip_disc" sortable header="WiP Disc" v-bind="tbStyle('wip')"></Column>
+                                    <Column field="wip_disc" sortable header="WiP Disc" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_disc || '-' }}
+                                        </template>
+                                    </Column>
                                     <Column field="wip_disc_price" sortable header="Cost" v-bind="tbStyle('wip')">
                                         <template #body="{ data }">
                                             {{ Number(data.wip_disc_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="wip_rim" sortable header="WiP Rim" v-bind="tbStyle('wip')"></Column>
+                                    <Column field="wip_rim" sortable header="WiP Rim" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_rim || '-' }}
+                                        </template>
+                                    </Column>
                                     <Column field="wip_rim_price" sortable header="Cost" v-bind="tbStyle('wip')">
                                         <template #body="{ data }">
                                             {{ Number(data.wip_rim_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="wip_rim" sortable header="WiP Rim" v-bind="tbStyle('wip')"></Column>
-                                    <Column field="wip_rim_price" sortable header="Cost" v-bind="tbStyle('wip')">
+                                    <Column field="wip_sidering" sortable header="WiP Sidering" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_sidering || '-' }}
+                                        </template>
+                                    </Column>
+                                    <Column field="wip_sidering_price" sortable header="Cost" v-bind="tbStyle('wip')">
                                         <template #body="{ data }">
-                                            {{ Number(data.wip_rim_price).toLocaleString('id-ID') }}
+                                            {{ Number(data.wip_sidering_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="wip_assy" sortable header="WiP Assy" v-bind="tbStyle('wip')"></Column>
+                                    <Column field="wip_assy" sortable header="WiP Assy" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_assy || '-' }}
+                                        </template>
+                                    </Column>
                                     <Column field="wip_assy_price" sortable header="Cost" v-bind="tbStyle('wip')">
                                         <template #body="{ data }">
                                             {{ Number(data.wip_assy_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="wip_cedW" sortable header="WiP CED W" v-bind="tbStyle('wip')"></Column>
+                                    <Column field="wip_cedW" sortable header="WiP CED W" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_cedW || '-' }}
+                                        </template>
+                                    </Column>
                                     <Column field="wip_cedW_price" sortable header="Cost" v-bind="tbStyle('wip')">
                                         <template #body="{ data }">
                                             {{ Number(data.wip_cedW_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="wip_cedSR" sortable header="WiP CED SR" v-bind="tbStyle('wip')"></Column>
+                                    <Column field="wip_cedSR" sortable header="WiP CED SR" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_cedSR || '-' }}
+                                        </template>
+                                    </Column>
                                     <Column field="wip_cedSR_price" sortable header="Cost" v-bind="tbStyle('wip')">
                                         <template #body="{ data }">
                                             {{ Number(data.wip_cedSR_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="wip_tcW" sortable header="WiP Topcoat W" v-bind="tbStyle('wip')"></Column>
+                                    <Column field="wip_tcW" sortable header="WiP Topcoat W" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_tcW || '-' }}
+                                        </template>
+                                    </Column>
                                     <Column field="wip_tcW_price" sortable header="Cost" v-bind="tbStyle('wip')">
                                         <template #body="{ data }">
                                             {{ Number(data.wip_tcW_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="wip_tcSR" sortable header="WiP Topcoat SR" v-bind="tbStyle('wip')"></Column>
+                                    <Column field="wip_tcSR" sortable header="WiP Topcoat SR" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_tcSR || '-' }}
+                                        </template>
+                                    </Column>
                                     <Column field="wip_tcSR_price" sortable header="Cost" v-bind="tbStyle('wip')">
                                         <template #body="{ data }">
                                             {{ Number(data.wip_tcSR_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="wip_valve" sortable header="WiP Valve" v-bind="tbStyle('wip')"></Column>
+                                    <Column field="wip_valve" sortable header="WiP Valve" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_valve || '-' }}
+                                        </template>
+                                    </Column>
                                     <Column field="wip_valve_price" sortable header="Cost" v-bind="tbStyle('wip')">
                                         <template #body="{ data }">
                                             {{ Number(data.wip_valve_price).toLocaleString('id-ID') }}
@@ -633,6 +719,21 @@ function closeDialog() {
                                     <Column field="total" sortable header="Total" v-bind="tbStyle('fg')">
                                         <template #body="{ data }">
                                             {{ Number(data.total).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="action" header="Action" :exportable="false" v-bind="tbStyle('fg')">
+                                        <template #body="data">
+                                            <div class="flex gap-2">
+                                                <Button
+                                                    v-tooltip="'Preview Product'"
+                                                    icon="pi pi-eye"
+                                                    severity="info"
+                                                    rounded
+                                                    text
+                                                    @click="openPreviewTab(data.data.item_code)"
+                                                />
+                                            </div>
                                         </template>
                                     </Column>
                                 </DataTable>
