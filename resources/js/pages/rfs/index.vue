@@ -32,11 +32,11 @@ interface RequestItem {
     id: number;
     name: string;
     priority: string;
-    created_at: Date;
+    created_at: string;
     description: string;
     status: string;
     attachment: File;
-    updated_at: Date;
+    updated_at: string;
 }
 
 const acceptRequest = (id: number) => {
@@ -71,7 +71,6 @@ const filters = ref({
 
 // Data with proper typing and added status field
 const items = computed(() => page.props.services as RequestItem[]);
-
 const priorities = ['All', 'low', 'medium', 'high', 'urgent'];
 const statuses = ['All', 'wait_for_review', 'accepted', 'in_progress', 'finish', 'rejected'];
 
@@ -321,14 +320,27 @@ const resetForm = () => {
                         <DatePicker
                             :modelValue="filterModel.value ? new Date(filterModel.value + 'T00:00:00') : null"
                             @update:modelValue="
-                                (val: Date | null) => {
+                                // PERUBAHAN KRITIS: Perluas tipe 'val' untuk mencakup semua kemungkinan yang disebutkan error
+                                (val: Date | Date[] | (Date | null)[] | null | undefined) => {
+                                    let selectedDate: Date | null = null;
+
                                     if (val instanceof Date) {
+                                        selectedDate = val;
+                                    } else if (Array.isArray(val) && val.length > 0) {
+                                        // Jika val adalah array, ambil elemen pertama jika itu Date
+                                        // Ini mengasumsikan Anda hanya tertarik pada tanggal pertama untuk filter tunggal
+                                        if (val[0] instanceof Date) {
+                                            selectedDate = val[0];
+                                        }
+                                    }
+
+                                    if (selectedDate instanceof Date) {
                                         const formatted =
-                                            val.getFullYear() +
+                                            selectedDate.getFullYear() +
                                             '-' +
-                                            String(val.getMonth() + 1).padStart(2, '0') +
+                                            String(selectedDate.getMonth() + 1).padStart(2, '0') +
                                             '-' +
-                                            String(val.getDate()).padStart(2, '0');
+                                            String(selectedDate.getDate()).padStart(2, '0');
                                         filterModel.value = formatted;
                                     } else {
                                         filterModel.value = null;
@@ -340,6 +352,7 @@ const resetForm = () => {
                             placeholder="yy-mm-dd"
                             :maxDate="new Date()"
                             showIcon
+                            selectionMode="single"
                         />
                     </template>
                 </Column>
@@ -433,14 +446,27 @@ const resetForm = () => {
                         <DatePicker
                             :modelValue="filterModel.value ? new Date(filterModel.value + 'T00:00:00') : null"
                             @update:modelValue="
-                                (val: Date | null) => {
+                                // PERUBAHAN KRITIS: Perluas tipe 'val' untuk mencakup semua kemungkinan yang disebutkan error
+                                (val: Date | Date[] | (Date | null)[] | null | undefined) => {
+                                    let selectedDate: Date | null = null;
+
                                     if (val instanceof Date) {
+                                        selectedDate = val;
+                                    } else if (Array.isArray(val) && val.length > 0) {
+                                        // Jika val adalah array, ambil elemen pertama jika itu Date
+                                        // Ini mengasumsikan Anda hanya tertarik pada tanggal pertama untuk filter tunggal
+                                        if (val[0] instanceof Date) {
+                                            selectedDate = val[0];
+                                        }
+                                    }
+
+                                    if (selectedDate instanceof Date) {
                                         const formatted =
-                                            val.getFullYear() +
+                                            selectedDate.getFullYear() +
                                             '-' +
-                                            String(val.getMonth() + 1).padStart(2, '0') +
+                                            String(selectedDate.getMonth() + 1).padStart(2, '0') +
                                             '-' +
-                                            String(val.getDate()).padStart(2, '0');
+                                            String(selectedDate.getDate()).padStart(2, '0');
                                         filterModel.value = formatted;
                                     } else {
                                         filterModel.value = null;
@@ -452,15 +478,19 @@ const resetForm = () => {
                             placeholder="yy-mm-dd"
                             :maxDate="new Date()"
                             showIcon
+                            selectionMode="single"
                         />
                     </template>
                 </Column>
 
-                <Column header="Action" style="width: 20%">
+                <Column
+                    header="Action"
+                    style="width: 20%"
+                    v-if="!auth?.user?.role?.includes('Director') || !auth?.user?.role?.includes('Deputy Division')"
+                >
                     <template #body="{ data }">
                         <div class="flex gap-4">
-                            <!-- Superior actions -->
-                            <template v-if="auth?.user?.permission === 'Approve'">
+                            <template v-if="auth?.user?.permissions?.includes('Approve') || auth?.user?.permissions?.includes('Reject')">
                                 <button
                                     v-if="data.status === 'wait_for_review'"
                                     class="inline-flex cursor-pointer items-center gap-1 rounded bg-green-400 px-3 py-1 text-xs font-semibold text-black hover:bg-green-600 hover:text-white"
@@ -476,16 +506,8 @@ const resetForm = () => {
                                 >
                                     <i class="pi pi-times" /> Reject
                                 </button>
-
-                                <div class="flex h-6 w-6 items-center justify-center">
-                                    <i class="pi pi-spin pi-spinner" style="color: cyan" v-if="data.status === 'in_progress'"></i>
-                                    <i class="pi pi-spin pi-hourglass" style="color: cyan" v-if="data.status === 'accepted'"></i>
-                                    <!-- Status icons -->
-                                    <i class="pi pi-check-circle" style="color: green" v-if="data.status === 'finish'"></i>
-
-                                    <i class="pi pi-times-circle" style="color: red" v-if="data.status === 'rejected'"></i>
-                                </div>
-
+                            </template>
+                            <template v-if="auth?.user?.roles.includes('Admin')">
                                 <button
                                     v-if="data.status === 'accepted'"
                                     class="inline-flex cursor-pointer items-center gap-1 rounded bg-orange-400 px-3 py-1 text-xs font-semibold text-black hover:bg-orange-600 hover:text-white"
@@ -495,13 +517,28 @@ const resetForm = () => {
                                 </button>
 
                                 <button
-                                    v-if="data.status === 'in_progress'"
+                                    v-if="data.status === 'in_progress' && auth?.user?.roles?.includes('Admin')"
                                     class="inline-flex cursor-pointer items-center gap-1 rounded bg-orange-400 px-3 py-1 text-xs font-semibold text-black hover:bg-orange-600 hover:text-white"
                                     @click="finishRequest(data.id)"
                                 >
                                     <i class="pi pi-check-square" /> Finish
                                 </button>
                             </template>
+                            <div class="flex h-6 w-6 items-center justify-center">
+                                <i
+                                    class="pi pi-spin pi-eye"
+                                    style="color: yellow"
+                                    v-if="data.status === 'wait_for_review' && !auth?.user?.permissions?.includes('Approve')"
+                                ></i>
+                                <i
+                                    class="pi pi-spin pi-spinner"
+                                    style="color: cyan"
+                                    v-if="data.status === 'in_progress' && !auth?.user?.permissions?.includes('Execute')"
+                                ></i>
+                                <i class="pi pi-spin pi-hourglass" style="color: cyan" v-if="data.status === 'accepted'"></i>
+                                <i class="pi pi-check-circle" style="color: green" v-if="data.status === 'finish'"></i>
+                                <i class="pi pi-times-circle" style="color: red" v-if="data.status === 'rejected'"></i>
+                            </div>
                         </div>
                     </template>
                 </Column>

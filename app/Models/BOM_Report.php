@@ -63,6 +63,56 @@ class BOM_Report extends Model
 
     public function bom()
     {
-        return $this->hasOne(BillOfMaterial::class, 'item_code', 'item_code');
+        return $this->belongsTo(BillOfMaterial::class, 'item_code', 'item_code');
+    }
+
+    public function discWIP()
+    {
+        return $this->belongsTo(BillOfMaterial::class, 'wip_disc', 'item_code');
+    }
+
+    public function discMaterial()
+    {
+        return $this->belongsTo(BillOfMaterial::class, 'disc_code', 'item_code');
+    }
+
+    public function discProcess()
+    {
+        return $this->belongsTo(BillOfMaterial::class, 'pr_disc', 'item_code');
+    }
+
+    public function rimWIP()
+    {
+        return $this->belongsTo(BillOfMaterial::class, 'wip_rim', 'item_code');
+    }
+
+    public function rimMaterial()
+    {
+        return $this->belongsTo(BillOfMaterial::class, 'rim_code', 'item_code');
+    }
+
+    public function rimProcess()
+    {
+        return $this->belongsTo(BillOfMaterial::class, 'pr_rim', 'item_code');
+    }
+
+    public function sideringWIP()
+    {
+        return $this->belongsTo(BillOfMaterial::class, 'wip_sidering', 'item_code');
+    }
+
+    public function sideringMaterial()
+    {
+        return $this->belongsTo(BillOfMaterial::class, 'sidering_code', 'item_code');
+    }
+
+    public function sideringProcess()
+    {
+        return $this->belongsTo(BillOfMaterial::class, 'pr_sidering', 'item_code');
+    }
+
+    public function assemblyProcess()
+    {
+        return $this->belongsTo(BillOfMaterial::class, 'pr_assy', 'item_code');
     }
 }

@@ -355,31 +355,215 @@ class BOMController extends Controller
 
     public function previewData(Request $request, string $item_code)
     {
-        $previewData = BOM_Report::where('item_code', $item_code)->with('bom')->first();
+        // $previewData = BOM_Report::where('item_code', $item_code)->with('bom')->first();
+
+        $previewData = BOM_Report::where('item_code', $item_code)
+            ->with([
+                'bom', // Deskripsi utama F15W02
+                'discWIP',
+                'discMaterial',
+                'discProcess',
+                'rimWIP',
+                'rimMaterial',
+                'rimProcess',
+                'sideringWIP',
+                'sideringMaterial',
+                'sideringProcess',
+            ])
+            ->first();
 
         if (!$previewData) {
             abort(404, 'Data BOM Report tidak ditemukan untuk Item Code: ' . $item_code);
         }
 
-        $renderedHtmlForPreview = View::make('exports.bom_report_preview', [
-            'data' => $previewData,
+        // Helper function untuk membuat array data periode
+        $createPeriodsData = function ($qty, $price, $total, $columnIndex = 0) {
+            $periods = array_fill(0, 4, ['qty' => '', 'price' => '', 'total' => '']); // 4 kolom kosong
+            // Perbaikan kondisi agar bisa menampilkan total saja jika qty/price null
+            // Pastikan columnIndex valid (antara 0 dan 3)
+            $validColumnIndex = max(0, min(3, $columnIndex));
 
-        ])->render();
+            // Perhatikan perubahan kondisi di sini: hanya perlu salah satu tidak null
+            if ($qty !== null || $price !== null || $total !== null) {
+                $periods[$validColumnIndex] = [
+                    'qty' => ($qty !== null) ? number_format($qty, 2, ',', '.') : '',
+                    'price' => ($price !== null) ? number_format($price, 0, ',', '.') : '',
+                    'total' => ($total !== null) ? number_format($total, 0, ',', '.') : '',
+                ];
+            }
+            return $periods;
+        };
+
+        // ===========================================
+        // SEGMENT: ASSEMBLY (Modifikasi di sini)
+        // ===========================================
+        $assemblyItems = [];
+
+        // --- ASSEMBLY (WC1W-001) ---
+        $assemblyItems[] = [
+            'item_code' => $previewData->wip_assy, // WC1W-001
+            'description' => $previewData->assyWIP->description ?? '[RIM+DISC] - ASSY BRAA',
+            'type' => 'PR',
+            'wip_info' => 'Assembly', // Info tambahan untuk kolom TIPE di UI
+            'percentage' => null,
+            // Perbaikan di sini: Isi `total` dengan $previewData->wip_assy_price
+            'periods_data' => $createPeriodsData(
+                null, // Qty kosong untuk induk
+                null, // Price kosong untuk induk
+                $previewData->wip_assy_price, // <<< INI YANG DIUBAH! Ambil harga WIP Assembly
+                1 // Kolom index 1 (untuk Qty, Price, Total ke-2)
+            ),
+            'level' => 0,
+            'children' => [
+                // Anak: Process Assembly (RS-AS01)
+                [
+                    'item_code' => $previewData->pr_assy, // RS-AS01
+                    'description' => $previewData->assyProcess->description ?? 'ASSY PROCESS BRAA',
+                    'type' => 'PR',
+                    'percentage' => $previewData->assy_percentage ?? 78,
+                    'periods_data' => $createPeriodsData(
+                        1.0, // Qty untuk proses biasanya 1.0
+                        $previewData->pr_assy_price,
+                        $previewData->pr_assy_price,
+                        1 // Tetap di kolom index 1
+                    ),
+                    'level' => 1
+                ]
+            ]
+        ];
+
+        // ===========================================
+        // SEGMENT: PROCESS
+        // ===========================================
+        $processItems = [];
+
+        $processItems[] = [
+            'item_code' => $previewData->wip_sidering, // WD1S-001
+            'description' => $previewData->sideringWIP->description ?? '[SIDE RING] - SIDE RING 15 X 5.50F',
+            'type' => 'PR',
+            'wip_disc_info' => 'Sidering', // Teks tambahan di kolom TYPE (Sidering)
+            'periods_data' => $createPeriodsData(null, null, $previewData->wip_sidering_price),
+            'level' => 0,
+            'children' => [
+                // Anak 1: Material Sidering (RFS011)
+                [
+                    'item_code' => $previewData->sidering_code, // RFS011
+                    'description' => $previewData->sideringMaterial->description ?? 'SIDERING BAR S25CL FX15 (H = 40 mm)',
+                    'type' => 'RM',
+                    'periods_data' => $createPeriodsData(
+                        $previewData->sidering_qty,
+                        $previewData->sidering_price,
+                        ($previewData->sidering_qty * $previewData->sidering_price),
+                        0 // Tampilkan di kolom pertama
+                    ),
+                    'level' => 1
+                ],
+                // Anak 2: Process Sidering (RS-SR02)
+                [
+                    'item_code' => $previewData->pr_sidering, // RS-SR02
+                    'description' => $previewData->sideringProcess->description ?? 'SIDE RING PROCESS 15F',
+                    'type' => 'PR',
+                    'periods_data' => $createPeriodsData(
+                        1.0,
+                        $previewData->pr_sidering_price,
+                        $previewData->pr_sidering_price,
+                        0 // Tampilkan di kolom pertama
+                    ),
+                    'level' => 1
+                ]
+            ]
+        ];
+
+        $processItems[] = [
+            'item_code' => $previewData->wip_rim, // WA1R-001
+            'description' => $previewData->rimWIP->description ?? '[RIM BAR] RIM BAR 15 X 5.50F',
+            'type' => 'PR',
+            'wip_disc_info' => 'Forming', // Teks tambahan di kolom TYPE (Forming)
+            'periods_data' => $createPeriodsData(null, null, $previewData->wip_rim_price),
+            'level' => 0,
+            'children' => [
+                // Anak 1: Material Rim (RFR013)
+                [
+                    'item_code' => $previewData->rim_code, // RFR013
+                    'description' => $previewData->rimMaterial->description ?? 'RIM BAR RM-T 550FX15TP (H = 180mm)',
+                    'type' => 'RM',
+                    'periods_data' => $createPeriodsData(
+                        $previewData->rim_qty,
+                        $previewData->rim_price,
+                        ($previewData->rim_qty * $previewData->rim_price),
+                        0 // Tampilkan di kolom pertama
+                    ),
+                    'level' => 1
+                ],
+                // Anak 2: Process Rim (RS-RB01)
+                [
+                    'item_code' => $previewData->pr_rim, // RS-RB01
+                    'description' => $previewData->rimProcess->description ?? 'RIM BAR PROCESS 15',
+                    'type' => 'PR',
+                    'periods_data' => $createPeriodsData(
+                        1.0,
+                        $previewData->pr_rim_price,
+                        $previewData->pr_rim_price,
+                        0 // Tampilkan di kolom pertama
+                    ),
+                    'level' => 1
+                ]
+            ]
+        ];
+
+        $processItems[] = [
+            'item_code' => $previewData->wip_disc, // WB1D-004
+            'description' => $previewData->discWIP->description ?? '[DISC] - DISC 5.3 BRAA', // Deskripsi dari relasi
+            'type' => 'PR', // Berdasarkan gambar
+            'wip_disc_info' => 'Disc', // Teks tambahan di kolom TYPE
+            'periods_data' => $createPeriodsData(null, null, $previewData->wip_disc_price), // Kosong untuk induk di gambar
+            'level' => 0, // Level indentasi awal
+            'children' => [
+                // Anak 1: Material Disc (RFD002)
+                [
+                    'item_code' => $previewData->disc_code, // RFD002
+                    'description' => $previewData->discMaterial->description ?? 'BRAA (O/D 50) - DISC 5.3 X 375 X 375',
+                    'type' => 'RM',
+                    'periods_data' => $createPeriodsData(
+                        $previewData->disc_qty,
+                        $previewData->disc_price,
+                        ($previewData->disc_qty * $previewData->disc_price), // Total Qty*Price
+                        0 // Tampilkan di kolom pertama
+                    ),
+                    'level' => 1 // Indentasi lebih dalam
+                ],
+                // Anak 2: Process Disc (RS-DC04)
+                [
+                    'item_code' => $previewData->pr_disc, // RS-DC04
+                    'description' => $previewData->discProcess->description ?? 'DISC PROCESS BRAA',
+                    'type' => 'PR',
+                    'periods_data' => $createPeriodsData(
+                        1.0, // Qty 1.0 dari gambar
+                        $previewData->pr_disc_price,
+                        $previewData->pr_disc_price, // Total sama dengan price karena Qty 1.0
+                        0 // Tampilkan di kolom pertama
+                    ),
+                    'level' => 1
+                ]
+            ]
+        ];
+
+        $reportData['categories'][] = [
+            'name' => 'Assembly',
+            'items' => $assemblyItems,
+        ];
+
+        // Tambahkan kategori "Process" ke dalam array categories
+        $reportData['categories'][] = [
+            'name' => 'Process',
+            'items' => $processItems,
+        ];
+
+        // dd($reportData['categories' === 'Assembly']);
 
         return Inertia::render('bom/preview', [
-            'itemCode' => $item_code, // Tetap kirim item_code untuk tombol cetak
-            'reportData' => $previewData->toArray(), // Kirim data model juga (opsional, untuk akses terstruktur jika diperlukan)
-            'previewHtml' => $renderedHtmlForPreview, // Kirim HTML yang sudah dirender ke frontend
+            'previewData' => $previewData,
+            'reportData' => $reportData,
         ]);
     }
-
-    // public function downloadReport(Request $request, string $item_code)
-    // {
-
-    //     $dataToExport = BOM_Report::where('item_code', $item_code)->first();
-
-    //     $exportInstance = new \App\Exports\BomReportExport($dataToExport);
-
-    //     return \Maatwebsite\Excel\Facades\Excel::download($exportInstance, 'report.xlsx');
-    // }
 }

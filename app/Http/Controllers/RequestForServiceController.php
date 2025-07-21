@@ -9,13 +9,10 @@ use Illuminate\Support\Facades\Auth;
 
 class RequestForServiceController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+
     public function index()
     {
         $services = RequestForService::all();
-        dd(Auth::user()->getPermissionNames());
 
         return Inertia::render('rfs/index', [
             'services' => $services,
@@ -23,7 +20,8 @@ class RequestForServiceController extends Controller
                 'user' => Auth::check() ? [
                     'name' => Auth::user()->name,
                     'npk' => Auth::user()->npk,
-                    'permissions' => Auth::user()->getPermissionNames(),
+                    'roles' => Auth::user()->getRoleNames()->toArray(), // Pastikan ini diubah ke array
+                    'permissions' => Auth::user()->getAllPermissions()->pluck('name')->toArray(), // Juga pastikan ini dikirim
                 ] : null,
             ],
         ]);
@@ -41,15 +39,20 @@ class RequestForServiceController extends Controller
             'attachment' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,xlsx,xls|max:10240',
         ]);
 
-        // Upload file if exists
+
         if ($request->hasFile('attachment')) {
             $validated['attachment'] = $request->file('attachment')->store('attachment', 'public');
         }
 
+        $user = Auth::user();
 
+        if ($user) {
+            if ($user->hasRole(['Director', 'Deputy Division', 'Deputy Department'])) {
+                $validated['status'] = 'accepted';
+            }
+        }
 
         RequestForService::create($validated);
-
         return redirect()->route('rfs.index')->with('success', 'Request submitted successfully.');
     }
 

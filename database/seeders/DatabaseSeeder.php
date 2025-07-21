@@ -9,8 +9,6 @@ use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Illuminate\Support\Facades\Hash;
 use App\Models\RequestForService;
-use Illuminate\Support\Arr;
-
 
 
 class DatabaseSeeder extends Seeder
