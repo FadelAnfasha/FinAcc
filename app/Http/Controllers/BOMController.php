@@ -376,11 +376,9 @@ class BOMController extends Controller
             abort(404, 'Data BOM Report tidak ditemukan untuk Item Code: ' . $item_code);
         }
 
-        // Helper function untuk membuat array data periode
         $createPeriodsData = function ($qty, $price, $total, $columnIndex = 0) {
             $periods = array_fill(0, 4, ['qty' => '', 'price' => '', 'total' => '']); // 4 kolom kosong
-            // Perbaikan kondisi agar bisa menampilkan total saja jika qty/price null
-            // Pastikan columnIndex valid (antara 0 dan 3)
+
             $validColumnIndex = max(0, min(3, $columnIndex));
 
             // Perhatikan perubahan kondisi di sini: hanya perlu salah satu tidak null
@@ -394,166 +392,759 @@ class BOMController extends Controller
             return $periods;
         };
 
-        // ===========================================
-        // SEGMENT: ASSEMBLY (Modifikasi di sini)
-        // ===========================================
-        $assemblyItems = [];
+        $cycleTimeAttributes = [
+            'blanking',
+            'spinDisc',
+            'autoDisc',
+            'manualDisc',
+            'discLathe',
 
-        // --- ASSEMBLY (WC1W-001) ---
-        $assemblyItems[] = [
-            'item_code' => $previewData->wip_assy, // WC1W-001
-            'description' => $previewData->assyWIP->description ?? '[RIM+DISC] - ASSY BRAA',
-            'type' => 'PR',
-            'wip_info' => 'Assembly', // Info tambahan untuk kolom TIPE di UI
-            'percentage' => null,
-            // Perbaikan di sini: Isi `total` dengan $previewData->wip_assy_price
-            'periods_data' => $createPeriodsData(
-                null, // Qty kosong untuk induk
-                null, // Price kosong untuk induk
-                $previewData->wip_assy_price, // <<< INI YANG DIUBAH! Ambil harga WIP Assembly
-                1 // Kolom index 1 (untuk Qty, Price, Total ke-2)
-            ),
-            'level' => 0,
-            'children' => [
-                // Anak: Process Assembly (RS-AS01)
-                [
-                    'item_code' => $previewData->pr_assy, // RS-AS01
-                    'description' => $previewData->assyProcess->description ?? 'ASSY PROCESS BRAA',
-                    'type' => 'PR',
-                    'percentage' => $previewData->assy_percentage ?? 78,
-                    'periods_data' => $createPeriodsData(
-                        1.0, // Qty untuk proses biasanya 1.0
-                        $previewData->pr_assy_price,
-                        $previewData->pr_assy_price,
-                        1 // Tetap di kolom index 1
-                    ),
-                    'level' => 1
-                ]
-            ]
+            'rim1',
+            'rim2',
+            'rim3',
+
+            'coiler',
+            'forming',
+
+            'assy1',
+            'assy2',
+            'machining',
+            'shotPeening',
+
+            'ced',
+            'topcoat',
+
+            'packing_dom',
+            'packing_exp',
         ];
+
+        // ===========================================
+        // PERHITUNGAN TOTAL CYCLE TIME BARU
+        // ===========================================
+        $totalCycleTime = 0;
+        $totalCTData = $previewData->ct; // Mengambil objek CT data
+
+        if ($totalCTData) { // Pastikan objek $previewData->ct itu sendiri tidak null
+            foreach ($cycleTimeAttributes as $attribute) {
+                // Karena Anda menjamin tidak ada nilai null, kita bisa langsung mengakses properti
+                // Tapi tetap baik untuk memastikan properti ada, meskipun nilainya 0
+                if (isset($totalCTData->{$attribute})) {
+                    $totalCycleTime += $totalCTData->{$attribute};
+                }
+            }
+        }
+        // ===========================================
+        // SEGMENT: FINISH GOOD 
+        // ===========================================
+
+        $packingChildren = [];
+        $fgItems = [];
+
+        if ($previewData->pack_price > 0) {
+            $packProcessLines = [];
+            $packLinesMapping = [
+                'pack' => ['ct_prop' => 'pack_ct'],
+            ];
+
+            $cycleTimeData = $previewData->ct;
+
+            if ($cycleTimeData) {
+                foreach ($packLinesMapping as $lineKey => $props) {
+
+                    if (isset($cycleTimeData->pack_ct_dom) && $cycleTimeData->pack_ct_dom == 0) {
+                        $cycleTimeValue = $cycleTimeData->packing_exp ?? null;
+                    } else {
+                        $cycleTimeValue = $cycleTimeData->packing_dom ?? null;
+                    }
+
+
+                    if ($cycleTimeValue > 0) {
+                        $displayName = 'Packing';
+                        $packProcessLines[] = [
+                            'name' => $displayName,
+                            'cycle_time' => ($cycleTimeValue !== null) ? number_format($cycleTimeValue, 1, ',', '.') : ''
+                        ];
+                    }
+                }
+            }
+
+            $packingChildren[] = [
+                'description' => 'Packing',
+                'type' => 'PR',
+                'lines' => $packProcessLines,
+                'periods_data' => $createPeriodsData(
+                    1.0,
+                    $previewData->pack_price ?? null,
+                    ($previewData->pack_price ?? 0) * 1.0,
+                    3
+                ),
+                'level' => 1
+            ];
+        }
+
+        if (($previewData->wip_valve_price ?? 0) > 0) {
+            $packingChildren[] = [
+                'description' => 'Valve',
+                'type' => 'PR',
+                'periods_data' => $createPeriodsData(
+                    1.0,
+                    $previewData->wip_valve_price ?? null,
+                    ($previewData->wip_valve_price ?? 0) * 1.0,
+                    3
+                ),
+                'level' => 1
+            ];
+        }
+
+        if (!empty(trim($previewData->item_code))) {
+            if ($previewData->item_code !== '-' && (!empty($packingChildren) || (isset($previewData->total) && ($previewData->total ?? 0) > 0))) {
+                $fgItems[] = [
+                    'item_code' => $previewData->item_code,
+                    'description' => $previewData->bom->description ?? null,
+                    'type' => 'PR',
+                    'wip_info' => 'Finish Good',
+                    'periods_data' => $createPeriodsData(
+                        null,
+                        null,
+                        $previewData->total ?? null,
+                        3
+                    ),
+                    'level' => 0,
+                    'children' => $packingChildren
+                ];
+            }
+        }
+        // ===========================================
+        // SEGMENT: PAINTING 
+        // ===========================================
+        $topcoatItems = [];
+
+        $tcWChildren = [];
+        if ($previewData->pr_tcW !== '-' && $previewData->pr_tcW !== null) {
+            $tcWProcessLines = [];
+            $tcWLinesMapping = [
+                'topcoat' => ['eff_prop' => 'topcoat_eff', 'ct_prop' => 'topcoat_ct'],
+            ];
+
+            $cycleTimeData = $previewData->ct;
+
+            if ($cycleTimeData) {
+                foreach ($tcWLinesMapping as $lineKey => $props) {
+                    $efficiencyProp = $props['eff_prop'];
+                    $cycleTimeProp = $props['ct_prop'];
+
+                    $efficiency = $cycleTimeData->{$efficiencyProp} ?? 0;
+
+                    $cycleTimeValue = ($cycleTimeData->{$cycleTimeProp} ?? 0) * 5 / 7;
+
+                    $formattedPercentage = number_format($efficiency * 100, 0);
+
+                    if ($efficiency > 0) {
+                        $displayName = ucfirst($lineKey);
+
+                        $tcWProcessLines[] = [
+                            'name' => $displayName,
+                            'percentage' => $formattedPercentage . '%',
+                            'cycle_time' => ($cycleTimeValue !== null) ? number_format($cycleTimeValue, 1, ',', '.') : ''
+                        ];
+                    }
+                }
+            }
+
+            $tcWChildren[] = [
+                'item_code' => $previewData->pr_tcW->item_code ?? $previewData->pr_tcW,
+                'description' => $previewData->tcWProcess->description ?? 'N/A',
+                'type' => 'PR',
+                'lines' => $tcWProcessLines,
+                'periods_data' => $createPeriodsData(
+                    1.0,
+                    $previewData->pr_tcW_price ?? null,
+                    $previewData->pr_tcW_price ?? null,
+                    2
+                ),
+                'level' => 1
+            ];
+        }
+        if (!empty(trim($previewData->wip_tcW))) {
+
+            if ($previewData->wip_tcW !== '-' && (!empty($tcWChildren) || (isset($previewData->wip_tcW_price) && $previewData->wip_tcW_price !== null && $previewData->wip_tcW_price >= 0))) {
+                $topcoatItems[] = [
+                    'item_code' => $previewData->wip_tcW,
+                    'description' => $previewData->tcWWIP->description ?? null,
+                    'type' => 'PR',
+                    'wip_info' => 'tcW',
+                    'periods_data' => $createPeriodsData(
+                        null,
+                        null,
+                        $previewData->wip_tcW_price ?? null,
+                        2
+                    ),
+                    'level' => 0,
+                    'children' => $tcWChildren
+                ];
+            }
+        }
+
+        $tcSRChildren = [];
+        if ($previewData->pr_tcSR !== '-' && $previewData->pr_tcSR !== null) {
+            $tcSRProcessLines = [];
+            $tcSRLinesMapping = [
+                'topcoat' => ['eff_prop' => 'topcoat_eff', 'ct_prop' => 'topcoat_ct'],
+            ];
+
+            $cycleTimeData = $previewData->ct;
+
+            if ($cycleTimeData) {
+                foreach ($tcSRLinesMapping as $lineKey => $props) {
+                    $efficiencyProp = $props['eff_prop'];
+                    $cycleTimeProp = $props['ct_prop'];
+
+                    $efficiency = $cycleTimeData->{$efficiencyProp} ?? 0;
+
+                    $cycleTimeValue = ($cycleTimeData->{$cycleTimeProp} ?? 0) * 2 / 7;
+
+                    $formattedPercentage = number_format($efficiency * 100, 0);
+
+                    if ($efficiency > 0) {
+                        $displayName = ucfirst($lineKey);
+
+                        $tcSRProcessLines[] = [
+                            'name' => $displayName,
+                            'percentage' => $formattedPercentage . '%',
+                            'cycle_time' => ($cycleTimeValue !== null) ? number_format($cycleTimeValue, 1, ',', '.') : ''
+                        ];
+                    }
+                }
+            }
+
+            $tcSRChildren[] = [
+                'item_code' => $previewData->pr_tcSR->item_code ?? $previewData->pr_tcSR,
+                'description' => $previewData->tcSRProcess->description ?? 'N/A',
+                'type' => 'PR',
+                'lines' => $tcSRProcessLines,
+                'periods_data' => $createPeriodsData(
+                    1.0,
+                    $previewData->pr_tcSR_price ?? null,
+                    $previewData->pr_tcSR_price ?? null,
+                    2
+                ),
+                'level' => 1
+            ];
+        }
+        if (!empty(trim($previewData->wip_tcSR))) {
+
+            if ($previewData->wip_tcSR !== '-' && (!empty($tcSRChildren) || (isset($previewData->wip_tcSR_price) && $previewData->wip_tcSR_price !== null && $previewData->wip_tcSR_price >= 0))) {
+                $topcoatItems[] = [
+                    'item_code' => $previewData->wip_tcSR,
+                    'description' => $previewData->tcSRWIP->description ?? null,
+                    'type' => 'PR',
+                    'wip_info' => 'tcSR',
+                    'periods_data' => $createPeriodsData(
+                        null,
+                        null,
+                        $previewData->wip_tcSR_price ?? null,
+                        2
+                    ),
+                    'level' => 0,
+                    'children' => $tcSRChildren
+                ];
+            }
+        }
+
+
+        $cedItems = [];
+        $cedWChildren = [];
+        if ($previewData->pr_cedW !== '-' && $previewData->pr_cedW !== null) {
+            $cedWProcessLines = [];
+            $cedWLinesMapping = [
+                'topcoat' => ['eff_prop' => 'topcoat_eff', 'ct_prop' => 'topcoat_ct'],
+            ];
+
+            $cycleTimeData = $previewData->ct;
+
+            if ($cycleTimeData) {
+                foreach ($cedWLinesMapping as $lineKey => $props) {
+                    $efficiencyProp = $props['eff_prop'];
+                    $cycleTimeProp = $props['ct_prop'];
+
+                    $efficiency = $cycleTimeData->{$efficiencyProp} ?? 0;
+
+                    $cycleTimeValue = ($cycleTimeData->{$cycleTimeProp} ?? 0) * 5 / 7;
+
+                    $formattedPercentage = number_format($efficiency * 100, 0);
+
+                    if ($efficiency > 0) {
+                        $displayName = ucfirst($lineKey);
+
+                        $cedWProcessLines[] = [
+                            'name' => $displayName,
+                            'percentage' => $formattedPercentage . '%',
+                            'cycle_time' => ($cycleTimeValue !== null) ? number_format($cycleTimeValue, 1, ',', '.') : ''
+                        ];
+                    }
+                }
+            }
+
+            $cedWChildren[] = [
+                'item_code' => $previewData->pr_cedW->item_code ?? $previewData->pr_cedW,
+                'description' => $previewData->cedWProcess->description ?? 'N/A',
+                'type' => 'PR',
+                'lines' => $cedWProcessLines,
+                'periods_data' => $createPeriodsData(
+                    1.0,
+                    $previewData->pr_cedW_price ?? null,
+                    $previewData->pr_cedW_price ?? null,
+                    2
+                ),
+                'level' => 1
+            ];
+        }
+        if (!empty(trim($previewData->wip_cedW))) {
+
+            if ($previewData->wip_cedW !== '-' && (!empty($cedWChildren) || (isset($previewData->wip_cedW_price) && $previewData->wip_cedW_price !== null && $previewData->wip_cedW_price >= 0))) {
+                $topcoatItems[] = [
+                    'item_code' => $previewData->wip_cedW,
+                    'description' => $previewData->cedWWIP->description ?? null,
+                    'type' => 'PR',
+                    'wip_info' => 'cedW',
+                    'periods_data' => $createPeriodsData(
+                        null,
+                        null,
+                        $previewData->wip_cedW_price ?? null,
+                        2
+                    ),
+                    'level' => 0,
+                    'children' => $cedWChildren
+                ];
+            }
+        }
+
+        $cedSRChildren = [];
+        if ($previewData->pr_cedSR !== '-' && $previewData->pr_cedSR !== null) {
+            $cedSRProcessLines = [];
+            $cedSRLinesMapping = [
+                'ced' => ['eff_prop' => 'ced_eff', 'ct_prop' => 'ced'],
+            ];
+
+            $cycleTimeData = $previewData->ct;
+
+            if ($cycleTimeData) {
+                foreach ($cedSRLinesMapping as $lineKey => $props) {
+                    $efficiencyProp = $props['eff_prop'];
+                    $cycleTimeProp = $props['ct_prop'];
+
+                    $efficiency = $cycleTimeData->{$efficiencyProp} ?? 0;
+
+                    $cycleTimeValue = ($cycleTimeData->{$cycleTimeProp} ?? 0) * 2 / 7;
+
+                    $formattedPercentage = number_format($efficiency * 100, 0);
+
+                    if ($efficiency > 0) {
+                        $displayName = ucfirst($lineKey);
+
+                        $cedSRProcessLines[] = [
+                            'name' => $displayName,
+                            'percentage' => $formattedPercentage . '%',
+                            'cycle_time' => ($cycleTimeValue !== null) ? number_format($cycleTimeValue, 1, ',', '.') : ''
+                        ];
+                    }
+                }
+            }
+
+            $cedSRChildren[] = [
+                'item_code' => $previewData->pr_cedSR->item_code ?? $previewData->pr_cedSR,
+                'description' => $previewData->cedSRProcess->description ?? 'N/A',
+                'type' => 'PR',
+                'lines' => $cedSRProcessLines,
+                'periods_data' => $createPeriodsData(
+                    1.0,
+                    $previewData->pr_cedSR_price ?? null,
+                    $previewData->pr_cedSR_price ?? null,
+                    2
+                ),
+                'level' => 1
+            ];
+        }
+        if (!empty(trim($previewData->wip_cedSR))) {
+
+            if ($previewData->wip_cedSR !== '-' && (!empty($cedSRChildren) || (isset($previewData->wip_cedSR_price) && $previewData->wip_cedSR_price !== null && $previewData->wip_cedSR_price >= 0))) {
+                $topcoatItems[] = [
+                    'item_code' => $previewData->wip_cedSR,
+                    'description' => $previewData->cedSRWIP->description ?? null,
+                    'type' => 'PR',
+                    'wip_info' => 'cedSR',
+                    'periods_data' => $createPeriodsData(
+                        null,
+                        null,
+                        $previewData->wip_cedSR_price ?? null,
+                        2
+                    ),
+                    'level' => 0,
+                    'children' => $cedSRChildren
+                ];
+            }
+        }
+
+        // ===========================================
+        // SEGMENT: ASSEMBLY 
+        // ===========================================
+        $assyItems = [];
+        $assyChildren = [];
+        if ($previewData->pr_assy !== '-' && $previewData->pr_assy !== null) {
+            $assyProcessLines = [];
+            $assyLinesMapping = [
+                'assy1'   => ['eff_prop' => 'assy1_eff', 'ct_prop' => 'assy1'],
+                'assy2'   => ['eff_prop' => 'assy2_eff', 'ct_prop' => 'assy2'],
+                'machining'   => ['eff_prop' => 'machining_eff', 'ct_prop' => 'machining'],
+                'shotPeening'   => ['eff_prop' => 'shotPeening_eff', 'ct_prop' => 'shotPeening'],
+            ];
+
+            $cycleTimeData = $previewData->ct;
+
+            if ($cycleTimeData) {
+                foreach ($assyLinesMapping as $lineKey => $props) {
+                    $efficiencyProp = $props['eff_prop'];
+                    $cycleTimeProp = $props['ct_prop'];
+
+                    $efficiency = $cycleTimeData->{$efficiencyProp} ?? 0;
+
+                    $cycleTimeValue = $cycleTimeData->{$cycleTimeProp} ?? 0;
+
+                    $formattedPercentage = number_format($efficiency * 100, 0);
+
+                    if ($efficiency > 0) {
+                        $displayName = ucfirst($lineKey);
+
+                        $assyProcessLines[] = [
+                            'name' => $displayName,
+                            'percentage' => $formattedPercentage . '%',
+                            'cycle_time' => ($cycleTimeValue !== null) ? number_format($cycleTimeValue, 1, ',', '.') : ''
+                        ];
+                    }
+                }
+            }
+
+            $assyChildren[] = [
+                'item_code' => $previewData->pr_assy->item_code ?? $previewData->pr_assy,
+                'description' => $previewData->assyProcess->description ?? 'N/A',
+                'type' => 'PR',
+                'lines' => $assyProcessLines,
+                'periods_data' => $createPeriodsData(
+                    1.0,
+                    $previewData->pr_assy_price ?? null,
+                    $previewData->pr_assy_price ?? null,
+                    1
+                ),
+                'level' => 1
+            ];
+        }
+        if (!empty(trim($previewData->wip_assy))) {
+
+            if ($previewData->wip_assy !== '-' && (!empty($assyChildren) || (isset($previewData->wip_assy_price) && $previewData->wip_assy_price !== null && $previewData->wip_assy_price >= 0))) {
+                $assyItems[] = [
+                    'item_code' => $previewData->wip_assy,
+                    'description' => $previewData->assyWIP->description ?? null,
+                    'type' => 'PR',
+                    'wip_info' => 'Assy',
+                    'periods_data' => $createPeriodsData(
+                        null,
+                        null,
+                        $previewData->wip_assy_price ?? null,
+                        1
+                    ),
+                    'level' => 0,
+                    'children' => $assyChildren
+                ];
+            }
+        }
 
         // ===========================================
         // SEGMENT: PROCESS
         // ===========================================
         $processItems = [];
+        #Sidering
+        $sideringChildren = [];
+        if ($previewData->sidering_code !== null && $previewData->sidering_code !== '-') {
+            $sideringChildren[] = [
+                'item_code' => $previewData->sidering_code,
+                'description' => $previewData->sideringMaterial->description ?? null,
+                'type' => 'RM',
+                'periods_data' => $createPeriodsData(
+                    $previewData->sidering_qty ?? null,
+                    $previewData->sidering_price ?? null,
+                    ($previewData->sidering_qty * ($previewData->sidering_price ?? 0)) ?? null,
+                    0
+                ),
+                'level' => 1
+            ];
+        }
 
-        $processItems[] = [
-            'item_code' => $previewData->wip_sidering, // WD1S-001
-            'description' => $previewData->sideringWIP->description ?? '[SIDE RING] - SIDE RING 15 X 5.50F',
-            'type' => 'PR',
-            'wip_disc_info' => 'Sidering', // Teks tambahan di kolom TYPE (Sidering)
-            'periods_data' => $createPeriodsData(null, null, $previewData->wip_sidering_price),
-            'level' => 0,
-            'children' => [
-                // Anak 1: Material Sidering (RFS011)
-                [
-                    'item_code' => $previewData->sidering_code, // RFS011
-                    'description' => $previewData->sideringMaterial->description ?? 'SIDERING BAR S25CL FX15 (H = 40 mm)',
-                    'type' => 'RM',
-                    'periods_data' => $createPeriodsData(
-                        $previewData->sidering_qty,
-                        $previewData->sidering_price,
-                        ($previewData->sidering_qty * $previewData->sidering_price),
-                        0 // Tampilkan di kolom pertama
-                    ),
-                    'level' => 1
-                ],
-                // Anak 2: Process Sidering (RS-SR02)
-                [
-                    'item_code' => $previewData->pr_sidering, // RS-SR02
-                    'description' => $previewData->sideringProcess->description ?? 'SIDE RING PROCESS 15F',
+        if ($previewData->pr_sidering !== '-' && $previewData->pr_sidering !== null) {
+            $sideringProcessLines = [];
+            $sideringLinesMapping = [
+                'coiler' => ['eff_prop' => 'coiler_eff', 'ct_prop' => 'coiler'],
+                'forming' => ['eff_prop' => 'forming_eff', 'ct_prop' => 'forming'],
+            ];
+
+            $cycleTimeData = $previewData->ct;
+
+            if ($cycleTimeData) {
+                foreach ($sideringLinesMapping as $lineKey => $props) {
+                    $efficiencyProp = $props['eff_prop'];
+                    $cycleTimeProp = $props['ct_prop'];
+
+                    $efficiency = $cycleTimeData->{$efficiencyProp} ?? 0;
+                    $cycleTimeValue = $cycleTimeData->{$cycleTimeProp} ?? null;
+
+                    $formattedPercentage = number_format($efficiency * 100, 0);
+
+                    if ($efficiency > 0) {
+                        $displayName = ucfirst($lineKey);
+
+                        $sideringProcessLines[] = [
+                            'name' => $displayName,
+                            'percentage' => $formattedPercentage . '%',
+                            'cycle_time' => ($cycleTimeValue !== null) ? number_format($cycleTimeValue, 1, ',', '.') : ''
+                        ];
+                    }
+                }
+            }
+
+            $sideringChildren[] = [
+                'item_code' => $previewData->pr_sidering->item_code ?? $previewData->pr_sidering,
+                'description' => $previewData->sideringProcess->description ?? 'N/A',
+                'type' => 'PR',
+                'lines' => $sideringProcessLines,
+                'periods_data' => $createPeriodsData(
+                    1.0,
+                    $previewData->pr_sidering_price ?? null,
+                    $previewData->pr_sidering_price ?? null,
+                    0
+                ),
+                'level' => 1
+            ];
+        }
+
+        if (!empty(trim($previewData->wip_sidering))) {
+            if ($previewData->wip_sidering !== '-' && (
+                !empty($sideringChildren) ||
+                (isset($previewData->wip_sidering_price) && $previewData->wip_sidering_price !== null && $previewData->wip_sidering_price >= 0)
+            )) {
+                $processItems[] = [
+                    'item_code' => $previewData->wip_sidering,
+                    'description' => $previewData->sideringWIP->description ?? null,
                     'type' => 'PR',
+                    'wip_info' => 'Sidering',
                     'periods_data' => $createPeriodsData(
-                        1.0,
-                        $previewData->pr_sidering_price,
-                        $previewData->pr_sidering_price,
-                        0 // Tampilkan di kolom pertama
+                        null,
+                        null,
+                        $previewData->wip_sidering_price ?? null,
+                        0
                     ),
-                    'level' => 1
-                ]
-            ]
+                    'level' => 0,
+                    'children' => $sideringChildren
+                ];
+            }
+        }
+
+        #Rim
+        $rimChildren = [];
+        if ($previewData->rim_code !== null && $previewData->rim_code !== '-') {
+            $rimChildren[] = [
+                'item_code' => $previewData->rim_code,
+                'description' => $previewData->rimMaterial->description ?? null,
+                'type' => 'RM',
+                'periods_data' => $createPeriodsData(
+                    $previewData->rim_qty ?? null,
+                    $previewData->rim_price ?? null,
+                    ($previewData->rim_qty * ($previewData->rim_price ?? 0)) ?? null,
+                    0
+                ),
+                'level' => 1
+            ];
+        }
+
+        if ($previewData->pr_rim !== '-' && $previewData->pr_rim !== null) {
+            $rimProcessLines = [];
+            $rimLinesMapping = [
+                'rim1' => ['eff_prop' => 'rim1_eff', 'ct_prop' => 'rim1'],
+                'rim2' => ['eff_prop' => 'rim2_eff', 'ct_prop' => 'rim2'],
+                'rim2insp' => ['eff_prop' => 'rim2insp_eff', 'ct_prop' => 'rim2insp'],
+                'rim3' => ['eff_prop' => 'rim3_eff', 'ct_prop' => 'rim3'],
+
+            ];
+
+            $cycleTimeData = $previewData->ct;
+
+            if ($cycleTimeData) {
+                foreach ($rimLinesMapping as $lineKey => $props) {
+                    $efficiencyProp = $props['eff_prop'];
+                    $cycleTimeProp = $props['ct_prop'];
+
+                    $efficiency = $cycleTimeData->{$efficiencyProp} ?? 0;
+                    $cycleTimeValue = $cycleTimeData->{$cycleTimeProp} ?? null;
+
+                    $formattedPercentage = number_format($efficiency * 100, 0);
+
+                    if ($efficiency > 0) {
+                        $displayName = ucfirst($lineKey);
+
+                        $rimProcessLines[] = [
+                            'name' => $displayName,
+                            'percentage' => $formattedPercentage . '%',
+                            'cycle_time' => ($cycleTimeValue !== null) ? number_format($cycleTimeValue, 1, ',', '.') : ''
+                        ];
+                    }
+                }
+            }
+
+            $rimChildren[] = [
+                'item_code' => $previewData->pr_rim->item_code ?? $previewData->pr_rim,
+                'description' => $previewData->rimProcess->description ?? 'N/A',
+                'type' => 'PR',
+                'lines' => $rimProcessLines,
+                'periods_data' => $createPeriodsData(
+                    1.0,
+                    $previewData->pr_rim_price ?? null,
+                    $previewData->pr_rim_price ?? null,
+                    0
+                ),
+                'level' => 1
+            ];
+        }
+
+        if (!empty(trim($previewData->wip_rim))) {
+            if ($previewData->wip_rim !== '-' && (
+                !empty($rimChildren) ||
+                (isset($previewData->wip_rim_price) && $previewData->wip_rim_price !== null && $previewData->wip_rim_price >= 0)
+            )) {
+                $processItems[] = [
+                    'item_code' => $previewData->wip_rim,
+                    'description' => $previewData->rimWIP->description ?? null,
+                    'type' => 'PR',
+                    'wip_info' => 'rim',
+                    'periods_data' => $createPeriodsData(
+                        null,
+                        null,
+                        $previewData->wip_rim_price ?? null,
+                        0
+                    ),
+                    'level' => 0,
+                    'children' => $rimChildren
+                ];
+            }
+        }
+
+        #Disc
+        $discChildren = [];
+        if ($previewData->disc_code !== null && $previewData->disc_code !== '-') {
+            $discChildren[] = [
+                'item_code' => $previewData->disc_code,
+                'description' => $previewData->discMaterial->description ?? null,
+                'type' => 'RM',
+                'periods_data' => $createPeriodsData(
+                    $previewData->disc_qty ?? null,
+                    $previewData->disc_price ?? null,
+                    ($previewData->disc_qty * ($previewData->disc_price ?? 0)) ?? null,
+                    0
+                ),
+                'level' => 1
+            ];
+        }
+
+        if ($previewData->pr_disc !== '-' && $previewData->pr_disc !== null) {
+            $discProcessLines = [];
+            $discLinesMapping = [
+                'blanking'   => ['eff_prop' => 'blanking_eff', 'ct_prop' => 'blanking'],
+                'spinDisc'   => ['eff_prop' => 'spinDisc_eff', 'ct_prop' => 'spinDisc'],
+                'autoDisc'   => ['eff_prop' => 'autoDisc_eff', 'ct_prop' => 'autoDisc'],
+                'manualDisc' => ['eff_prop' => 'manualDisc_eff', 'ct_prop' => 'manualDisc'],
+                'c3_sn'      => ['eff_prop' => 'c3_sn_eff',      'ct_prop' => 'c3_sn'],
+                'repairC3'   => ['eff_prop' => 'repairC3_eff',   'ct_prop' => 'repairC3'],
+                'discLathe'  => ['eff_prop' => 'discLathe_eff',  'ct_prop' => 'discLathe'],
+            ];
+
+            $cycleTimeData = $previewData->ct;
+
+            if ($cycleTimeData) {
+                foreach ($discLinesMapping as $lineKey => $props) {
+                    $efficiencyProp = $props['eff_prop'];
+                    $cycleTimeProp = $props['ct_prop'];
+
+                    $efficiency = $cycleTimeData->{$efficiencyProp} ?? 0;
+                    $cycleTimeValue = $cycleTimeData->{$cycleTimeProp} ?? null;
+
+                    $formattedPercentage = number_format($efficiency * 100, 0);
+
+                    if ($efficiency > 0) {
+                        $displayName = ucfirst($lineKey);
+
+                        $discProcessLines[] = [
+                            'name' => $displayName,
+                            'percentage' => $formattedPercentage . '%',
+                            'cycle_time' => ($cycleTimeValue !== null) ? number_format($cycleTimeValue, 1, ',', '.') : ''
+                        ];
+                    }
+                }
+            }
+
+            $discChildren[] = [
+                'item_code' => $previewData->pr_disc->item_code ?? $previewData->pr_disc,
+                'description' => $previewData->discProcess->description ?? 'N/A',
+                'type' => 'PR',
+                'lines' => $discProcessLines,
+                'periods_data' => $createPeriodsData(
+                    1.0,
+                    $previewData->pr_disc_price ?? null,
+                    $previewData->pr_disc_price ?? null,
+                    0
+                ),
+                'level' => 1
+            ];
+        }
+
+        if (!empty(trim($previewData->wip_disc))) {
+            if ($previewData->wip_disc !== '-' && (
+                !empty($discChildren) ||
+                (isset($previewData->wip_disc_price) && $previewData->wip_disc_price !== null && $previewData->wip_disc_price >= 0)
+            )) {
+                $processItems[] = [
+                    'item_code' => $previewData->wip_disc,
+                    'description' => $previewData->discWIP->description ?? null,
+                    'type' => 'PR',
+                    'wip_info' => 'Disc',
+                    'periods_data' => $createPeriodsData(
+                        null,
+                        null,
+                        $previewData->wip_disc_price ?? null,
+                        0
+                    ),
+                    'level' => 0,
+                    'children' => $discChildren
+                ];
+            }
+        }
+
+        $reportData['categories'][] = [
+            'name' => 'FinishGood',
+            'items' => $fgItems,
         ];
 
-        $processItems[] = [
-            'item_code' => $previewData->wip_rim, // WA1R-001
-            'description' => $previewData->rimWIP->description ?? '[RIM BAR] RIM BAR 15 X 5.50F',
-            'type' => 'PR',
-            'wip_disc_info' => 'Forming', // Teks tambahan di kolom TYPE (Forming)
-            'periods_data' => $createPeriodsData(null, null, $previewData->wip_rim_price),
-            'level' => 0,
-            'children' => [
-                // Anak 1: Material Rim (RFR013)
-                [
-                    'item_code' => $previewData->rim_code, // RFR013
-                    'description' => $previewData->rimMaterial->description ?? 'RIM BAR RM-T 550FX15TP (H = 180mm)',
-                    'type' => 'RM',
-                    'periods_data' => $createPeriodsData(
-                        $previewData->rim_qty,
-                        $previewData->rim_price,
-                        ($previewData->rim_qty * $previewData->rim_price),
-                        0 // Tampilkan di kolom pertama
-                    ),
-                    'level' => 1
-                ],
-                // Anak 2: Process Rim (RS-RB01)
-                [
-                    'item_code' => $previewData->pr_rim, // RS-RB01
-                    'description' => $previewData->rimProcess->description ?? 'RIM BAR PROCESS 15',
-                    'type' => 'PR',
-                    'periods_data' => $createPeriodsData(
-                        1.0,
-                        $previewData->pr_rim_price,
-                        $previewData->pr_rim_price,
-                        0 // Tampilkan di kolom pertama
-                    ),
-                    'level' => 1
-                ]
-            ]
+        $reportData['categories'][] = [
+            'name' => 'Topcoat',
+            'items' => $topcoatItems,
         ];
 
-        $processItems[] = [
-            'item_code' => $previewData->wip_disc, // WB1D-004
-            'description' => $previewData->discWIP->description ?? '[DISC] - DISC 5.3 BRAA', // Deskripsi dari relasi
-            'type' => 'PR', // Berdasarkan gambar
-            'wip_disc_info' => 'Disc', // Teks tambahan di kolom TYPE
-            'periods_data' => $createPeriodsData(null, null, $previewData->wip_disc_price), // Kosong untuk induk di gambar
-            'level' => 0, // Level indentasi awal
-            'children' => [
-                // Anak 1: Material Disc (RFD002)
-                [
-                    'item_code' => $previewData->disc_code, // RFD002
-                    'description' => $previewData->discMaterial->description ?? 'BRAA (O/D 50) - DISC 5.3 X 375 X 375',
-                    'type' => 'RM',
-                    'periods_data' => $createPeriodsData(
-                        $previewData->disc_qty,
-                        $previewData->disc_price,
-                        ($previewData->disc_qty * $previewData->disc_price), // Total Qty*Price
-                        0 // Tampilkan di kolom pertama
-                    ),
-                    'level' => 1 // Indentasi lebih dalam
-                ],
-                // Anak 2: Process Disc (RS-DC04)
-                [
-                    'item_code' => $previewData->pr_disc, // RS-DC04
-                    'description' => $previewData->discProcess->description ?? 'DISC PROCESS BRAA',
-                    'type' => 'PR',
-                    'periods_data' => $createPeriodsData(
-                        1.0, // Qty 1.0 dari gambar
-                        $previewData->pr_disc_price,
-                        $previewData->pr_disc_price, // Total sama dengan price karena Qty 1.0
-                        0 // Tampilkan di kolom pertama
-                    ),
-                    'level' => 1
-                ]
-            ]
+        $reportData['categories'][] = [
+            'name' => 'CED',
+            'items' => $cedItems,
         ];
 
         $reportData['categories'][] = [
             'name' => 'Assembly',
-            'items' => $assemblyItems,
+            'items' => $assyItems,
         ];
 
-        // Tambahkan kategori "Process" ke dalam array categories
         $reportData['categories'][] = [
             'name' => 'Process',
             'items' => $processItems,
@@ -564,6 +1155,8 @@ class BOMController extends Controller
         return Inertia::render('bom/preview', [
             'previewData' => $previewData,
             'reportData' => $reportData,
+            'totalCT' => number_format($totalCycleTime, 0, ',', '.'),
+            'mfgCost' => number_format($previewData->total, 0, ',', '.'),
         ]);
     }
 }

@@ -66,6 +66,11 @@ class BOM_Report extends Model
         return $this->belongsTo(BillOfMaterial::class, 'item_code', 'item_code');
     }
 
+    public function ct()
+    {
+        return $this->belongsTo(CycleTime::class, 'item_code', 'item_code');
+    }
+
     public function discWIP()
     {
         return $this->belongsTo(BillOfMaterial::class, 'wip_disc', 'item_code');
@@ -111,8 +116,53 @@ class BOM_Report extends Model
         return $this->belongsTo(BillOfMaterial::class, 'pr_sidering', 'item_code');
     }
 
-    public function assemblyProcess()
+    public function assyWIP()
+    {
+        return $this->belongsTo(BillOfMaterial::class, 'wip_assy', 'item_code');
+    }
+
+    public function assyProcess()
     {
         return $this->belongsTo(BillOfMaterial::class, 'pr_assy', 'item_code');
+    }
+
+    public function cedWWIP()
+    {
+        return $this->belongsTo(BillOfMaterial::class, 'wip_cedW', 'item_code');
+    }
+
+    public function cedWProcess()
+    {
+        return $this->belongsTo(BillOfMaterial::class, 'pr_cedW', 'item_code');
+    }
+
+    public function cedSRWIP()
+    {
+        return $this->belongsTo(BillOfMaterial::class, 'wip_cedSR', 'item_code');
+    }
+
+    public function cedSRProcess()
+    {
+        return $this->belongsTo(BillOfMaterial::class, 'pr_cedSR', 'item_code');
+    }
+
+    public function tcWWIP()
+    {
+        return $this->belongsTo(BillOfMaterial::class, 'wip_tcW', 'item_code');
+    }
+
+    public function tcWProcess()
+    {
+        return $this->belongsTo(BillOfMaterial::class, 'pr_tcW', 'item_code');
+    }
+
+    public function tcSRWIP()
+    {
+        return $this->belongsTo(BillOfMaterial::class, 'wip_tcSR', 'item_code');
+    }
+
+    public function tcSRProcess()
+    {
+        return $this->belongsTo(BillOfMaterial::class, 'pr_tcSR', 'item_code');
     }
 }
