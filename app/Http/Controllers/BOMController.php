@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\View; // Import Facade View untuk merender Blade 
 
 
 use App\Models\BOM_Report;
+use BcMath\Number;
 use Illuminate\Support\Str;
 
 class BOMController extends Controller
@@ -523,7 +524,7 @@ class BOMController extends Controller
         if ($previewData->pr_tcW !== '-' && $previewData->pr_tcW !== null) {
             $tcWProcessLines = [];
             $tcWLinesMapping = [
-                'topcoat' => ['eff_prop' => 'topcoat_eff', 'ct_prop' => 'topcoat_ct'],
+                'topcoat' => ['eff_prop' => 'topcoat_eff', 'ct_prop' => 'topcoat'],
             ];
 
             $cycleTimeData = $previewData->ct;
@@ -589,7 +590,7 @@ class BOMController extends Controller
         if ($previewData->pr_tcSR !== '-' && $previewData->pr_tcSR !== null) {
             $tcSRProcessLines = [];
             $tcSRLinesMapping = [
-                'topcoat' => ['eff_prop' => 'topcoat_eff', 'ct_prop' => 'topcoat_ct'],
+                'topcoat' => ['eff_prop' => 'topcoat_eff', 'ct_prop' => 'topcoat'],
             ];
 
             $cycleTimeData = $previewData->ct;
@@ -657,7 +658,7 @@ class BOMController extends Controller
         if ($previewData->pr_cedW !== '-' && $previewData->pr_cedW !== null) {
             $cedWProcessLines = [];
             $cedWLinesMapping = [
-                'topcoat' => ['eff_prop' => 'topcoat_eff', 'ct_prop' => 'topcoat_ct'],
+                'ced' => ['eff_prop' => 'ced_eff', 'ct_prop' => 'ced'],
             ];
 
             $cycleTimeData = $previewData->ct;
@@ -699,10 +700,10 @@ class BOMController extends Controller
                 'level' => 1
             ];
         }
-        if (!empty(trim($previewData->wip_cedW))) {
 
+        if (!empty(trim($previewData->wip_cedW))) {
             if ($previewData->wip_cedW !== '-' && (!empty($cedWChildren) || (isset($previewData->wip_cedW_price) && $previewData->wip_cedW_price !== null && $previewData->wip_cedW_price >= 0))) {
-                $topcoatItems[] = [
+                $cedItems[] = [
                     'item_code' => $previewData->wip_cedW,
                     'description' => $previewData->cedWWIP->description ?? null,
                     'type' => 'PR',
@@ -718,6 +719,7 @@ class BOMController extends Controller
                 ];
             }
         }
+
 
         $cedSRChildren = [];
         if ($previewData->pr_cedSR !== '-' && $previewData->pr_cedSR !== null) {
@@ -765,10 +767,11 @@ class BOMController extends Controller
                 'level' => 1
             ];
         }
+
         if (!empty(trim($previewData->wip_cedSR))) {
 
             if ($previewData->wip_cedSR !== '-' && (!empty($cedSRChildren) || (isset($previewData->wip_cedSR_price) && $previewData->wip_cedSR_price !== null && $previewData->wip_cedSR_price >= 0))) {
-                $topcoatItems[] = [
+                $cedItems[] = [
                     'item_code' => $previewData->wip_cedSR,
                     'description' => $previewData->cedSRWIP->description ?? null,
                     'type' => 'PR',
@@ -872,14 +875,14 @@ class BOMController extends Controller
                 'periods_data' => $createPeriodsData(
                     $previewData->sidering_qty ?? null,
                     $previewData->sidering_price ?? null,
-                    ($previewData->sidering_qty * ($previewData->sidering_price ?? 0)) ?? null,
+                    $previewData->sidering_price ?? null,
                     0
                 ),
                 'level' => 1
             ];
         }
 
-        if ($previewData->pr_sidering !== '-' && $previewData->pr_sidering !== null) {
+        if ($previewData->pr_sidering !== '-' || $previewData->pr_sidering !== null) {
             $sideringProcessLines = [];
             $sideringLinesMapping = [
                 'coiler' => ['eff_prop' => 'coiler_eff', 'ct_prop' => 'coiler'],
@@ -926,10 +929,14 @@ class BOMController extends Controller
         }
 
         if (!empty(trim($previewData->wip_sidering))) {
-            if ($previewData->wip_sidering !== '-' && (
-                !empty($sideringChildren) ||
-                (isset($previewData->wip_sidering_price) && $previewData->wip_sidering_price !== null && $previewData->wip_sidering_price >= 0)
-            )) {
+            if (
+                ($previewData->wip_sidering === '-' && isset($previewData->wip_sidering_price) && $previewData->wip_sidering_price > 0)
+                ||
+                ($previewData->wip_sidering !== '-' && (
+                    !empty($sideringChildren) ||
+                    (isset($previewData->wip_sidering_price) && $previewData->wip_sidering_price !== null && $previewData->wip_sidering_price >= 0)
+                ))
+            ) {
                 $processItems[] = [
                     'item_code' => $previewData->wip_sidering,
                     'description' => $previewData->sideringWIP->description ?? null,
@@ -964,7 +971,7 @@ class BOMController extends Controller
             ];
         }
 
-        if ($previewData->pr_rim !== '-' && $previewData->pr_rim !== null) {
+        if ($previewData->pr_rim !== '-' || $previewData->pr_rim !== null) {
             $rimProcessLines = [];
             $rimLinesMapping = [
                 'rim1' => ['eff_prop' => 'rim1_eff', 'ct_prop' => 'rim1'],
@@ -1014,15 +1021,19 @@ class BOMController extends Controller
         }
 
         if (!empty(trim($previewData->wip_rim))) {
-            if ($previewData->wip_rim !== '-' && (
-                !empty($rimChildren) ||
-                (isset($previewData->wip_rim_price) && $previewData->wip_rim_price !== null && $previewData->wip_rim_price >= 0)
-            )) {
+            if (
+                ($previewData->wip_rim === '-' && isset($previewData->wip_rim_price) && $previewData->wip_rim_price > 0)
+                ||
+                ($previewData->wip_rim !== '-' && (
+                    !empty($rimChildren) ||
+                    (isset($previewData->wip_rim_price) && $previewData->wip_rim_price !== null && $previewData->wip_rim_price >= 0)
+                ))
+            ) {
                 $processItems[] = [
                     'item_code' => $previewData->wip_rim,
                     'description' => $previewData->rimWIP->description ?? null,
                     'type' => 'PR',
-                    'wip_info' => 'rim',
+                    'wip_info' => 'Rim',
                     'periods_data' => $createPeriodsData(
                         null,
                         null,
@@ -1052,7 +1063,7 @@ class BOMController extends Controller
             ];
         }
 
-        if ($previewData->pr_disc !== '-' && $previewData->pr_disc !== null) {
+        if ($previewData->pr_disc !== '-' || $previewData->pr_disc !== null) {
             $discProcessLines = [];
             $discLinesMapping = [
                 'blanking'   => ['eff_prop' => 'blanking_eff', 'ct_prop' => 'blanking'],
@@ -1090,7 +1101,7 @@ class BOMController extends Controller
 
             $discChildren[] = [
                 'item_code' => $previewData->pr_disc->item_code ?? $previewData->pr_disc,
-                'description' => $previewData->discProcess->description ?? 'N/A',
+                'description' => $previewData->discProcess->description ?? null,
                 'type' => 'PR',
                 'lines' => $discProcessLines,
                 'periods_data' => $createPeriodsData(
@@ -1104,10 +1115,14 @@ class BOMController extends Controller
         }
 
         if (!empty(trim($previewData->wip_disc))) {
-            if ($previewData->wip_disc !== '-' && (
-                !empty($discChildren) ||
-                (isset($previewData->wip_disc_price) && $previewData->wip_disc_price !== null && $previewData->wip_disc_price >= 0)
-            )) {
+            if (
+                ($previewData->wip_disc === '-' && isset($previewData->wip_disc_price) && $previewData->wip_disc_price > 0)
+                ||
+                ($previewData->wip_disc !== '-' && (
+                    !empty($discChildren) ||
+                    (isset($previewData->wip_disc_price) && $previewData->wip_disc_price !== null && $previewData->wip_disc_price >= 0)
+                ))
+            ) {
                 $processItems[] = [
                     'item_code' => $previewData->wip_disc,
                     'description' => $previewData->discWIP->description ?? null,
@@ -1124,6 +1139,7 @@ class BOMController extends Controller
                 ];
             }
         }
+
 
         $reportData['categories'][] = [
             'name' => 'FinishGood',
@@ -1150,13 +1166,24 @@ class BOMController extends Controller
             'items' => $processItems,
         ];
 
-        // dd($reportData['categories' === 'Assembly']);
+        $mfgCost = $previewData->total;
+        $opexCost = $previewData->total * 0.06;
+        $totalCost = $mfgCost + $opexCost;
+        $margin = $totalCost * 0.05;
+        $sellingPrice = $totalCost + $margin;
 
         return Inertia::render('bom/preview', [
             'previewData' => $previewData,
             'reportData' => $reportData,
             'totalCT' => number_format($totalCycleTime, 0, ',', '.'),
-            'mfgCost' => number_format($previewData->total, 0, ',', '.'),
+            'mfgCost' => number_format($mfgCost, 0, ',', '.'),
+            'opexCost' => number_format($opexCost, 0, ',', '.'),
+            'totalCost' => number_format($totalCost, 0, ',', '.'),
+            'margin' => number_format($margin, 0, ',', '.'),
+            'sellingPrice' => number_format($sellingPrice, 0, ',', '.'),
+            'total_rm' => number_format(($previewData->total_raw_material), 0, ',', '.'),
+            'total_pr' => number_format(($previewData->total_process), 0, ',', '.'),
+
         ]);
     }
 }
