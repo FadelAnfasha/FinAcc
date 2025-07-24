@@ -100,10 +100,9 @@ class ReportService
         $totals = [];
         foreach ($this->processes as $proc) {
             $totals[$proc] = $ctxsqData->sum(fn($item) => $item->ctxsq[$proc] ?? 0);
-            // dump("Process :  $proc", 'Totals : ', $totals);
         }
-
         return $ctxsqData->map(function ($item) use ($totals, $wages) {
+
             $base = [];
 
             foreach ($this->processes as $proc) {

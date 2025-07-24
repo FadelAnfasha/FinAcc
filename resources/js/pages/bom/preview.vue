@@ -37,6 +37,7 @@ const formattedReportDate = computed(() => {
 onMounted(() => {
     setTimeout(() => {
         window.print();
+        window.close();
     }, 500);
 });
 </script>
@@ -51,7 +52,7 @@ onMounted(() => {
     .bom-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 9.5pt; /* Ini adalah font dasar untuk tabel */
+        font-size: 8pt; /* Ini adalah font dasar untuk tabel */
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
@@ -60,7 +61,7 @@ onMounted(() => {
     .bom-table td {
         border: 1px solid #000 !important;
         padding: 2px !important; /* Mengurangi padding sedikit lagi */
-        vertical-align: top !important;
+        /* vertical-align: top !important; */
         box-sizing: border-box !important;
         background-color: transparent !important;
         line-height: 1.1; /* Tambahkan line-height untuk kontrol spasi baris */
@@ -79,7 +80,7 @@ onMounted(() => {
         color: #1a202c !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
-        font-size: 9pt; /* Ukuran font footer */
+        font-size: 7pt; /* Ukuran font footer */
     }
 
     .bom-table tfoot tr:first-child td {
@@ -99,22 +100,23 @@ onMounted(() => {
         width: 85px; /* Sedikit lebih kecil dari 100px */
         min-width: 85px;
         max-width: 85px;
-        font-size: 9.5px; /* Ukuran font default untuk codeCol, akan ditimpa oleh main-item-code-cell */
+        font-size: 8pt; /* Ukuran font default untuk codeCol, akan ditimpa oleh main-item-code-cell */
     }
     .bom-table .typeCol {
-        width: 170px; /* Lebih kecil dari 190px */
-        min-width: 170px;
-        max-width: 170px;
-        font-size: 9.5px;
+        width: 130px; /* Lebih kecil dari 190px */
+        min-width: 130px;
+        max-width: 130px;
+        font-size: 8pt;
     }
     .bom-table .stCol {
-        font-size: 10px; /* Ukuran font untuk header standard cost */
+        font-size: 8pt; /* Ukuran font untuk header standard cost */
     }
     .bom-table .col-qty {
         width: 35px; /* Sangat kecil */
         min-width: 35px;
         max-width: 35px;
-        font-size: 9.5px;
+        font-size: 8pt;
+        align-items: center;
     }
     .bom-table .col-price {
         width: 60px; /* Lebih kecil */
@@ -134,7 +136,6 @@ onMounted(() => {
     .bdy-price,
     .bdy-total {
         font-size: 9px !important; /* Ubah ke 9px */
-        text-align: right !important;
     }
 
     /* Font size untuk item code (anak) dan description di tbody */
@@ -303,14 +304,14 @@ onMounted(() => {
 
                             <template v-if="item.children && item.children.length">
                                 <tr v-for="child in item.children" :key="child.item_code">
-                                    <td class="border p-1">{{ child.type }}</td>
+                                    <td class="border p-1" style="width: 15px">{{ child.type }}</td>
                                     <td class="typeCol border p-1" colspan="2">
                                         {{ child.description }}
                                         <span v-if="child.wip_info">{{ child.wip_info }}</span>
                                         <div v-if="child.type === 'PR' && child.lines && child.lines.length > 0" class="mt-1 text-orange-500 italic">
                                             <div v-for="(line, lineIndex) in child.lines" :key="lineIndex" class="flex justify-between">
                                                 <div>
-                                                    <span class="inline-block w-20">{{ line.name }}</span>
+                                                    <span class="inline-block">{{ line.name }}</span>
                                                     <span class="ml-6">{{ line.percentage }}</span>
                                                 </div>
                                                 <span v-if="line.cycle_time">{{ line.cycle_time }}</span>
@@ -475,16 +476,16 @@ onMounted(() => {
                                     {{ item.description }}
                                 </td>
                                 <template v-for="(period, pIndex) in item.periods_data" :key="pIndex">
-                                    <td class="bdy-qty col-qty border p-1 text-right">{{ period.qty }}</td>
-                                    <td class="bdy-price col-price border p-1 text-right">{{ period.price }}</td>
-                                    <td class="bdy-total col-total border p-1 text-right">{{ period.total }}</td>
+                                    <td class="bdy-qty col-qty border p-1">{{ period.qty }}</td>
+                                    <td class="bdy-price col-price border p-1">{{ period.price }}</td>
+                                    <td class="bdy-total col-total border p-1">{{ period.total }}</td>
                                 </template>
                             </tr>
 
                             <template v-if="item.children && item.children.length">
                                 <tr v-for="child in item.children" :key="child.item_code">
                                     <td class="border p-1">{{ child.type }}</td>
-                                    <td class="border p-1 whitespace-nowrap">{{ child.item_code }}</td>
+                                    <td class="border p-1 whitespace-nowrap" style="width: 25px">{{ child.item_code }}</td>
                                     <td class="typeCol border p-1">
                                         {{ child.description }}
                                         <span v-if="child.wip_info">{{ child.wip_info }}</span>

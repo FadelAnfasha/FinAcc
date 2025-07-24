@@ -964,7 +964,7 @@ class BOMController extends Controller
                 'periods_data' => $createPeriodsData(
                     $previewData->rim_qty ?? null,
                     $previewData->rim_price ?? null,
-                    ($previewData->rim_qty * ($previewData->rim_price ?? 0)) ?? null,
+                    $previewData->rim_price ?? null,
                     0
                 ),
                 'level' => 1
@@ -1056,7 +1056,7 @@ class BOMController extends Controller
                 'periods_data' => $createPeriodsData(
                     $previewData->disc_qty ?? null,
                     $previewData->disc_price ?? null,
-                    ($previewData->disc_qty * ($previewData->disc_price ?? 0)) ?? null,
+                    $previewData->disc_price ?? null,
                     0
                 ),
                 'level' => 1
