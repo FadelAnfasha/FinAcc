@@ -169,7 +169,7 @@ onMounted(() => {
     .footer-section {
         margin-top: 10px !important;
         width: 100%;
-        padding: 0 4mm !important;
+        /* padding: 0 4mm !important; */
         box-sizing: border-box;
     }
 
@@ -526,12 +526,16 @@ onMounted(() => {
             <div class="note-and-signatures-wrapper">
                 <div class="notes-section">
                     <div class="mb-2">
-                        <p>
-                            Total Raw Material : <span>{{ total_rm }}</span>
-                        </p>
-                        <p>
-                            Total Process : <span>{{ total_process }}</span>
-                        </p>
+                        <Table>
+                            <tr>
+                                <td>Total Raw Material</td>
+                                <td class="pl-2">: {{ total_rm }}</td>
+                            </tr>
+                            <tr>
+                                <td>Total Process</td>
+                                <td class="pl-2">: {{ total_process }}</td>
+                            </tr>
+                        </Table>
                     </div>
                     <p><strong>Note:</strong></p>
                     <p>
