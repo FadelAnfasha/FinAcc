@@ -169,7 +169,6 @@ onMounted(() => {
     .footer-section {
         margin-top: 10px !important;
         width: 100%;
-        /* padding: 0 4mm !important; */
         box-sizing: border-box;
     }
 

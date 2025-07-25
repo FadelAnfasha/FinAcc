@@ -97,7 +97,7 @@
 }
 
 
-:root {
+/* :root {
     --background: hsl(39, 81%, 73%);
     --foreground: hsl(312, 26%, 44%);
     --muted-foreground: hsl(312, 15%, 55%);
@@ -129,9 +129,59 @@
     --sidebar-border: hsl(39, 20%, 70%);
     --sidebar-ring: hsl(312, 45%, 50%);
     --sidebar: hsl(39, 40%, 82%);
+} */
+
+:root {
+    /* Umum */
+    --background: hsl(180, 60%, 95%); /* Sangat terang, hampir putih, sentuhan hijau/biru pucat */
+    --foreground: hsl(210, 25%, 35%); /* Teks gelap tapi lembut, biru keabuan */
+
+    --muted: hsl(180, 25%, 88%); /* Latar belakang elemen 'muted', hijau kebiruan pucat */
+    --muted-foreground: hsl(210, 15%, 50%); /* Teks 'muted', abu-abu kebiruan */
+
+    /* Card & Popover */
+    --card: hsl(180, 50%, 97%); /* Latar belakang card, sedikit lebih cerah dari background */
+    --card-foreground: hsl(210, 25%, 30%); /* Teks card, biru keabuan tua */
+    --popover: hsl(180, 55%, 98%); /* Latar belakang popover, sangat terang */
+    --popover-foreground: hsl(210, 25%, 30%); /* Teks popover */
+
+    /* Primary (Aksi Utama, Tombol) - Biru Pastel Lembut */
+    --primary: hsl(200, 50%, 70%); /* Biru pastel sedang */
+    --primary-foreground: hsl(0, 0%, 100%); /* Teks putih di atas primary */
+
+    /* Secondary (Aksi Sekunder, Latar Belakang Alternatif) - Hijau Pastel Lembut */
+    --secondary: hsl(150, 40%, 85%); /* Hijau pastel terang */
+    --secondary-foreground: hsl(210, 25%, 35%); /* Teks gelap di atas secondary */
+
+    /* Accent (Highlight, Interaktif) - Ungu/Pink Pastel */
+    --accent: hsl(270, 30%, 80%); /* Lavender pastel */
+    --accent-foreground: hsl(210, 25%, 35%); /* Teks gelap di atas accent */
+
+    /* Batas & Input */
+    --border: hsl(180, 20%, 80%); /* Garis batas, abu-abu kehijauan pucat */
+    --input: hsl(180, 30%, 92%); /* Input field background */
+    --ring: hsl(200, 55%, 75%); /* Fokus ring, biru pastel sedikit lebih cerah */
+
+    /* Chart Colors (Contoh, bisa disesuaikan) */
+    --chart-1: hsl(200, 60%, 60%); /* Biru pastel */
+    --chart-2: hsl(150, 50%, 70%); /* Hijau pastel */
+    --chart-3: hsl(240, 45%, 75%); /* Ungu pastel */
+    --chart-4: hsl(40, 70%, 80%); /* Krem pastel */
+    --chart-5: hsl(340, 50%, 85%); /* Pink pastel */
+
+    /* Sidebar (Jika berbeda dari background utama) */
+    --sidebar-background: hsl(180, 50%, 90%); /* Sedikit lebih gelap dari background utama untuk kontras */
+    --sidebar-foreground: hsl(210, 20%, 30%);
+    --sidebar-primary: hsl(200, 45%, 65%);
+    --sidebar-primary-foreground: hsl(0, 0%, 100%);
+    --sidebar-accent: hsl(150, 35%, 75%);
+    --sidebar-accent-foreground: hsl(210, 20%, 30%);
+    --sidebar-border: hsl(180, 15%, 70%);
+    --sidebar-ring: hsl(200, 50%, 70%);
+    --sidebar: hsl(180, 50%, 90%);
 }
 
-.dark {
+/* .dark {
     --background: hsl(248, 46%, 37%);
     --foreground: hsl(30, 17%, 88%);
     --card: hsl(248, 30%, 25%);
@@ -165,9 +215,61 @@
     --sidebar-border: hsl(248, 12%, 28%);
     --sidebar-ring: hsl(30, 30%, 70%);
     --sidebar: hsl(248, 35%, 20%);
+} */
+
+.dark {
+    /* Umum */
+    --background: hsl(210, 25%, 20%); /* Latar belakang gelap, biru keabuan dalam */
+    --foreground: hsl(180, 20%, 85%); /* Teks terang, hijau kebiruan pucat */
+
+    --muted: hsl(210, 15%, 28%); /* Latar belakang elemen 'muted', abu-abu gelap */
+    --muted-foreground: hsl(180, 10%, 65%); /* Teks 'muted', abu-abu kehijauan */
+
+    /* Card & Popover */
+    --card: hsl(210, 20%, 25%); /* Latar belakang card, sedikit lebih terang dari background */
+    --card-foreground: hsl(180, 20%, 90%); /* Teks card */
+    --popover: hsl(210, 18%, 22%); /* Latar belakang popover, lebih gelap */
+    --popover-foreground: hsl(180, 20%, 90%); /* Teks popover */
+
+    /* Primary (Aksi Utama, Tombol) - Biru Pastel Diredam */
+    --primary: hsl(200, 40%, 50%); /* Biru pastel yang diredam */
+    --primary-foreground: hsl(0, 0%, 100%); /* Teks putih */
+
+    /* Secondary (Aksi Sekunder, Latar Belakang Alternatif) - Hijau Pastel Diredam */
+    --secondary: hsl(150, 30%, 40%); /* Hijau pastel yang diredam */
+    --secondary-foreground: hsl(180, 20%, 80%); /* Teks terang */
+
+    /* Accent (Highlight, Interaktif) - Ungu/Pink Pastel Diredam */
+    --accent: hsl(270, 25%, 45%); /* Lavender gelap pastel */
+    --accent-foreground: hsl(180, 20%, 80%); /* Teks terang */
+
+    /* Destructive (Opsional, Merah untuk aksi destruktif) */
+    --destructive: hsl(0, 60%, 45%); /* Merah diredam */
+    --destructive-foreground: hsl(0, 0%, 100%);
+
+    /* Batas & Input */
+    --border: hsl(210, 12%, 35%); /* Garis batas, abu-abu kebiruan gelap */
+    --input: hsl(210, 15%, 30%); /* Input field background */
+    --ring: hsl(200, 45%, 55%); /* Fokus ring, biru pastel sedikit lebih terang */
+
+    /* Chart Colors (Contoh, bisa disesuaikan) */
+    --chart-1: hsl(200, 50%, 70%);
+    --chart-2: hsl(150, 45%, 60%);
+    --chart-3: hsl(240, 40%, 65%);
+    --chart-4: hsl(40, 60%, 70%);
+    --chart-5: hsl(340, 45%, 75%);
+
+    /* Sidebar (Jika berbeda dari background utama) */
+    --sidebar-background: hsl(210, 20%, 18%); /* Lebih gelap dari background utama */
+    --sidebar-foreground: hsl(180, 18%, 80%);
+    --sidebar-primary: hsl(200, 35%, 45%);
+    --sidebar-primary-foreground: hsl(0, 0%, 100%);
+    --sidebar-accent: hsl(150, 25%, 35%);
+    --sidebar-accent-foreground: hsl(180, 18%, 80%);
+    --sidebar-border: hsl(210, 10%, 30%);
+    --sidebar-ring: hsl(200, 40%, 50%);
+    --sidebar: hsl(210, 20%, 18%);
 }
-
-
 
 @layer base {
     * {
