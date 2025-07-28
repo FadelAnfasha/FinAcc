@@ -27,7 +27,7 @@ const boms = computed(() =>
         const typeChar: string = bom.item_code?.charAt(3) ?? '';
         const typeMap: Record<string, string> = {
             D: 'Disc',
-            N: 'Side Ring',
+            N: 'Sidering',
             W: 'Wheel',
             R: 'Rim',
         };
@@ -64,7 +64,7 @@ function tbStyle(section: 'main' | 'rm' | 'pr' | 'wip' | 'fg') {
 
 // const bom = ref<any[]>([]);
 
-const type = ['All', 'Disc', 'Side Ring', 'Wheel'];
+const type = ['All', 'Disc', 'Sidering', 'Wheel'];
 
 function getTypeClass(priority: string): string | undefined {
     switch (priority) {
@@ -72,7 +72,7 @@ function getTypeClass(priority: string): string | undefined {
             return 'secondary';
         case 'Disc':
             return 'bg-purple-400 text-purple-800';
-        case 'Side Ring':
+        case 'Sidering':
             return 'bg-blue-300 text-blue-800';
         case 'Wheel':
             return 'bg-orange-400 text-orange-800';
