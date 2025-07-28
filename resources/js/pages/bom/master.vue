@@ -31,6 +31,7 @@ const page = usePage();
 
 const filters = ref({
     item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    description: { value: null, matchMode: FilterMatchMode.CONTAINS },
 });
 const loading = ref(false);
 
@@ -1607,7 +1608,7 @@ const formatCurrency = (value: number) => {
                                     v-model:filters="filters"
                                     filterDisplay="row"
                                     :loading="loading"
-                                    :globalFilterFields="['item_code']"
+                                    :globalFilterFields="['item_code', 'description']"
                                     class="text-md"
                                     ref="dtBOM"
                                 >
@@ -1626,7 +1627,27 @@ const formatCurrency = (value: number) => {
                                                 class="w-full"
                                             /> </template
                                     ></Column>
-                                    <Column field="description" header="Description" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column
+                                        field="description"
+                                        header="Name"
+                                        :showFilterMenu="false"
+                                        sortable
+                                        :headerStyle="headerStyle"
+                                        :bodyStyle="bodyStyle"
+                                    >
+                                        <template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search description"
+                                                class="w-full"
+                                            />
+                                        </template>
+                                        <template #body="{ data }">
+                                            {{ data ? data.description : 'N/A' }}
+                                        </template>
+                                    </Column>
+                                    <!-- <Column field="description" header="Description" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle" /> -->
                                     <Column field="uom" header="Unit of Material" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
 
                                     <Column field="quantity" header="Quantity" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />

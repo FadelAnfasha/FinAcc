@@ -27,7 +27,11 @@ import { computed, nextTick, onMounted, reactive, ref } from 'vue';
 
 const filters = ref({
     bp_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    bp_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    'bp.bp_name': { value: null, matchMode: FilterMatchMode.CONTAINS },
     item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    type: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    'item.type': { value: null, matchMode: FilterMatchMode.CONTAINS },
 });
 const loading = ref(false);
 
@@ -1213,6 +1217,7 @@ function handleDestroy() {
                                                 Data source From : <span class="text-cyan-400">{{ dataSource[0] }}</span>
                                             </div>
                                         </div>
+
                                         <div class="flex flex-col items-center gap-3">
                                             <FileUpload
                                                 ref="fileUploaderBP"
@@ -1225,6 +1230,7 @@ function handleDestroy() {
                                                 @select="(event) => handleCSVImport(event, 'bp')"
                                             />
                                         </div>
+
                                         <div class="flex flex-col items-center gap-3">
                                             <Button
                                                 icon="pi pi-users
@@ -1258,7 +1264,7 @@ function handleDestroy() {
                                     v-model:filters="filters"
                                     filterDisplay="row"
                                     :loading="loading"
-                                    :globalFilterFields="['bp_code']"
+                                    :globalFilterFields="['bp_code', 'bp_name']"
                                     class="text-md"
                                     ref="dtBP"
                                 >
@@ -1277,7 +1283,23 @@ function handleDestroy() {
                                                 class="w-full"
                                             /> </template
                                     ></Column>
-                                    <Column field="bp_name" sortable header="BP Name" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
+
+                                    <Column
+                                        field="bp_name"
+                                        header="Customer"
+                                        :showFilterMenu="false"
+                                        sortable
+                                        :headerStyle="headerStyle"
+                                        :bodyStyle="bodyStyle"
+                                        ><template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search Customer"
+                                                class="w-full"
+                                            /> </template
+                                    ></Column>
+
                                     <Column field="created_at_formatted" sortable header="Added at" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="slotProps">
                                             {{ formatDate(slotProps.data.created_at) }}
@@ -1364,12 +1386,27 @@ function handleDestroy() {
                                             <InputText
                                                 v-model="filterModel.value"
                                                 @input="filterCallback()"
-                                                placeholder="Search Item code"
+                                                placeholder="Search Item Code"
                                                 class="w-full"
                                             /> </template
                                     ></Column>
                                     <Column field="size" header="Size" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="type" header="Type" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+
+                                    <Column
+                                        field="type"
+                                        header="Name"
+                                        :showFilterMenu="false"
+                                        sortable
+                                        :headerStyle="headerStyle"
+                                        :bodyStyle="bodyStyle"
+                                        ><template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search Description"
+                                                class="w-full"
+                                            /> </template
+                                    ></Column>
 
                                     <Column field="blanking" header="Blanking" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
@@ -2004,7 +2041,7 @@ function handleDestroy() {
                                     v-model:filters="filters"
                                     filterDisplay="row"
                                     :loading="loading"
-                                    :globalFilterFields="['bp_code', 'item_code']"
+                                    :globalFilterFields="['bp_code', 'bp.bp_name', 'item_code', 'item.type']"
                                     class="text-md"
                                     ref="dtSQ"
                                 >
@@ -2028,10 +2065,18 @@ function handleDestroy() {
 
                                     <Column
                                         field="bp.bp_name"
+                                        header="Customer"
+                                        :showFilterMenu="false"
                                         sortable
-                                        header="Business Partner Name"
                                         :headerStyle="headerStyle"
                                         :bodyStyle="bodyStyle"
+                                        ><template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search Customer"
+                                                class="w-full"
+                                            /> </template
                                     ></Column>
 
                                     <Column
@@ -2046,6 +2091,23 @@ function handleDestroy() {
                                                 v-model="filterModel.value"
                                                 @input="filterCallback()"
                                                 placeholder="Search Item code"
+                                                class="w-full"
+                                            />
+                                        </template>
+                                    </Column>
+
+                                    <Column
+                                        field="item.type"
+                                        header="Name"
+                                        :showFilterMenu="false"
+                                        sortable
+                                        :headerStyle="headerStyle"
+                                        :bodyStyle="bodyStyle"
+                                        ><template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search Name"
                                                 class="w-full"
                                             />
                                         </template>

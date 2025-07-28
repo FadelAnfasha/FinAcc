@@ -44,6 +44,7 @@ const boms = computed(() =>
 const filters = ref({
     item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
     type_name: { value: null, matchMode: FilterMatchMode.EQUALS },
+    'bom.description': { value: null, matchMode: FilterMatchMode.CONTAINS },
 });
 
 function tbStyle(section: 'main' | 'rm' | 'pr' | 'wip' | 'fg') {
@@ -400,7 +401,7 @@ function openPreviewTab(item_code: string) {
                                     v-model:filters="filters"
                                     filterDisplay="row"
                                     :loading="loading"
-                                    :globalFilterFields="['item_code', 'type_name']"
+                                    :globalFilterFields="['item_code', 'type_name', 'description']"
                                     class="text-md"
                                     ref="dtBOM"
                                 >
@@ -468,9 +469,18 @@ function openPreviewTab(item_code: string) {
                                             </div>
                                         </template></Column
                                     >
-                                    <Column sortable header="Name" v-bind="tbStyle('main')">
+
+                                    <Column field="bom.description" header="Name" :showFilterMenu="false" sortable v-bind="tbStyle('main')">
+                                        <template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search description"
+                                                class="w-full"
+                                            />
+                                        </template>
                                         <template #body="{ data }">
-                                            {{ data.bom?.description ?? '-' }}
+                                            {{ data.bom ? data.bom.description : 'N/A' }}
                                         </template>
                                     </Column>
 
