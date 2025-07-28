@@ -215,7 +215,12 @@ const scrollToSection = (hash: string) => {
             <!-- Gambar sebagai latar belakang -->
             <div
                 class="absolute inset-0 z-0 bg-center bg-no-repeat opacity-70"
-                style="background-image: url('/storage/images/topy.png'); background-size: contain"
+                style="
+                    background-image: url('/storage/images/topy.png');
+                    background-size: cover; /* Ganti 'contain' dengan 'cover' */
+                    background-attachment: fixed;
+                    background-size: 50%;
+                "
             ></div>
 
             <!-- Konten di atas gambar -->
