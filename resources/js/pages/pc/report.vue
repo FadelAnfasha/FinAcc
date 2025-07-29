@@ -164,6 +164,8 @@ const lastUpdate = computed(() => {
     return [Max_CTxSQUpdate, Max_BaseCostUpdate, Max_CPPUpdate, Max_PCUpdate];
 });
 
+const lastMaster = computed(() => page.props.lastUpdate as any);
+
 function formatlastUpdate(date: Date | string) {
     return dayjs(date).format('DD MMM YYYY HH:mm:ss');
 }
@@ -232,7 +234,13 @@ function confirmUpdate() {
     );
 }
 
-function closeDialog() {
+function closeDialog(type: 'pc' | null) {
+    // Sesuaikan tipe data 'type'
+    if (type === 'pc') {
+        router.visit(route('bom.report')); // Mengarahkan ke rute 'bom.route'
+        // Atau router.get(route('bom.route'));
+    }
+    // Logika untuk menutup dialog tetap dijalankan setelah (atau jika bukan 'pc')
     updateReportDialog.value = false;
     updateStatus.value = 'idle';
     updateType.value = null;
@@ -259,7 +267,14 @@ function closeDialog() {
                 </div>
             </div>
 
-            <Dialog v-model:visible="updateReportDialog" header="Update Confirmation" modal class="w-[30rem]" :closable="false" @hide="closeDialog">
+            <Dialog
+                v-model:visible="updateReportDialog"
+                header="Update Confirmation"
+                modal
+                class="w-[30rem]"
+                :closable="false"
+                @hide="closeDialog(null)"
+            >
                 <!-- Idle state -->
                 <template v-if="updateStatus === 'idle'">
                     <div class="space-y-4">
@@ -268,10 +283,101 @@ function closeDialog() {
                             >,
                         </p>
                         <p>Are you sure you want to update the report?</p>
-
+                        <p class="mt-6 mb-2 font-semibold">Make sure this data is up to date:</p>
+                        <div class="overflow-x-auto">
+                            <table v-if="updateType === 'ctxsq'" class="w-full border-collapse text-left">
+                                <thead>
+                                    <tr>
+                                        <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Data</th>
+                                        <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Last Update</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="border-b border-gray-800 px-4 py-2">Cycle Time</td>
+                                        <td class="border-b border-gray-800 px-4 py-2">
+                                            <span class="text-red-300">{{ lastMaster[0] ? formatlastUpdate(lastMaster[0]) : '-' }}</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border-b border-gray-800 px-4 py-2">Sales Quantity</td>
+                                        <td class="border-b border-gray-800 px-4 py-2">
+                                            <span class="text-red-300">{{ lastMaster[1] ? formatlastUpdate(lastMaster[1]) : '-' }}</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <table v-if="updateType === 'base'" class="w-full border-collapse text-left">
+                                <thead>
+                                    <tr>
+                                        <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Data</th>
+                                        <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Last Update</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="border-b border-gray-800 px-4 py-2">Activity Quantity</td>
+                                        <td class="border-b border-gray-800 px-4 py-2">
+                                            <span class="text-red-300">{{ lastUpdate[0] ? formatlastUpdate(lastUpdate[0]) : '-' }}</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border-b border-gray-800 px-4 py-2">Sales Quantity</td>
+                                        <td class="border-b border-gray-800 px-4 py-2">
+                                            <span class="text-red-300">{{ lastMaster[1] ? formatlastUpdate(lastMaster[1]) : '-' }}</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <table v-if="updateType === 'cpp'" class="w-full border-collapse text-left">
+                                <thead>
+                                    <tr>
+                                        <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Data</th>
+                                        <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Last Update</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="border-b border-gray-800 px-4 py-2">Convertion Cost</td>
+                                        <td class="border-b border-gray-800 px-4 py-2">
+                                            <span class="text-red-300">{{ lastUpdate[1] ? formatlastUpdate(lastUpdate[1]) : '-' }}</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <table v-if="updateType === 'pc'" class="w-full border-collapse text-left">
+                                <thead>
+                                    <tr>
+                                        <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Data</th>
+                                        <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Last Update</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="border-b border-gray-800 px-4 py-2">Cost per Process</td>
+                                        <td class="border-b border-gray-800 px-4 py-2">
+                                            <span class="text-red-300">{{ lastUpdate[2] ? formatlastUpdate(lastUpdate[2]) : '-' }}</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                         <div class="flex justify-end gap-3 pt-4">
-                            <Button label="Cancel" icon="pi pi-times" severity="secondary" @click="closeDialog" />
-                            <Button label="Yes, Update" icon="pi pi-check" severity="success" :loading="isUpdating" @click="confirmUpdate" />
+                            <Button
+                                label="Cancel"
+                                icon="pi pi-times"
+                                @click="closeDialog(null)"
+                                unstyled
+                                class="w-48 cursor-pointer rounded-xl bg-red-500 px-4 py-2 text-center font-bold text-slate-900 hover:bg-red-700"
+                            />
+                            <Button
+                                label="Yes, Update"
+                                icon="pi pi-check"
+                                :loading="isUpdating"
+                                @click="confirmUpdate"
+                                unstyled
+                                class="w-48 cursor-pointer rounded-xl bg-emerald-500 px-4 py-2 text-center font-bold text-slate-900 hover:bg-emerald-700"
+                            />
                         </div>
                     </div>
                 </template>
@@ -288,8 +394,22 @@ function closeDialog() {
                             It’s now safe to close this window.
                         </p>
 
-                        <div class="flex justify-end pt-4">
-                            <Button label="Close" icon="pi pi-times" @click="closeDialog" />
+                        <div class="flex justify-end gap-2 pt-4">
+                            <Button
+                                label=" Close"
+                                icon="pi pi-times"
+                                @click="closeDialog(null)"
+                                unstyled
+                                class="w-28 cursor-pointer rounded-xl bg-red-500 px-4 py-2 text-center font-bold text-slate-900 hover:bg-red-700"
+                            />
+                            <Button
+                                v-if="updateType === 'pc'"
+                                label=" Explode BOM"
+                                icon="pi pi-map"
+                                @click="closeDialog('pc')"
+                                unstyled
+                                class="w-40 cursor-pointer rounded-xl bg-cyan-500 px-4 py-2 text-center font-bold text-slate-900 hover:bg-cyan-700"
+                            />
                         </div>
                     </div>
                 </template>
@@ -316,32 +436,34 @@ function closeDialog() {
                     <TabPanels>
                         <TabPanel value="0">
                             <section ref="ctXsqSection" class="p-2">
-                                <div class="mb-4 flex items-center justify-between">
-                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Cycle Time x Sales Quantity</h2>
-                                    <div class="flex gap-4">
-                                        <div>
-                                            <div class="flex flex-col items-center gap-3">
-                                                Last Update :
-                                                <span class="text-red-300">{{ lastUpdate[0] ? formatlastUpdate(lastUpdate[0]) : '-' }}</span>
-                                            </div>
-                                        </div>
+                                <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
+                                        Cycle Time x Sales Quantity
+                                    </h2>
 
-                                        <div class="flex flex-col items-center gap-3">
+                                    <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
+                                        <div class="flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row">
                                             <Button
-                                                icon="pi pi-sync
-"
+                                                icon="pi pi-download"
+                                                label=" Export"
+                                                unstyled
+                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 sm:w-28"
+                                                @click="exportCSV('ctxsq')"
+                                            />
+                                            <Button
+                                                icon="pi pi-sync"
                                                 label=" Update Report?"
                                                 unstyled
                                                 class="w-28 cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900"
                                                 @click="showUpdateDialog('ctxsq')"
                                             />
-                                            <Button
-                                                icon="pi pi-download"
-                                                label=" Export"
-                                                unstyled
-                                                class="w-28 cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900"
-                                                @click="exportCSV('ctxsq')"
-                                            />
+                                        </div>
+                                    </div>
+
+                                    <div class="text-right text-gray-700 dark:text-gray-300">
+                                        <div>
+                                            Last Update :
+                                            <span class="text-red-300">{{ lastUpdate[0] ? formatlastUpdate(lastUpdate[0]) : '-' }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -652,17 +774,20 @@ function closeDialog() {
 
                         <TabPanel value="1">
                             <section ref="baseSection" class="p-2">
-                                <div class="mb-4 flex items-center justify-between">
-                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Convertion Cost / Product</h2>
-                                    <div class="flex gap-4">
-                                        <div>
-                                            <div class="flex flex-col items-center gap-3">
-                                                Last Update :
-                                                <span class="text-red-300">{{ lastUpdate[1] ? formatlastUpdate(lastUpdate[1]) : '-' }}</span>
-                                            </div>
-                                        </div>
+                                <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
+                                        Convertion Cost / Product
+                                    </h2>
 
-                                        <div class="flex flex-col items-center gap-3">
+                                    <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
+                                        <div class="flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row">
+                                            <Button
+                                                icon="pi pi-download"
+                                                label=" Export"
+                                                unstyled
+                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 sm:w-28"
+                                                @click="exportCSV('base')"
+                                            />
                                             <Button
                                                 icon="pi pi-sync
 "
@@ -671,13 +796,13 @@ function closeDialog() {
                                                 class="w-28 cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900"
                                                 @click="showUpdateDialog('base')"
                                             />
-                                            <Button
-                                                icon="pi pi-download"
-                                                label=" Export"
-                                                unstyled
-                                                class="w-28 cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900"
-                                                @click="exportCSV('base')"
-                                            />
+                                        </div>
+                                    </div>
+
+                                    <div class="text-right text-gray-700 dark:text-gray-300">
+                                        <div>
+                                            Last Update :
+                                            <span class="text-red-300">{{ lastUpdate[1] ? formatlastUpdate(lastUpdate[1]) : '-' }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -981,17 +1106,20 @@ function closeDialog() {
 
                         <TabPanel value="2">
                             <section ref="cppSection" class="p-2">
-                                <div class="mb-4 flex items-center justify-between">
-                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Total Convertion Cost / Unit</h2>
-                                    <div class="flex gap-4">
-                                        <div>
-                                            <div class="flex flex-col items-center gap-3">
-                                                Last Update :
-                                                <span class="text-red-300">{{ lastUpdate[2] ? formatlastUpdate(lastUpdate[2]) : '-' }}</span>
-                                            </div>
-                                        </div>
+                                <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
+                                        Total Convertion Cost / Unit
+                                    </h2>
 
-                                        <div class="flex flex-col items-center gap-3">
+                                    <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
+                                        <div class="flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row">
+                                            <Button
+                                                icon="pi pi-download"
+                                                label=" Export"
+                                                unstyled
+                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 sm:w-28"
+                                                @click="exportCSV('ctxsq')"
+                                            />
                                             <Button
                                                 icon="pi pi-sync
 "
@@ -1000,13 +1128,13 @@ function closeDialog() {
                                                 class="w-28 cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900"
                                                 @click="showUpdateDialog('cpp')"
                                             />
-                                            <Button
-                                                icon="pi pi-download"
-                                                label=" Export"
-                                                unstyled
-                                                class="w-28 cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900"
-                                                @click="exportCSV('cpp')"
-                                            />
+                                        </div>
+                                    </div>
+
+                                    <div class="text-right text-gray-700 dark:text-gray-300">
+                                        <div>
+                                            Last Update :
+                                            <span class="text-red-300">{{ lastUpdate[2] ? formatlastUpdate(lastUpdate[2]) : '-' }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1310,17 +1438,20 @@ function closeDialog() {
 
                         <TabPanel value="3">
                             <section ref="processCost" class="p-2">
-                                <div class="mb-4 flex items-center justify-between">
-                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Process Cost / Product</h2>
-                                    <div class="flex gap-4">
-                                        <div>
-                                            <div class="flex flex-col items-center gap-3">
-                                                Last Update :
-                                                <span class="text-red-300">{{ lastUpdate[3] ? formatlastUpdate(lastUpdate[3]) : '-' }}</span>
-                                            </div>
-                                        </div>
+                                <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
+                                        Process Cost / Product
+                                    </h2>
 
-                                        <div class="flex flex-col items-center gap-3">
+                                    <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
+                                        <div class="flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row">
+                                            <Button
+                                                icon="pi pi-download"
+                                                label=" Export"
+                                                unstyled
+                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 sm:w-28"
+                                                @click="exportCSV('pc')"
+                                            />
                                             <Button
                                                 icon="pi pi-sync
 "
@@ -1329,13 +1460,13 @@ function closeDialog() {
                                                 class="w-28 cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900"
                                                 @click="showUpdateDialog('pc')"
                                             />
-                                            <Button
-                                                icon="pi pi-download"
-                                                label=" Export"
-                                                unstyled
-                                                class="w-28 cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900"
-                                                @click="exportCSV('pc')"
-                                            />
+                                        </div>
+                                    </div>
+
+                                    <div class="text-right text-gray-700 dark:text-gray-300">
+                                        <div>
+                                            Last Update :
+                                            <span class="text-red-300">{{ lastUpdate[3] ? formatlastUpdate(lastUpdate[3]) : '-' }}</span>
                                         </div>
                                     </div>
                                 </div>

@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('bp_name');
             $table->timestamps();
 
-            $table->index('bp_code');
+            // $table->index('bp_code');
         });
     }
 

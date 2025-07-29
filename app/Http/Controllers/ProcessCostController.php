@@ -39,6 +39,37 @@ class ProcessCostController extends Controller
         $cpp = costPerProcess::with(['bp', 'item'])->get();
         $pc = ProcessCost::all();
 
+        $lastUpdate = [];
+
+        // Ambil data CycleTime dengan updated_at paling terbaru
+        $latestCycleTime = CycleTime::latest('updated_at')->first();
+
+        // Ambil data SalesQuantity dengan updated_at paling terbaru
+        $latestSalesQuantity = SalesQuantity::latest('updated_at')->first();
+
+        $latestWagesDistribution = WagesDistribution::latest('updated_at')->first();
+
+        // Tambahkan created_at dari CycleTime ke array $lastUpdate jika ada
+        if ($latestCycleTime) {
+            $lastUpdate[] = $latestCycleTime->created_at;
+        } else {
+            $lastUpdate[] = null; // Atau nilai default lain jika tidak ada data
+        }
+
+        // Tambahkan created_at dari SalesQuantity ke array $lastUpdate jika ada
+        if ($latestSalesQuantity) {
+            $lastUpdate[] = $latestSalesQuantity->created_at;
+        } else {
+            $lastUpdate[] = null; // Atau nilai default lain jika tidak ada data
+        }
+
+        // Tambahkan created_at dari WagesDistribution ke array $lastUpdate jika ada
+        if ($latestWagesDistribution) {
+            $lastUpdate[] = $latestWagesDistribution->created_at;
+        } else {
+            $lastUpdate[] = null; // Atau nilai default lain jika tidak ada data
+        }
+
         $NumericFields = [
             'blanking',
             'spinDisc',
@@ -101,7 +132,8 @@ class ProcessCostController extends Controller
             'cpp' => $cpp,
             'cppTotal' => $cppTotals,
             'processCost' => $pc,
-            'pcTotal' => $pcTotals
+            'pcTotal' => $pcTotals,
+            'lastUpdate' => $lastUpdate
         ]);
     }
 

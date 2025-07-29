@@ -57,7 +57,7 @@ return new class extends Migration
             $table->float('packing_exp');
             $table->timestamps();
 
-            $table->index('item_code');
+            // $table->index('item_code');
         });
     }
 

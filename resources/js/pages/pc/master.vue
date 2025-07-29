@@ -736,7 +736,7 @@ function handleDestroy() {
                     v-model:visible="showImportDialog"
                     header="Import Confirmation"
                     modal
-                    class="w-[30rem]"
+                    class="w-[40rem]"
                     :closable="false"
                     @hide="resetImportState"
                 >
@@ -749,7 +749,7 @@ function handleDestroy() {
 
                     <div class="space-y-4" v-if="notImported">
                         <p>
-                            Hi <span class="text-red-400">{{ userName }}</span
+                            Hi <span class="font-semibold text-red-400">{{ userName }}</span
                             >,
                         </p>
 
@@ -759,7 +759,33 @@ function handleDestroy() {
                             >?
                         </p>
 
-                        <div class="flex justify-end gap-3 pt-4">
+                        <p class="mt-6 mb-2 font-semibold">Make sure this data is up to date:</p>
+                        <div class="overflow-x-auto">
+                            <table class="w-full border-collapse text-left">
+                                <thead>
+                                    <tr>
+                                        <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Data</th>
+                                        <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Last Update</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="border-b border-gray-800 px-4 py-2">Business Partner</td>
+                                        <td class="border-b border-gray-800 px-4 py-2">
+                                            <span class="text-red-300">{{ lastUpdate[0] ? formatlastUpdate(lastUpdate[0]) : '-' }}</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border-b border-gray-800 px-4 py-2">Cycle Time</td>
+                                        <td class="border-b border-gray-800 px-4 py-2">
+                                            <span class="text-red-300">{{ lastUpdate[1] ? formatlastUpdate(lastUpdate[1]) : '-' }}</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="flex justify-end gap-3 pt-6">
                             <Button
                                 label="Cancel"
                                 icon="pi pi-times"
@@ -779,7 +805,7 @@ function handleDestroy() {
 
                     <div class="space-y-4" v-if="!notImported">
                         <p>
-                            Hi <span class="text-red-400">{{ userName }}</span
+                            Hi <span class="font-semibold text-red-400">{{ userName }}</span
                             >,
                         </p>
 
@@ -1193,6 +1219,7 @@ function handleDestroy() {
                     </div>
                 </Dialog>
             </div>
+
             <div class="mx-26 mb-26">
                 <Tabs value="0">
                     <TabList>
@@ -1205,48 +1232,48 @@ function handleDestroy() {
                     <TabPanels>
                         <TabPanel value="0">
                             <section ref="bpSection" class="p-2">
-                                <div class="mb-4 flex items-center justify-between">
-                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Business Partner</h2>
-                                    <div class="flex gap-4">
-                                        <div>
-                                            <div>
-                                                Last Update :
-                                                <span class="text-red-300">{{ lastUpdate[0] ? formatlastUpdate(lastUpdate[0]) : '-' }}</span>
-                                            </div>
-                                            <div>
-                                                Data source From : <span class="text-cyan-400">{{ dataSource[0] }}</span>
-                                            </div>
-                                        </div>
+                                <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                                    <h2 class="mb-4 text-3xl font-semibold text-slate-900 md:mb-0 dark:text-white">Business Partner</h2>
 
-                                        <div class="flex flex-col items-center gap-3">
-                                            <FileUpload
-                                                ref="fileUploaderBP"
-                                                mode="basic"
-                                                name="file"
-                                                :customUpload="true"
-                                                accept=".csv"
-                                                chooseLabel="Import CSV"
-                                                chooseIcon="pi pi-upload"
-                                                @select="(event) => handleCSVImport(event, 'bp')"
-                                            />
-                                        </div>
+                                    <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
+                                        <FileUpload
+                                            ref="fileUploaderBP"
+                                            mode="basic"
+                                            name="file"
+                                            :customUpload="true"
+                                            accept=".csv"
+                                            chooseLabel="Import CSV"
+                                            chooseIcon="pi pi-upload"
+                                            @select="(event) => handleCSVImport(event, 'bp')"
+                                            class="w-full sm:w-auto"
+                                        />
 
-                                        <div class="flex flex-col items-center gap-3">
-                                            <Button
-                                                icon="pi pi-users
-"
-                                                label=" Add BP"
-                                                unstyled
-                                                class="w-28 cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900"
-                                                @click="addData('bp')"
-                                            />
+                                        <div class="flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row">
                                             <Button
                                                 icon="pi pi-download"
                                                 label=" Export"
                                                 unstyled
-                                                class="w-28 cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900"
+                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 sm:w-28"
                                                 @click="exportCSV('bp')"
                                             />
+                                            <Button
+                                                icon="pi pi-users"
+                                                label=" Add BP"
+                                                unstyled
+                                                class="w-full cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900 sm:w-28"
+                                                @click="addData('bp')"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div class="text-right">
+                                        <div>
+                                            Last Update :
+                                            <span class="text-red-300">{{ lastUpdate[0] ? formatlastUpdate(lastUpdate[0]) : '-' }}</span>
+                                        </div>
+                                        <div>
+                                            Data source From :
+                                            <span class="text-cyan-400">{{ dataSource[0] }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1323,38 +1350,43 @@ function handleDestroy() {
 
                         <TabPanel value="1">
                             <section ref="ctSection" class="p-2">
-                                <div class="mb-4 flex items-center justify-between">
-                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Cycle Time</h2>
-                                    <div class="flex gap-4">
-                                        <div>
-                                            <div>
-                                                Last Update :
-                                                <span class="text-red-300">{{ lastUpdate[1] ? formatlastUpdate(lastUpdate[1]) : '-' }}</span>
-                                            </div>
-                                            <div>
-                                                Data source From : <span class="text-cyan-400">{{ dataSource[1] }}</span>
-                                            </div>
-                                        </div>
-                                        <div class="flex flex-col items-center gap-3">
-                                            <FileUpload
-                                                ref="fileUploaderCT"
-                                                mode="basic"
-                                                name="file"
-                                                :customUpload="true"
-                                                accept=".csv"
-                                                chooseLabel="Import CSV"
-                                                chooseIcon="pi pi-upload"
-                                                @select="(event) => handleCSVImport(event, 'ct')"
-                                            />
-                                        </div>
-                                        <div class="flex flex-col items-center gap-3">
+                                <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
+                                        Cycle Time
+                                    </h2>
+
+                                    <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
+                                        <FileUpload
+                                            ref="fileUploaderBP"
+                                            mode="basic"
+                                            name="file"
+                                            :customUpload="true"
+                                            accept=".csv"
+                                            chooseLabel="Import CSV"
+                                            chooseIcon="pi pi-upload"
+                                            @select="(event) => handleCSVImport(event, 'ct')"
+                                            class="w-full sm:w-auto"
+                                        />
+
+                                        <div class="flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row">
                                             <Button
                                                 icon="pi pi-download"
                                                 label=" Export"
                                                 unstyled
-                                                class="w-28 cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900"
+                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 sm:w-28"
                                                 @click="exportCSV('ct')"
                                             />
+                                        </div>
+                                    </div>
+
+                                    <div class="text-right text-gray-700 dark:text-gray-300">
+                                        <div>
+                                            Last Update :
+                                            <span class="text-red-300">{{ lastUpdate[1] ? formatlastUpdate(lastUpdate[1]) : '-' }}</span>
+                                        </div>
+                                        <div>
+                                            Data source From :
+                                            <span class="text-cyan-400">{{ dataSource[1] }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1993,38 +2025,43 @@ function handleDestroy() {
 
                         <TabPanel value="2">
                             <section ref="sqSection" class="p-2">
-                                <div class="mb-4 flex items-center justify-between">
-                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Sales Quantity</h2>
-                                    <div class="flex gap-4">
-                                        <div>
-                                            <div>
-                                                Last Update :
-                                                <span class="text-red-300">{{ lastUpdate[2] ? formatlastUpdate(lastUpdate[2]) : '-' }}</span>
-                                            </div>
-                                            <div>
-                                                Data source From : <span class="text-cyan-400">{{ dataSource[2] }}</span>
-                                            </div>
-                                        </div>
-                                        <div class="flex flex-col items-center gap-3">
-                                            <FileUpload
-                                                ref="fileUploaderSQ"
-                                                mode="basic"
-                                                name="file"
-                                                :customUpload="true"
-                                                accept=".csv"
-                                                chooseLabel="Import CSV"
-                                                chooseIcon="pi pi-upload"
-                                                @select="(event) => handleCSVImport(event, 'sq')"
-                                            />
-                                        </div>
-                                        <div class="flex flex-col items-center gap-3">
+                                <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
+                                        Sales Quantity
+                                    </h2>
+
+                                    <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
+                                        <FileUpload
+                                            ref="fileUploaderBP"
+                                            mode="basic"
+                                            name="file"
+                                            :customUpload="true"
+                                            accept=".csv"
+                                            chooseLabel="Import CSV"
+                                            chooseIcon="pi pi-upload"
+                                            @select="(event) => handleCSVImport(event, 'sq')"
+                                            class="w-full sm:w-auto"
+                                        />
+
+                                        <div class="flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row">
                                             <Button
                                                 icon="pi pi-download"
                                                 label=" Export"
                                                 unstyled
-                                                class="w-28 cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900"
+                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 sm:w-28"
                                                 @click="exportCSV('sq')"
                                             />
+                                        </div>
+                                    </div>
+
+                                    <div class="text-right text-gray-700 dark:text-gray-300">
+                                        <div>
+                                            Last Update :
+                                            <span class="text-red-300">{{ lastUpdate[2] ? formatlastUpdate(lastUpdate[2]) : '-' }}</span>
+                                        </div>
+                                        <div>
+                                            Data source From :
+                                            <span class="text-cyan-400">{{ dataSource[2] }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -2158,38 +2195,43 @@ function handleDestroy() {
 
                         <TabPanel value="3">
                             <section ref="wdSection" class="p-2">
-                                <div class="mb-4 flex items-center justify-between">
-                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Wages Distribution</h2>
-                                    <div class="flex gap-4">
-                                        <div>
-                                            <div>
-                                                Last Update :
-                                                <span class="text-red-300">{{ lastUpdate[3] ? formatlastUpdate(lastUpdate[3]) : '-' }}</span>
-                                            </div>
-                                            <div>
-                                                Data source From : <span class="text-cyan-400">{{ dataSource[3] }}</span>
-                                            </div>
-                                        </div>
-                                        <div class="flex flex-col items-center gap-3">
-                                            <FileUpload
-                                                ref="fileUploaderWD"
-                                                mode="basic"
-                                                name="file"
-                                                :customUpload="true"
-                                                accept=".csv"
-                                                chooseLabel="Import CSV"
-                                                chooseIcon="pi pi-upload"
-                                                @select="(event) => handleCSVImport(event, 'wd')"
-                                            />
-                                        </div>
-                                        <div class="flex flex-col items-center gap-3">
+                                <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
+                                        Wages Distribution
+                                    </h2>
+
+                                    <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
+                                        <FileUpload
+                                            ref="fileUploaderBP"
+                                            mode="basic"
+                                            name="file"
+                                            :customUpload="true"
+                                            accept=".csv"
+                                            chooseLabel="Import CSV"
+                                            chooseIcon="pi pi-upload"
+                                            @select="(event) => handleCSVImport(event, 'wd')"
+                                            class="w-full sm:w-auto"
+                                        />
+
+                                        <div class="flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row">
                                             <Button
                                                 icon="pi pi-download"
                                                 label=" Export"
                                                 unstyled
-                                                class="w-28 cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900"
+                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 sm:w-28"
                                                 @click="exportCSV('wd')"
                                             />
+                                        </div>
+                                    </div>
+
+                                    <div class="text-right text-gray-700 dark:text-gray-300">
+                                        <div>
+                                            Last Update :
+                                            <span class="text-red-300">{{ lastUpdate[3] ? formatlastUpdate(lastUpdate[3]) : '-' }}</span>
+                                        </div>
+                                        <div>
+                                            Data source From :
+                                            <span class="text-cyan-400">{{ dataSource[3] }}</span>
                                         </div>
                                     </div>
                                 </div>

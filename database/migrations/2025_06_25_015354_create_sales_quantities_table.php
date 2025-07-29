@@ -18,14 +18,11 @@ return new class extends Migration
             $table->integer('quantity');
             $table->timestamps();
 
-            $table->foreign('bp_code')->references('bp_code')->on('business_partner')->onDelete('restrict');
-            $table->foreign('item_code')->references('item_code')->on('cycle_time')->onDelete('restrict');
+            // $table->foreign('bp_code')->references('bp_code')->on('business_partner')->onDelete('restrict');
+            // $table->foreign('item_code')->references('item_code')->on('cycle_time')->onDelete('restrict');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('sales_quantities');

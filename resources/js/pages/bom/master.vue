@@ -104,12 +104,12 @@ const lastUpdate = computed(() => {
     const bom_update = ((page.props.billOfMaterials as any[]) ?? []).map((bom) => new Date(bom.updated_at));
     const Max_bomUpdate = bom_update.length ? new Date(Math.max(...bom_update.map((d) => d.getTime()))) : null;
 
-    return [Max_matUpdate, Max_packUpdate, Max_valveUpdate, Max_procUpdate, Max_bomUpdate];
+    return [Max_matUpdate, Max_valveUpdate, Max_bomUpdate];
 });
 
 const dataSource = [
     'Share Others/Finacc/Bill of Material/Material Price (MP)/mat_master.csv',
-    'Share Others/Finacc/Bill of Material/Packing Price (PP)/pack_master.csv',
+    // 'Share Others/Finacc/Bill of Material/Packing Price (PP)/pack_master.csv',
     'Share Others/Finacc/Bill of Material/Valve Price (VP)/vp_master.csv',
     // 'Share Others/Finacc/Bill of Material/Process Price (MP)/proc_master.csv',
     'Share Others/Finacc/Bill of Material/Bill of Material (BOM)/bom_master.csv',
@@ -1072,38 +1072,43 @@ const formatCurrency = (value: number) => {
                     <TabPanels>
                         <TabPanel value="0">
                             <section ref="matSection" class="p-2">
-                                <div class="mb-4 flex items-center justify-between">
-                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Material Price</h2>
-                                    <div class="flex gap-4">
-                                        <div>
-                                            <div>
-                                                Last Update :
-                                                <span class="text-red-300">{{ lastUpdate[0] ? formatlastUpdate(lastUpdate[0]) : '-' }}</span>
-                                            </div>
-                                            <div>
-                                                Data source From : <span class="text-cyan-400">{{ dataSource[0] }}</span>
-                                            </div>
-                                        </div>
-                                        <div class="flex flex-col items-center gap-3">
-                                            <FileUpload
-                                                ref="fileUploaderMAT"
-                                                mode="basic"
-                                                name="file"
-                                                :customUpload="true"
-                                                accept=".csv"
-                                                chooseLabel="Import CSV"
-                                                chooseIcon="pi pi-upload"
-                                                @select="(event) => handleCSVImport(event, 'mat')"
-                                            />
-                                        </div>
-                                        <div class="flex flex-col items-center gap-3">
+                                <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
+                                        Material Price
+                                    </h2>
+
+                                    <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
+                                        <FileUpload
+                                            ref="fileUploaderBP"
+                                            mode="basic"
+                                            name="file"
+                                            :customUpload="true"
+                                            accept=".csv"
+                                            chooseLabel="Import CSV"
+                                            chooseIcon="pi pi-upload"
+                                            @select="(event) => handleCSVImport(event, 'mat')"
+                                            class="w-full sm:w-auto"
+                                        />
+
+                                        <div class="flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row">
                                             <Button
                                                 icon="pi pi-download"
                                                 label=" Export"
                                                 unstyled
-                                                class="w-28 cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900"
+                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 sm:w-28"
                                                 @click="exportCSV('mat')"
                                             />
+                                        </div>
+                                    </div>
+
+                                    <div class="text-right text-gray-700 dark:text-gray-300">
+                                        <div>
+                                            Last Update :
+                                            <span class="text-red-300">{{ lastUpdate[0] ? formatlastUpdate(lastUpdate[0]) : '-' }}</span>
+                                        </div>
+                                        <div>
+                                            Data source From :
+                                            <span class="text-cyan-400">{{ dataSource[0] }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1312,38 +1317,43 @@ const formatCurrency = (value: number) => {
 
                         <TabPanel value="1">
                             <section ref="packSection" class="p-2">
-                                <div class="mb-4 flex items-center justify-between">
-                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Valve Price</h2>
-                                    <div class="flex gap-4">
-                                        <div>
-                                            <div>
-                                                Last Update :
-                                                <span class="text-red-300">{{ lastUpdate[2] ? formatlastUpdate(lastUpdate[2]) : '-' }}</span>
-                                            </div>
-                                            <div>
-                                                Data source From : <span class="text-cyan-400">{{ dataSource[2] }}</span>
-                                            </div>
-                                        </div>
-                                        <div class="flex flex-col items-center gap-3">
-                                            <FileUpload
-                                                ref="fileUploaderVALVE"
-                                                mode="basic"
-                                                name="file"
-                                                :customUpload="true"
-                                                accept=".csv"
-                                                chooseLabel="Import CSV"
-                                                chooseIcon="pi pi-upload"
-                                                @select="(event) => handleCSVImport(event, 'valve')"
-                                            />
-                                        </div>
-                                        <div class="flex flex-col items-center gap-3">
+                                <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
+                                        Valve Price
+                                    </h2>
+
+                                    <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
+                                        <FileUpload
+                                            ref="fileUploaderBP"
+                                            mode="basic"
+                                            name="file"
+                                            :customUpload="true"
+                                            accept=".csv"
+                                            chooseLabel="Import CSV"
+                                            chooseIcon="pi pi-upload"
+                                            @select="(event) => handleCSVImport(event, 'mat')"
+                                            class="w-full sm:w-auto"
+                                        />
+
+                                        <div class="flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row">
                                             <Button
                                                 icon="pi pi-download"
                                                 label=" Export"
                                                 unstyled
-                                                class="w-28 cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900"
-                                                @click="exportCSV('valve')"
+                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 sm:w-28"
+                                                @click="exportCSV('mat')"
                                             />
+                                        </div>
+                                    </div>
+
+                                    <div class="text-right text-gray-700 dark:text-gray-300">
+                                        <div>
+                                            Last Update :
+                                            <span class="text-red-300">{{ lastUpdate[1] ? formatlastUpdate(lastUpdate[1]) : '-' }}</span>
+                                        </div>
+                                        <div>
+                                            Data source From :
+                                            <span class="text-cyan-400">{{ dataSource[1] }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1561,38 +1571,33 @@ const formatCurrency = (value: number) => {
 
                         <TabPanel value="2">
                             <section ref="bomSection" class="p-2">
-                                <div class="mb-4 flex items-center justify-between">
-                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Bill of Material</h2>
-                                    <div class="flex gap-4">
+                                <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
+                                        Bill of Material
+                                    </h2>
+
+                                    <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
+                                        <FileUpload
+                                            ref="fileUploaderBP"
+                                            mode="basic"
+                                            name="file"
+                                            :customUpload="true"
+                                            accept=".csv"
+                                            chooseLabel="Import CSV"
+                                            chooseIcon="pi pi-upload"
+                                            @select="(event) => handleCSVImport(event, 'mat')"
+                                            class="w-full sm:w-auto"
+                                        />
+                                    </div>
+
+                                    <div class="text-right text-gray-700 dark:text-gray-300">
                                         <div>
-                                            <div>
-                                                Last Update :
-                                                <span class="text-red-300">{{ lastUpdate[4] ? formatlastUpdate(lastUpdate[4]) : '-' }}</span>
-                                            </div>
-                                            <div>
-                                                Data source From : <span class="text-cyan-400">{{ dataSource[3] }}</span>
-                                            </div>
+                                            Last Update :
+                                            <span class="text-red-300">{{ lastUpdate[2] ? formatlastUpdate(lastUpdate[2]) : '-' }}</span>
                                         </div>
-                                        <div class="flex flex-col items-center gap-3">
-                                            <FileUpload
-                                                ref="fileUploaderBOM"
-                                                mode="basic"
-                                                name="file"
-                                                :customUpload="true"
-                                                accept=".csv"
-                                                chooseLabel="Import CSV"
-                                                chooseIcon="pi pi-upload"
-                                                @select="(event) => handleCSVImport(event, 'bom')"
-                                            />
-                                        </div>
-                                        <div class="flex flex-col items-center gap-3">
-                                            <Button
-                                                icon="pi pi-download"
-                                                label=" Export"
-                                                unstyled
-                                                class="w-28 cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900"
-                                                @click="exportCSV('bom')"
-                                            />
+                                        <div>
+                                            Data source From :
+                                            <span class="text-cyan-400">{{ dataSource[2] }}</span>
                                         </div>
                                     </div>
                                 </div>

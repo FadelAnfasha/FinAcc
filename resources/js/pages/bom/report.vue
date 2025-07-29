@@ -205,6 +205,8 @@ const lastUpdate = computed(() => {
     return [Max_BOMUpdate];
 });
 
+const lastMaster = computed(() => page.props.lastMaster as any);
+
 function formatlastUpdate(date: Date | string) {
     return dayjs(date).format('DD MMM YYYY HH:mm:ss');
 }
@@ -309,13 +311,56 @@ function openPreviewTab(item_code: string) {
                             >,
                         </p>
                         <p>Are you sure you want to update the report?</p>
-
+                        <p class="mt-6 mb-2 font-semibold">Make sure this data is up to date:</p>
+                        <div class="overflow-x-auto">
+                            <table v-if="updateType === 'bom'" class="w-full border-collapse text-left">
+                                <thead>
+                                    <tr>
+                                        <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Data</th>
+                                        <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Last Update</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="border-b border-gray-800 px-4 py-2">Material Price</td>
+                                        <td class="border-b border-gray-800 px-4 py-2">
+                                            <span class="text-red-300">{{ lastMaster[0] ? formatlastUpdate(lastMaster[0]) : '-' }}</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border-b border-gray-800 px-4 py-2">Valve Price</td>
+                                        <td class="border-b border-gray-800 px-4 py-2">
+                                            <span class="text-red-300">{{ lastMaster[1] ? formatlastUpdate(lastMaster[1]) : '-' }}</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border-b border-gray-800 px-4 py-2">Bill of Material</td>
+                                        <td class="border-b border-gray-800 px-4 py-2">
+                                            <span class="text-red-300">{{ lastMaster[2] ? formatlastUpdate(lastMaster[2]) : '-' }}</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border-b border-gray-800 px-4 py-2">Process Cost</td>
+                                        <td class="border-b border-gray-800 px-4 py-2">
+                                            <span class="text-red-300">{{ lastMaster[3] ? formatlastUpdate(lastMaster[3]) : '-' }}</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                         <div class="flex justify-end gap-3 pt-4">
-                            <Button label="Cancel" icon="pi pi-times" severity="secondary" @click="closeDialog" />
                             <Button
-                                label="Yes, Update"
+                                label=" Cancel"
+                                icon="pi pi-times"
+                                unstyled
+                                class="w-28 cursor-pointer rounded-xl bg-red-500 px-4 py-2 text-center font-bold text-slate-900 hover:bg-red-700"
+                                @click="closeDialog"
+                            />
+                            <Button
+                                label=" Yes, Update"
                                 icon="pi pi-check"
-                                severity="success"
+                                unstyled
+                                class="w-36 cursor-pointer rounded-xl bg-emerald-500 px-4 py-2 text-center font-bold text-slate-900 hover:bg-emerald-700"
                                 :loading="updateStatus.value === 'updating'"
                                 @click="confirmUpdate"
                             />
@@ -358,32 +403,35 @@ function openPreviewTab(item_code: string) {
                     <TabPanels>
                         <TabPanel value="0">
                             <section class="p-2">
-                                <div class="mb-4 flex items-center justify-between">
-                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Bill of Material</h2>
-                                    <div class="flex gap-4">
-                                        <div>
-                                            <div class="flex flex-col items-center gap-3">
-                                                Last Update :
-                                                <span class="text-red-300">{{ lastUpdate[0] ? formatlastUpdate(lastUpdate[0]) : '-' }}</span>
-                                            </div>
-                                        </div>
+                                <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
+                                        Bill of Material
+                                    </h2>
 
-                                        <div class="flex flex-col items-center gap-3">
-                                            <Button
-                                                icon="pi pi-sync
-"
-                                                label=" Update Report?"
-                                                unstyled
-                                                class="w-28 cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900"
-                                                @click="showUpdateDialog('bom')"
-                                            />
+                                    <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
+                                        <div class="flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row">
                                             <Button
                                                 icon="pi pi-download"
                                                 label=" Export"
                                                 unstyled
-                                                class="w-28 cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900"
+                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 sm:w-28"
                                                 @click="exportCSV('bom')"
                                             />
+                                        </div>
+                                        <Button
+                                            icon="pi pi-sync
+"
+                                            label=" Update Report?"
+                                            unstyled
+                                            class="w-28 cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900"
+                                            @click="showUpdateDialog('bom')"
+                                        />
+                                    </div>
+
+                                    <div class="text-right text-gray-700 dark:text-gray-300">
+                                        <div>
+                                            Last Update :
+                                            <span class="text-red-300">{{ lastUpdate[0] ? formatlastUpdate(lastUpdate[0]) : '-' }}</span>
                                         </div>
                                     </div>
                                 </div>

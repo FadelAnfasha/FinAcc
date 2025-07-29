@@ -61,10 +61,45 @@ class BOMController extends Controller
     {
         // $bom = BOM_Report::take('10')->get();
         $bom = BOM_Report::with('bom')->get();
+        $lastUpdate = [];
 
+        // Ambil data Material dengan updated_at paling terbaru
+        $latestMaterial = Material::latest('updated_at')->first();
+
+        // Ambil data Valve dengan updated_at paling terbaru
+        $latestValve = Valve::latest('updated_at')->first();
+        $latestProcessCost = ProcessCost::latest('updated_at')->first();
+        $latestBOM = BillOfMaterial::latest('updated_at')->first();
+
+        // Tambahkan created_at dari Material ke array $lastUpdate jika ada
+        if ($latestMaterial) {
+            $lastUpdate[] = $latestMaterial->created_at;
+        } else {
+            $lastUpdate[] = null; // Atau nilai default lain jika tidak ada data
+        }
+
+        // Tambahkan created_at dari Valve ke array $lastUpdate jika ada
+        if ($latestValve) {
+            $lastUpdate[] = $latestValve->created_at;
+        } else {
+            $lastUpdate[] = null; // Atau nilai default lain jika tidak ada data
+        }
+        // Tambahkan created_at dari BOM ke array $lastUpdate jika ada
+        if ($latestBOM) {
+            $lastUpdate[] = $latestBOM->created_at;
+        } else {
+            $lastUpdate[] = null; // Atau nilai default lain jika tidak ada data
+        }
+        // Tambahkan created_at dari ProcessCost ke array $lastUpdate jika ada
+        if ($latestProcessCost) {
+            $lastUpdate[] = $latestProcessCost->created_at;
+        } else {
+            $lastUpdate[] = null; // Atau nilai default lain jika tidak ada data
+        }
 
         return Inertia::render("bom/report", [
-            'bom' => $bom
+            'bom' => $bom,
+            'lastMaster' => $lastUpdate
         ]);
     }
 
