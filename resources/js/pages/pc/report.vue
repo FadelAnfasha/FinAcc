@@ -322,9 +322,9 @@ function closeDialog(type: 'pc' | null) {
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td class="border-b border-gray-800 px-4 py-2">Sales Quantity</td>
+                                        <td class="border-b border-gray-800 px-4 py-2">Wages Distribution</td>
                                         <td class="border-b border-gray-800 px-4 py-2">
-                                            <span class="text-red-300">{{ lastMaster[1] ? formatlastUpdate(lastMaster[1]) : '-' }}</span>
+                                            <span class="text-red-300">{{ lastMaster[2] ? formatlastUpdate(lastMaster[2]) : '-' }}</span>
                                         </td>
                                     </tr>
                                 </tbody>

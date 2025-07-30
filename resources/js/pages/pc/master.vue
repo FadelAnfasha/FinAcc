@@ -759,8 +759,8 @@ function handleDestroy() {
                             >?
                         </p>
 
-                        <p class="mt-6 mb-2 font-semibold">Make sure this data is up to date:</p>
-                        <div class="overflow-x-auto">
+                        <div class="overflow-x-auto" v-if="importType === 'sq'">
+                            <p class="mt-6 mb-2 font-semibold">Make sure this data is up to date:</p>
                             <table class="w-full border-collapse text-left">
                                 <thead>
                                     <tr>
@@ -787,16 +787,18 @@ function handleDestroy() {
 
                         <div class="flex justify-end gap-3 pt-6">
                             <Button
-                                label="Cancel"
+                                label=" Cancel"
                                 icon="pi pi-times"
-                                severity="secondary"
+                                unstyled
+                                class="w-28 cursor-pointer rounded-xl bg-red-500 px-4 py-2 text-center font-bold text-slate-900 hover:bg-red-700"
                                 :disabled="isUploading"
                                 @click="cancelCSVimport(importType!)"
                             />
                             <Button
-                                label="Yes, Import"
+                                label=" Yes, Import"
                                 icon="pi pi-check"
-                                severity="success"
+                                unstyled
+                                class="w-40 cursor-pointer rounded-xl bg-emerald-500 px-4 py-2 text-center font-bold text-slate-900 hover:bg-emerald-700"
                                 :loading="isUploading"
                                 @click="() => confirmUpload(importType!)"
                             />
@@ -815,9 +817,10 @@ function handleDestroy() {
                         </p>
                         <div class="flex justify-end gap-3 pt-4">
                             <Button
-                                label="Close"
+                                label=" Close"
                                 icon="pi pi-times"
-                                severity="secondary"
+                                unstyled
+                                class="w-28 cursor-pointer rounded-xl bg-red-500 px-4 py-2 text-center font-bold text-slate-900 hover:bg-red-700"
                                 :disabled="isUploading"
                                 @click="
                                     () => {

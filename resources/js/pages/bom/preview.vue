@@ -21,6 +21,8 @@ const margin = computed(() => page.props.margin as any);
 const sellingPrice = computed(() => page.props.sellingPrice as any);
 const total_rm = computed(() => page.props.total_rm as any);
 const total_process = computed(() => page.props.total_pr as any);
+const opex = computed(() => page.props.opex as any);
+const progin = computed(() => page.props.progin as any);
 
 const formattedReportDate = computed(() => {
     // reportData.updated_at akan berisi string seperti "2025-07-21T02:58:55.000000Z"
@@ -516,7 +518,7 @@ onMounted(() => {
                 <tr>
                     <td class="border p-1 text-left font-bold">Total Cycle Time:</td>
                     <td class="border p-1 text-right font-bold" colspan="3">{{ totalCT }}</td>
-                    <td colspan="11" class="border p-1 text-left font-bold">Total Manufacturing Cost (Total dari FG):</td>
+                    <td colspan="11" class="border p-1 text-left font-bold">Total Manufacturing Cost:</td>
                     <td class="border p-1 text-right font-bold">{{ mfgCost }}</td>
                 </tr>
             </tfoot>
@@ -564,7 +566,7 @@ onMounted(() => {
                                 <td>{{ mfgCost }}</td>
                             </tr>
                             <tr>
-                                <td>6.0% OPEX</td>
+                                <td>{{ opex }}% OPEX</td>
                                 <td>{{ opexCost }}</td>
                             </tr>
                             <tr>
@@ -572,7 +574,7 @@ onMounted(() => {
                                 <td>{{ totalCost }}</td>
                             </tr>
                             <tr>
-                                <td>5.0% Profit Margin</td>
+                                <td>{{ progin }}% Profit Margin</td>
                                 <td>{{ margin }}</td>
                             </tr>
                             <tr>

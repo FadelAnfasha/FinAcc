@@ -7,6 +7,7 @@ import Button from 'primevue/button';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
 import Dialog from 'primevue/dialog';
+import InputNumber from 'primevue/inputnumber';
 import InputText from 'primevue/inputtext';
 import Select from 'primevue/select';
 import Tab from 'primevue/tab';
@@ -212,18 +213,40 @@ function formatlastUpdate(date: Date | string) {
 }
 
 const updateReportDialog = ref(false);
+const updateConstDialog = ref(false);
 type UpdateStatus = 'idle' | 'updating' | 'done';
 const updateStatus = ref<UpdateStatus>('idle');
 const userName = computed(() => page.props.auth?.user?.name ?? '');
-const updateType = ref<'bom' | null>(null);
+const updateType = ref<'bom' | 'opgin' | null>(null);
 
-function showUpdateDialog(type: 'bom') {
+function showUpdateDialog(type: 'bom' | 'opgin') {
     updateType.value = type;
     updateStatus.value = 'idle';
-    nextTick(() => {
-        updateReportDialog.value = true;
-    });
+
+    if (updateType.value === 'opgin') {
+        nextTick(() => {
+            tempOpex.value = opexDef.value;
+            tempProgin.value = proginDef.value;
+            updateConstDialog.value = true;
+        });
+    } else {
+        nextTick(() => {
+            updateReportDialog.value = true;
+        });
+    }
 }
+
+const saveOpexProgin = () => {
+    if (tempOpex.value !== null && tempProgin.value !== null) {
+        opexDef.value = tempOpex.value;
+        proginDef.value = tempProgin.value;
+    }
+    updateConstDialog.value = false;
+};
+
+const cancelOpexProgin = () => {
+    updateConstDialog.value = false; // Tutup dialog
+};
 
 function confirmUpdate() {
     if (!updateType.value) return;
@@ -237,9 +260,7 @@ function confirmUpdate() {
 
     const messages = {
         bom: 'Bill of Material Report',
-        base: 'Base Cost Report',
-        cpp: 'Cost per Process Report',
-        pc: 'Cost per Component Report',
+        opgin: 'OPEX / Profit Margin',
     };
 
     router.post(
@@ -278,10 +299,20 @@ function closeDialog() {
     updateType.value = null;
 }
 
-function openPreviewTab(item_code: string) {
-    const previewUrl = route('preview.item', { item_code: item_code });
+function openPreviewTab(item_code: string, opex: number, progin: number) {
+    const previewUrl = route('preview.item', {
+        item_code: item_code,
+        opex: opex,
+        progin: progin,
+    });
+
     window.open(previewUrl, '_blank'); // Membuka URL di tab baru
 }
+
+let opexDef = ref(6);
+let proginDef = ref(5);
+const tempOpex = ref<number | null>(null);
+const tempProgin = ref<number | null>(null);
 </script>
 
 <template>
@@ -395,6 +426,36 @@ function openPreviewTab(item_code: string) {
                 </template>
             </Dialog>
 
+            <Dialog v-model:visible="updateConstDialog" header="Edit OPEX & Profit Margin" modal class="w-[25rem]" :closable="false">
+                <div class="space-y-4">
+                    <div class="flex flex-col gap-2">
+                        <label for="tempOpex">OPEX (%):</label>
+                        <InputNumber v-model="tempOpex" inputId="tempOpex" suffix="%" fluid />
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label for="tempProgin">Profit Margin (%):</label>
+                        <InputNumber v-model="tempProgin" inputId="tempProgin" suffix="%" fluid />
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-6">
+                    <Button
+                        label=" Cancel"
+                        icon="pi pi-times"
+                        unstyled
+                        class="w-28 cursor-pointer rounded-xl bg-red-500 px-4 py-2 text-center font-bold text-slate-900 hover:bg-red-700"
+                        @click="cancelOpexProgin"
+                    />
+                    <Button
+                        label=" Save"
+                        icon="pi pi-check"
+                        unstyled
+                        class="w-28 cursor-pointer rounded-xl bg-emerald-500 px-4 py-2 text-center font-bold text-slate-900 hover:bg-emerald-700"
+                        @click="saveOpexProgin"
+                    />
+                </div>
+            </Dialog>
+
             <div class="mx-26 mb-26">
                 <Tabs value="0">
                     <TabList>
@@ -408,24 +469,41 @@ function openPreviewTab(item_code: string) {
                                         Bill of Material
                                     </h2>
 
-                                    <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
-                                        <div class="flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row">
+                                    <div class="mb-4 flex flex-col gap-4 md:flex-row md:items-start md:justify-end">
+                                        <div class="flex w-full flex-col items-center gap-4 sm:flex-row md:w-auto">
                                             <Button
                                                 icon="pi pi-download"
                                                 label=" Export"
                                                 unstyled
-                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 sm:w-28"
+                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-orange-700 sm:w-28"
                                                 @click="exportCSV('bom')"
                                             />
+                                            <Button
+                                                icon="pi pi-sync"
+                                                label=" Update Report?"
+                                                unstyled
+                                                class="w-full cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-cyan-700 sm:w-36"
+                                                @click="showUpdateDialog('bom')"
+                                            />
                                         </div>
-                                        <Button
-                                            icon="pi pi-sync
-"
-                                            label=" Update Report?"
-                                            unstyled
-                                            class="w-28 cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900"
-                                            @click="showUpdateDialog('bom')"
-                                        />
+
+                                        <div class="flex w-full flex-col items-center gap-4 sm:flex-row md:w-auto">
+                                            <div class="flex items-center gap-2">
+                                                <label for="opex" class="whitespace-nowrap">OPEX :</label>
+                                                <InputNumber v-model="opexDef" inputId="percent" suffix="%" fluid class="w-28" disabled />
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <label for="progin" class="whitespace-nowrap">Profit Margin :</label>
+                                                <InputNumber v-model="proginDef" inputId="percent" suffix="%" fluid class="w-28" disabled />
+                                            </div>
+                                            <Button
+                                                icon="pi pi-sync"
+                                                label=" Update Value?"
+                                                unstyled
+                                                class="w-full cursor-pointer rounded-xl bg-emerald-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-emerald-700 sm:w-36"
+                                                @click="showUpdateDialog('opgin')"
+                                            />
+                                        </div>
                                     </div>
 
                                     <div class="text-right text-gray-700 dark:text-gray-300">
@@ -789,7 +867,7 @@ function openPreviewTab(item_code: string) {
                                                     severity="info"
                                                     rounded
                                                     text
-                                                    @click="openPreviewTab(data.data.item_code)"
+                                                    @click="openPreviewTab(data.data.item_code, opexDef, proginDef)"
                                                 />
                                             </div>
                                         </template>

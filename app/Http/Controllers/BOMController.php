@@ -392,7 +392,8 @@ class BOMController extends Controller
     public function previewData(Request $request, string $item_code)
     {
         // $previewData = BOM_Report::where('item_code', $item_code)->with('bom')->first();
-
+        $opex = $request->query('opex');
+        $progin = $request->query('progin');
         $previewData = BOM_Report::where('item_code', $item_code)
             ->with([
                 'bom', // Deskripsi utama F15W02
@@ -1202,9 +1203,9 @@ class BOMController extends Controller
         ];
 
         $mfgCost = $previewData->total;
-        $opexCost = $previewData->total * 0.06;
+        $opexCost = $previewData->total * ($opex / 100);
         $totalCost = $mfgCost + $opexCost;
-        $margin = $totalCost * 0.05;
+        $margin = $totalCost * ($progin / 100);
         $sellingPrice = $totalCost + $margin;
 
         return Inertia::render('bom/preview', [
@@ -1218,7 +1219,8 @@ class BOMController extends Controller
             'sellingPrice' => number_format($sellingPrice, 0, ',', '.'),
             'total_rm' => number_format(($previewData->total_raw_material), 0, ',', '.'),
             'total_pr' => number_format(($previewData->total_process), 0, ',', '.'),
-
+            'opex' => $opex,
+            'progin' => $progin
         ]);
     }
 }

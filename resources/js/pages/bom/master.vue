@@ -712,16 +712,18 @@ const formatCurrency = (value: number) => {
 
                         <div class="flex justify-end gap-3 pt-4">
                             <Button
-                                label="Cancel"
+                                label=" Cancel"
                                 icon="pi pi-times"
-                                severity="secondary"
+                                unstyled
+                                class="w-28 cursor-pointer rounded-xl bg-red-500 px-4 py-2 text-center font-bold text-slate-900 hover:bg-red-700"
                                 :disabled="isUploading"
                                 @click="cancelCSVimport(importType!)"
                             />
                             <Button
-                                label="Yes, Import"
+                                label=" Yes, Import"
                                 icon="pi pi-check"
-                                severity="success"
+                                unstyled
+                                class="w-40 cursor-pointer rounded-xl bg-emerald-500 px-4 py-2 text-center font-bold text-slate-900 hover:bg-emerald-700"
                                 :loading="isUploading"
                                 @click="() => confirmUpload(importType!)"
                             />
@@ -740,9 +742,10 @@ const formatCurrency = (value: number) => {
                         </p>
                         <div class="flex justify-end gap-3 pt-4">
                             <Button
-                                label="Close"
+                                label=" Close"
                                 icon="pi pi-times"
-                                severity="secondary"
+                                unstyled
+                                class="w-28 cursor-pointer rounded-xl bg-red-500 px-4 py-2 text-center font-bold text-slate-900 hover:bg-red-700"
                                 :disabled="isUploading"
                                 @click="
                                     () => {
@@ -757,6 +760,9 @@ const formatCurrency = (value: number) => {
 
                 <Dialog v-model:visible="showComponent" :header="`Components of ${finishGood.item_code}`" modal class="w-[60rem]" :closable="false">
                     <DataTable :value="componentItems" responsiveLayout="scroll">
+                        <div class="mr-2 mb-2 flex justify-end">
+                            <Button label="Close" severity="warn" @click="closeComponentDialog" />
+                        </div>
                         <Column header="#" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                             <template #body="{ index }">
                                 {{ index + 1 }}
@@ -770,9 +776,6 @@ const formatCurrency = (value: number) => {
                         <Column field="depth" header="Depth" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
                         <Column field="bom_type" header="Bom Type" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
                     </DataTable>
-                    <div class="mt-2 mr-2 flex justify-end">
-                        <Button label="Close" severity="warn" @click="closeComponentDialog" />
-                    </div>
                 </Dialog>
 
                 <Dialog v-model:visible="showDialog" :header="headerType" modal :style="{ width: dialogWidth }" :closable="false">
@@ -1331,7 +1334,7 @@ const formatCurrency = (value: number) => {
                                             accept=".csv"
                                             chooseLabel="Import CSV"
                                             chooseIcon="pi pi-upload"
-                                            @select="(event) => handleCSVImport(event, 'mat')"
+                                            @select="(event) => handleCSVImport(event, 'valve')"
                                             class="w-full sm:w-auto"
                                         />
 
@@ -1341,7 +1344,7 @@ const formatCurrency = (value: number) => {
                                                 label=" Export"
                                                 unstyled
                                                 class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 sm:w-28"
-                                                @click="exportCSV('mat')"
+                                                @click="exportCSV('valve')"
                                             />
                                         </div>
                                     </div>
@@ -1585,7 +1588,7 @@ const formatCurrency = (value: number) => {
                                             accept=".csv"
                                             chooseLabel="Import CSV"
                                             chooseIcon="pi pi-upload"
-                                            @select="(event) => handleCSVImport(event, 'mat')"
+                                            @select="(event) => handleCSVImport(event, 'bom')"
                                             class="w-full sm:w-auto"
                                         />
                                     </div>
