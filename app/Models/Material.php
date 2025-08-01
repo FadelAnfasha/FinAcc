@@ -14,12 +14,12 @@ class Material extends Model
     protected $primaryKey = 'item_code';
     public $incrementing = false; // jika item_no bukan auto-increment
     protected $keyType = 'string'; // jika item_no bukan integer
-
     protected $fillable = [
         'item_code',
         'in_stock',
         'item_group',
-        'price',
+        'actualPrice',
+        'standardPrice',
         'date_of_update',
         'manufacturer',
     ];
@@ -28,4 +28,14 @@ class Material extends Model
     {
         return $this->hasOne(BillOfMaterial::class, 'item_code', 'item_code');
     }
+
+    // public function fixed()
+    // {
+    //     return $this->hasOne(fixedMaterial::class, 'item_code', 'item_code');
+    // }
+
+    // public function standard()
+    // {
+    //     return $this->hasOne(standardMaterial::class, 'item_code', 'item_code');
+    // }
 }

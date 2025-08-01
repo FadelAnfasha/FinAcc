@@ -296,13 +296,13 @@ function closeDialog(type: 'pc' | null) {
                                     <tr>
                                         <td class="border-b border-gray-800 px-4 py-2">Cycle Time</td>
                                         <td class="border-b border-gray-800 px-4 py-2">
-                                            <span class="text-red-300">{{ lastMaster[0] ? formatlastUpdate(lastMaster[0]) : '-' }}</span>
+                                            <span class="text-red-300">{{ lastMaster[0] ? formatlastUpdate(lastMaster[0]) : 'Empty' }}</span>
                                         </td>
                                     </tr>
                                     <tr>
                                         <td class="border-b border-gray-800 px-4 py-2">Sales Quantity</td>
                                         <td class="border-b border-gray-800 px-4 py-2">
-                                            <span class="text-red-300">{{ lastMaster[1] ? formatlastUpdate(lastMaster[1]) : '-' }}</span>
+                                            <span class="text-red-300">{{ lastMaster[1] ? formatlastUpdate(lastMaster[1]) : 'Empty' }}</span>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -318,13 +318,13 @@ function closeDialog(type: 'pc' | null) {
                                     <tr>
                                         <td class="border-b border-gray-800 px-4 py-2">Activity Quantity</td>
                                         <td class="border-b border-gray-800 px-4 py-2">
-                                            <span class="text-red-300">{{ lastUpdate[0] ? formatlastUpdate(lastUpdate[0]) : '-' }}</span>
+                                            <span class="text-red-300">{{ lastUpdate[0] ? formatlastUpdate(lastUpdate[0]) : 'Empty' }}</span>
                                         </td>
                                     </tr>
                                     <tr>
                                         <td class="border-b border-gray-800 px-4 py-2">Wages Distribution</td>
                                         <td class="border-b border-gray-800 px-4 py-2">
-                                            <span class="text-red-300">{{ lastMaster[2] ? formatlastUpdate(lastMaster[2]) : '-' }}</span>
+                                            <span class="text-red-300">{{ lastMaster[2] ? formatlastUpdate(lastMaster[2]) : 'Empty' }}</span>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -340,7 +340,7 @@ function closeDialog(type: 'pc' | null) {
                                     <tr>
                                         <td class="border-b border-gray-800 px-4 py-2">Convertion Cost</td>
                                         <td class="border-b border-gray-800 px-4 py-2">
-                                            <span class="text-red-300">{{ lastUpdate[1] ? formatlastUpdate(lastUpdate[1]) : '-' }}</span>
+                                            <span class="text-red-300">{{ lastUpdate[1] ? formatlastUpdate(lastUpdate[1]) : 'Empty' }}</span>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -356,7 +356,7 @@ function closeDialog(type: 'pc' | null) {
                                     <tr>
                                         <td class="border-b border-gray-800 px-4 py-2">Cost per Process</td>
                                         <td class="border-b border-gray-800 px-4 py-2">
-                                            <span class="text-red-300">{{ lastUpdate[2] ? formatlastUpdate(lastUpdate[2]) : '-' }}</span>
+                                            <span class="text-red-300">{{ lastUpdate[2] ? formatlastUpdate(lastUpdate[2]) : 'Empty' }}</span>
                                         </td>
                                     </tr>
                                 </tbody>

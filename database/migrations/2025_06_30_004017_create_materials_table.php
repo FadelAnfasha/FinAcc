@@ -15,7 +15,8 @@ return new class extends Migration
             $table->string('item_code')->primary(); // menjadikannya primary key agar bisa direferensikan
             $table->integer('in_stock');
             $table->string('item_group');
-            $table->decimal('price', 15, 2);
+            $table->decimal('actualPrice', 15, 2);
+            $table->decimal('standardPrice', 15, 2);
             $table->timestamps();
         });
     }

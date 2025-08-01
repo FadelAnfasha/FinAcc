@@ -1156,9 +1156,15 @@ const formatCurrency = (value: number) => {
 
                                     <Column field="in_stock" sortable header="In Stock" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
                                     <Column field="item_group" sortable header="Group" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
-                                    <Column field="price" header="Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+
+                                    <Column field="actualPrice" header="Actual Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
-                                            {{ formatCurrency(data.price) }}
+                                            {{ formatCurrency(data.actualPrice) }}
+                                        </template>
+                                    </Column>
+                                    <Column field="standardPrice" header="Standard Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ formatCurrency(data.standardPrice) }}
                                         </template>
                                     </Column>
 
@@ -1202,8 +1208,8 @@ const formatCurrency = (value: number) => {
                                 </DataTable>
                             </section>
                         </TabPanel>
-                        <!-- 
-                        <TabPanel value="1">
+
+                        <!-- <TabPanel value="1">
                             <section ref="packSection" class="p-2">
                                 <div class="mb-4 flex items-center justify-between">
                                     <h2 class="text-3xl font-semibold hover:text-indigo-500">Packing Price</h2>

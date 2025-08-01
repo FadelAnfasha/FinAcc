@@ -32,18 +32,19 @@ class MaterialController extends Controller
             $newData = [
                 'in_stock' => is_numeric($row[1]) ? intval($row[1]) : 0,
                 'item_group' => $row[2],
-                'price' => is_numeric($row[3]) ? floatval($row[3]) : 0.0,
+                'actualPrice' => is_numeric($row[3]) ? floatval($row[3]) : 0.0,
+                'standardPrice' => is_numeric($row[4]) ? floatval($row[4]) : 0.0,
             ];
 
             // dd($material, $row[0], $newData);
-
             // Jika material belum ada, maka data baru akan ditambahkan
             if (!$material) {
                 $material = Material::create([
                     'item_code' => $row[0],
                     'in_stock' => is_numeric($row[1]) ? intval($row[1]) : 0,
                     'item_group' => $row[2],
-                    'price' => is_numeric($row[3]) ? floatval($row[3]) : 0.0,
+                    'actualPrice' => is_numeric($row[3]) ? floatval($row[3]) : 0.0,
+                    'standardPrice' => is_numeric($row[4]) ? floatval($row[4]) : 0.0,
                 ]);
                 $addedItems[] = $material->item_code; // Tambahkan ke daftar addedItems
             } else {
@@ -68,7 +69,6 @@ class MaterialController extends Controller
             Cache::put('import-progress-mat', $progress, now()->addMinutes(5));
         }
         Cache::put('import-progress-mat', 100, now()->addMinutes(5));
-
 
         // Kirim data feedback ke view
         redirect()->route('pc.master')->with([

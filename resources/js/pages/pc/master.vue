@@ -772,13 +772,13 @@ function handleDestroy() {
                                     <tr>
                                         <td class="border-b border-gray-800 px-4 py-2">Business Partner</td>
                                         <td class="border-b border-gray-800 px-4 py-2">
-                                            <span class="text-red-300">{{ lastUpdate[0] ? formatlastUpdate(lastUpdate[0]) : '-' }}</span>
+                                            <span class="text-red-300">{{ lastUpdate[0] ? formatlastUpdate(lastUpdate[0]) : 'Empty' }}</span>
                                         </td>
                                     </tr>
                                     <tr>
                                         <td class="border-b border-gray-800 px-4 py-2">Cycle Time</td>
                                         <td class="border-b border-gray-800 px-4 py-2">
-                                            <span class="text-red-300">{{ lastUpdate[1] ? formatlastUpdate(lastUpdate[1]) : '-' }}</span>
+                                            <span class="text-red-300">{{ lastUpdate[1] ? formatlastUpdate(lastUpdate[1]) : 'Empty' }}</span>
                                         </td>
                                     </tr>
                                 </tbody>
