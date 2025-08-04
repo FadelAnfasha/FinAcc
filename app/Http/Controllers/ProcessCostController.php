@@ -8,11 +8,11 @@ use App\Models\costPerProcess;
 use App\Models\CycleTime;
 use App\Models\ProcessCost;
 use App\Models\CTxSQ;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\SalesQuantity;
 use App\Models\WagesDistribution;
 use App\Services\ReportService;
+use Illuminate\Support\Facades\Session;
 
 
 class ProcessCostController extends Controller
@@ -24,11 +24,23 @@ class ProcessCostController extends Controller
         $salesQuantity = SalesQuantity::with(['bp', 'item'])->get();
         $wagesDistribution = WagesDistribution::first();
 
+        $addedItems = Session::get('addedItems', []);
+        $invalidItems = Session::get('invalidItems', []);
+
+        // if (!empty($addedItems)) {
+        //     dump($addedItems);
+        //     dump($invalidItems);
+        // }
+
         return Inertia::render("pc/master", [
             'businessPartners' => $bPartner,
             'cycleTimes' => $cTimes,
             'salesQuantities' => $salesQuantity,
             'wagesDistribution' => $wagesDistribution,
+            'importResult' => [
+                'addedItems' => $addedItems,
+                'invalidItems' => $invalidItems
+            ]
         ]);
     }
 

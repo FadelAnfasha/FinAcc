@@ -71,6 +71,49 @@ const salesQuantity = computed(() =>
 
 const wagesDistribution = page.props.wagesDistribution as Record<string, string>;
 
+interface ImportResult {
+    addedItems: string[];
+    invalidItems: { bp_code: string; bp_name: string; item_code: string; description: string; reason: string }[];
+}
+
+const importResult = computed(() => {
+    // Memberikan petunjuk tipe data kepada page.props.importResult
+    const result = page.props.importResult as ImportResult;
+
+    // Menambahkan pemeriksaan tipe data untuk memastikan `result` adalah objek
+    if (!result || typeof result !== 'object') {
+        return {
+            addedItems: [],
+            invalidItems: [],
+        };
+    }
+
+    // Perbaikan untuk addedItems:
+    // Mengambil item (yang berupa string bp_code) dari array
+    const addedItems = (result.addedItems || []).map((item, index) => ({
+        no: index + 1,
+        bp_code: item, // Menyimpan nilai string bp_code ke properti bp_code
+    }));
+
+    // Perbaikan untuk invalidItems:
+    // Setiap item adalah objek { 'bp_code': '...', 'reason': '...' }
+    // Kita perlu mengambil properti bp_code dan reason dari setiap objek
+    const invalidItems = (result.invalidItems || []).map((item, index) => ({
+        no: index + 1,
+        bp_code: item.bp_code,
+        bp_name: item.bp_name,
+        item_code: item.item_code,
+        description: item.description,
+
+        reason: item.reason,
+    }));
+
+    return {
+        addedItems: addedItems,
+        invalidItems: invalidItems,
+    };
+});
+
 const lastUpdate = computed(() => {
     // Business Partners
     const bp_update = ((page.props.businessPartners as any[]) ?? []).map((bp) => new Date(bp.updated_at));
@@ -815,6 +858,59 @@ function handleDestroy() {
                             Import
                             <strong class="text-green-500">Finished</strong>, it's safe to close window.
                         </p>
+
+                        <p><span class="text-xl font-semibold text-orange-400">Failed</span> to import:</p>
+                        <table class="w-full border-collapse text-left">
+                            <thead>
+                                <tr>
+                                    <th
+                                        v-if="importType === 'bp' || importType === 'sq'"
+                                        class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400"
+                                    >
+                                        BP Code
+                                    </th>
+                                    <th v-if="importType === 'bp'" class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">BP Name</th>
+                                    <th
+                                        v-if="importType === 'ct' || importType === 'sq'"
+                                        class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400"
+                                    >
+                                        Item Code
+                                    </th>
+                                    <th v-if="importType === 'ct'" class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">
+                                        Description
+                                    </th>
+
+                                    <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Menggunakan template v-if dan v-for -->
+                                <template v-if="importResult.invalidItems.length > 0">
+                                    <tr v-for="item in importResult.invalidItems" :key="item.no">
+                                        <td v-if="importType === 'bp' || importType === 'sq'" class="border-b border-gray-800 px-4 py-2">
+                                            {{ item.bp_code }}
+                                        </td>
+                                        <td v-if="importType === 'bp'" class="border-b border-gray-800 px-4 py-2">
+                                            {{ item.bp_name }}
+                                        </td>
+                                        <td v-if="importType === 'ct' || importType === 'sq'" class="border-b border-gray-800 px-4 py-2">
+                                            {{ item.item_code }}
+                                        </td>
+                                        <td v-if="importType === 'ct'" class="border-b border-gray-800 px-4 py-2">
+                                            {{ item.description }}
+                                        </td>
+                                        <td class="border-b border-gray-800 px-4 py-2">
+                                            {{ item.reason }}
+                                        </td>
+                                    </tr>
+                                </template>
+                                <tr v-else>
+                                    <td colspan="2" class="border-b border-gray-800 px-4 py-2 text-center text-gray-500">
+                                        There are no invalid items.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                         <div class="flex justify-end gap-3 pt-4">
                             <Button
                                 label=" Close"

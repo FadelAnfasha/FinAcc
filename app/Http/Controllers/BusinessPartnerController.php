@@ -13,13 +13,10 @@ class BusinessPartnerController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'file' => 'required|mimes:csv'
+            'file' => 'required|mimes:csv,txt'
         ]);
 
         $file = $request->file('file');
-        $csvData = array_map('str_getcsv', file($file));
-
-        $header = array_shift($csvData); // Skip header
 
         $addedItems = [];
         $invalidItems = [];
@@ -27,28 +24,49 @@ class BusinessPartnerController extends Controller
         $codeCounts = [];
         $nameCounts = [];
 
-        $total = count($csvData);
+        $csvData = [];
+        if (($handle = fopen($file->getRealPath(), 'r')) !== FALSE) {
+            $delimiter = ';';
 
-        // Hitung duplikat di file
+            $header = fgetcsv($handle, 1000, $delimiter);
+
+            while (($row = fgetcsv($handle, 1000, $delimiter)) !== FALSE) {
+                if (count($row) >= 3) {
+                    $csvData[] = $row;
+                } else {
+                    $invalidItems[] = implode(';', $row) . ' (Invalid row format)';
+                }
+            }
+
+            fclose($handle);
+        } else {
+            return redirect()->route('pc.master')->withErrors(['file' => 'Failed to open the CSV file.']);
+        }
+
+        $total = count($csvData);
+        if ($total === 0) {
+            return redirect()->route('pc.master')->withErrors(['file' => 'The CSV file is empty.']);
+        }
+
+        BusinessPartner::truncate();
         foreach ($csvData as $row) {
-            $bpCode = trim($row[0]);
-            $bpName = trim($row[1]);
+            $bpCode = trim($row[1]);
+            $bpName = trim($row[2]);
 
             $codeCounts[$bpCode] = ($codeCounts[$bpCode] ?? 0) + 1;
             $nameCounts[$bpName] = ($nameCounts[$bpName] ?? 0) + 1;
         }
 
         foreach ($csvData as $index => $row) {
-            $bpCode = trim($row[0]);
-            $bpName = trim($row[1]);
+            $bpCode = trim($row[1]);
+            $bpName = trim($row[2]);
 
-            // Duplikat dalam file
-            if ($codeCounts[$bpCode] > 1 || $nameCounts[$bpName] > 1) {
-                $invalidItems[] = "{$bpCode} - {$bpName} (Duplicate in file)";
+            if (($codeCounts[$bpCode] ?? 0) > 1 || ($nameCounts[$bpName] ?? 0) > 1) {
+                // $invalidItems[] = "{$bpCode} - {$bpName} (Duplicate in file)";
+                $invalidItems[] = ['bp_code' => $bpCode, 'reason' => 'Duplicate in file.'];
                 continue;
             }
 
-            // Validasi format kode & inisial huruf
             $isValid = preg_match('/^C[A-Z]\d{4}$/', $bpCode);
             $matchesNameInitial = (
                 strlen($bpCode) >= 2 &&
@@ -57,30 +75,33 @@ class BusinessPartnerController extends Controller
             );
 
             if (!$isValid || !$matchesNameInitial) {
-                $invalidItems[] = "{$bpCode} - {$bpName} (Format validation failed)";
+                // $invalidItems[] = "{$bpCode} - {$bpName} (Invalid code format)";
+                $invalidItems[] = [
+                    'bp_code' => $bpCode,
+                    'bp_name' => $bpName,
+                    'reason' => 'Invalid code format.',
+                ];
                 continue;
             }
 
-            // ✅ CEK 1: Kode sudah ada di database?
             if (BusinessPartner::where('bp_code', $bpCode)->exists()) {
-                $invalidItems[] = "{$bpCode} - {$bpName} (BP Code already exists)";
+                // $invalidItems[] = "{$bpCode} - {$bpName} (BP Code already exists)";
+                $invalidItems[] = ['bp_code' => $bpCode, 'bp_name' => $bpName, 'reason' => 'BP Code already exist.'];
                 continue;
             }
 
-            // ✅ CEK 2: Nama sudah ada di database?
             if (BusinessPartner::where('bp_name', $bpName)->exists()) {
-                $invalidItems[] = "{$bpCode} - {$bpName} (BP Name already exists)";
+                // $invalidItems[] = "{$bpCode} - {$bpName} (BP Name already exists)";
+                $invalidItems[] = ['bp_code' => $bpCode, 'bp_name' => $bpName, 'reason' => 'BP Name already exist.'];
                 continue;
             }
 
-            // ✅ Data valid → simpan
             BusinessPartner::create([
                 'bp_code' => $bpCode,
                 'bp_name' => $bpName
             ]);
             $addedItems[] = $bpCode;
 
-            // Progress (optional)
             $progress = intval(($index + 1) / $total * 100);
             Cache::put('import-progress-bp', $progress, now()->addMinutes(5));
         }
@@ -88,7 +109,7 @@ class BusinessPartnerController extends Controller
         Cache::put('import-progress-bp', 100, now()->addMinutes(5));
 
         return redirect()->route('pc.master')->with([
-            'success' => 'CSV file imported successfully',
+            'success' => 'CSV import process completed!',
             'addedItems' => $addedItems,
             'invalidItems' => $invalidItems
         ]);

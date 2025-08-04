@@ -195,7 +195,7 @@ function handleCSVImport(event: FileUploadUploaderEvent, type: 'mat' | 'pack' | 
         mat: 'mat_master.csv',
         pack: 'pack_master.csv',
         proc: 'proc_master.csv',
-        valve: 'valve_master.csv',
+        valve: 'vp_master.csv',
         bom: 'bom_master.csv',
     };
 
@@ -551,7 +551,7 @@ function handleDestroy() {
                     severity: 'warn',
                     summary: 'Error',
                     group: 'br',
-                    detail: `Failed to delete this  ${destroyedData.value.item_code} data`,
+                    detail: `Failed to delete this  ${destroyedData.value.item_code} data`,
                     life: 3000,
                 });
             },
@@ -579,7 +579,7 @@ function handleDestroy() {
                     severity: 'warn',
                     summary: 'Error',
                     group: 'br',
-                    detail: `Failed to delete this  ${destroyedData.value.item_code} data`,
+                    detail: `Failed to delete this  ${destroyedData.value.item_code} data`,
                     life: 3000,
                 });
             },
@@ -607,7 +607,7 @@ function handleDestroy() {
                     severity: 'warn',
                     summary: 'Error',
                     group: 'br',
-                    detail: `Failed to delete this  ${destroyedData.value.item_code} data`,
+                    detail: `Failed to delete this  ${destroyedData.value.item_code} data`,
                     life: 3000,
                 });
             },
@@ -635,7 +635,7 @@ function handleDestroy() {
                     severity: 'warn',
                     summary: 'Error',
                     group: 'br',
-                    detail: `Failed to delete this  ${destroyedData.value.item_code} data`,
+                    detail: `Failed to delete this  ${destroyedData.value.item_code} data`,
                     life: 3000,
                 });
             },
@@ -662,6 +662,42 @@ const formatCurrency = (value: number) => {
         minimumFractionDigits: 0,
     }).format(value);
 };
+
+// Logika baru untuk mengecek flash data dari controller
+watch(
+    () => page.props.importResult,
+    (newResult) => {
+        if (newResult) {
+            console.log('--- Hasil Import ---');
+            console.log('Pesan Sukses:', newResult.success);
+            console.log('Item yang Ditambahkan:', newResult.addedItems);
+            console.log('Item yang Gagal:', newResult.invalidItems);
+            console.log('--------------------');
+
+            // Tambahkan logika untuk menampilkan toast
+            if (newResult.success) {
+                toast.add({
+                    severity: 'success',
+                    summary: newResult.success,
+                    detail: `${newResult.addedItems.length} item berhasil ditambahkan`,
+                    life: 4000,
+                    group: 'br',
+                });
+            }
+
+            if (newResult.invalidItems && newResult.invalidItems.length > 0) {
+                toast.add({
+                    severity: 'warn',
+                    summary: 'Import Gagal',
+                    detail: `${newResult.invalidItems.length} item gagal diimpor. Lihat konsol untuk detail.`,
+                    life: 6000,
+                    group: 'br',
+                });
+            }
+        }
+    },
+    { immediate: true },
+);
 </script>
 
 <template>

@@ -13,68 +13,83 @@ class SalesQuantityController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'file' => 'required|mimes:csv'
+            'file' => 'required|mimes:csv,txt'
         ]);
 
         $file = $request->file('file');
-        $csvData = array_map('str_getcsv', file($file));
-
-        $header = array_shift($csvData); // Skip header
 
         $addedItems = [];
         $updatedItems = [];
-        $skippedItems = [];
+        $invalidItems = [];
+        $csvData = [];
+
+        // Membaca file CSV dengan delimiter ';'
+        if (($handle = fopen($file->getRealPath(), 'r')) === FALSE) {
+            return redirect()->route('pc.master')->withErrors(['file' => 'Failed to open the CSV file.']);
+        }
+
+        $delimiter = ';';
+        // Lewati baris pertama (header)
+        fgetcsv($handle, 1000, $delimiter);
+
+        // Baca seluruh data CSV ke dalam array
+        while (($row = fgetcsv($handle, 1000, $delimiter)) !== FALSE) {
+            $csvData[] = $row;
+        }
+
+        fclose($handle);
 
         $total = count($csvData);
+        if ($total === 0) {
+            return redirect()->route('pc.master')->withErrors(['file' => 'The CSV file is empty.']);
+        }
+
+        // Hapus semua data yang ada sebelum mengimpor yang baru
+        SalesQuantity::truncate();
 
         foreach ($csvData as $index => $row) {
+            // Asumsi: kolom 0=id, 1=bp_code, 2=item_code, 3=quantity
+            if (count($row) < 4) {
+                $invalidItems[] = ['bp_code' => 'N/A', 'item_code' => 'N/A', 'reason' => 'Invalid row format.'];
+                continue;
+            }
+
             $id = trim($row[0]);
             $bp_code = trim($row[1]);
             $item_code = trim($row[2]);
-            $quantity = is_numeric($row[3]) ? intval($row[3]) : 0;
+            $quantity = trim($row[3]);
 
-            // Validasi keberadaan BP dan Item Code
+            // Validasi: Pastikan quantity adalah angka
+            if (!is_numeric($quantity)) {
+                $invalidItems[] = ['bp_code' => $bp_code, 'item_code' => $item_code, 'reason' => 'Quantity must be a numeric value.'];
+                continue;
+            }
+
+            // Validasi keberadaan BP dan Item Code di database
             $bpExists = BusinessPartner::where('bp_code', $bp_code)->exists();
             $itemExists = CycleTime::where('item_code', $item_code)->exists();
 
             if (!$bpExists) {
-                $skippedItems[] = "{$bp_code} - {$item_code} (BP code not found)";
+                $invalidItems[] = ['bp_code' => $bp_code, 'item_code' => $item_code, 'reason' => 'BP Code not found in master data.'];
                 continue;
             }
 
             if (!$itemExists) {
-                $skippedItems[] = "{$bp_code} - {$item_code} (Item code not found)";
+                $invalidItems[] = ['bp_code' => $bp_code, 'item_code' => $item_code, 'reason' => 'Item Code not found in master data.'];
                 continue;
             }
 
-            // Cek apakah data berdasarkan ID sudah ada
-            $salesQty = SalesQuantity::find($id);
-
             $newData = [
+                'id' => $id,
                 'bp_code' => $bp_code,
                 'item_code' => $item_code,
-                'quantity' => $quantity,
+                'quantity' => intval($quantity),
             ];
 
-            if (!$salesQty) {
-                // Data belum ada, tambahkan
-                SalesQuantity::create(array_merge(['id' => $id], $newData));
-                $addedItems[] = "{$bp_code} - {$item_code}";
-            } else {
-                // Data sudah ada, cek apakah perlu update
-                $isUpdated = false;
-                foreach ($newData as $key => $value) {
-                    if ($salesQty->{$key} != $value) {
-                        $isUpdated = true;
-                        break;
-                    }
-                }
+            // Karena menggunakan truncate, kita hanya perlu create
+            SalesQuantity::create($newData);
+            $addedItems[] = "{$bp_code} - {$item_code}";
 
-                if ($isUpdated) {
-                    $salesQty->update($newData);
-                    $updatedItems[] = "{$bp_code} - {$item_code}";
-                }
-            }
             $progress = intval(($index + 1) / $total * 100);
             Cache::put('import-progress-sq', $progress, now()->addMinutes(5));
         }
@@ -84,7 +99,7 @@ class SalesQuantityController extends Controller
             'success' => 'CSV file imported successfully.',
             'addedItems' => $addedItems,
             'updatedItems' => $updatedItems,
-            'skippedItems' => $skippedItems
+            'invalidItems' => $invalidItems
         ]);
     }
 
