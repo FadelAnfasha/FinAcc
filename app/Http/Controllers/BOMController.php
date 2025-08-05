@@ -10,12 +10,10 @@ use App\Models\Material;
 use App\Models\Process;
 use App\Models\Packing;
 use App\Models\Valve;
-use Illuminate\Support\Facades\View; // Import Facade View untuk merender Blade ke string
-
-
 use App\Models\BOM_Report;
-use BcMath\Number;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Session;
+
 
 class BOMController extends Controller
 {
@@ -46,6 +44,9 @@ class BOMController extends Controller
             }
         }
 
+        $addedItems = Session::get('addedItems', []);
+        $invalidItems = Session::get('invalidItems', []);
+
         return Inertia::render("bom/master", [
             'materials' => $materials,
             'packings' => $packings,
@@ -54,6 +55,10 @@ class BOMController extends Controller
             'processes' => $processes,
             'finish_good' => $finishGood,
             'component' => $componentItems, // ✅ dikirim ke frontend
+            'importResult' => [
+                'addedItems' => $addedItems,
+                'invalidItems' => $invalidItems
+            ]
         ]);
     }
 

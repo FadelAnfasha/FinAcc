@@ -195,7 +195,7 @@ function handleCSVImport(event: FileUploadUploaderEvent, type: 'mat' | 'pack' | 
         mat: 'mat_master.csv',
         pack: 'pack_master.csv',
         proc: 'proc_master.csv',
-        valve: 'vp_master.csv',
+        valve: 'valve_master.csv',
         bom: 'bom_master.csv',
     };
 
@@ -663,41 +663,82 @@ const formatCurrency = (value: number) => {
     }).format(value);
 };
 
-// Logika baru untuk mengecek flash data dari controller
-watch(
-    () => page.props.importResult,
-    (newResult) => {
-        if (newResult) {
-            console.log('--- Hasil Import ---');
-            console.log('Pesan Sukses:', newResult.success);
-            console.log('Item yang Ditambahkan:', newResult.addedItems);
-            console.log('Item yang Gagal:', newResult.invalidItems);
-            console.log('--------------------');
+// // Logika baru untuk mengecek flash data dari controller
+// watch(
+//     () => page.props.importResult,
+//     (newResult) => {
+//         if (newResult) {
+//             console.log('--- Hasil Import ---');
+//             console.log('Pesan Sukses:', newResult.success);
+//             console.log('Item yang Ditambahkan:', newResult.addedItems);
+//             console.log('Item yang Gagal:', newResult.invalidItems);
+//             console.log('--------------------');
 
-            // Tambahkan logika untuk menampilkan toast
-            if (newResult.success) {
-                toast.add({
-                    severity: 'success',
-                    summary: newResult.success,
-                    detail: `${newResult.addedItems.length} item berhasil ditambahkan`,
-                    life: 4000,
-                    group: 'br',
-                });
-            }
+//             // Tambahkan logika untuk menampilkan toast
+//             if (newResult.success) {
+//                 toast.add({
+//                     severity: 'success',
+//                     summary: newResult.success,
+//                     detail: `${newResult.addedItems.length} item berhasil ditambahkan`,
+//                     life: 4000,
+//                     group: 'br',
+//                 });
+//             }
 
-            if (newResult.invalidItems && newResult.invalidItems.length > 0) {
-                toast.add({
-                    severity: 'warn',
-                    summary: 'Import Gagal',
-                    detail: `${newResult.invalidItems.length} item gagal diimpor. Lihat konsol untuk detail.`,
-                    life: 6000,
-                    group: 'br',
-                });
-            }
-        }
-    },
-    { immediate: true },
-);
+//             if (newResult.invalidItems && newResult.invalidItems.length > 0) {
+//                 toast.add({
+//                     severity: 'warn',
+//                     summary: 'Import Gagal',
+//                     detail: `${newResult.invalidItems.length} item gagal diimpor. Lihat konsol untuk detail.`,
+//                     life: 6000,
+//                     group: 'br',
+//                 });
+//             }
+//         }
+//     },
+//     { immediate: true },
+// );
+
+interface ImportResult {
+    addedItems: string[];
+    invalidItems: { item_code: string; price: string; description: string; reason: string }[];
+}
+
+const importResult = computed(() => {
+    // Memberikan petunjuk tipe data kepada page.props.importResult
+    const result = page.props.importResult as ImportResult;
+
+    // Menambahkan pemeriksaan tipe data untuk memastikan `result` adalah objek
+    if (!result || typeof result !== 'object') {
+        return {
+            addedItems: [],
+            invalidItems: [],
+        };
+    }
+
+    // Perbaikan untuk addedItems:
+    // Mengambil item (yang berupa string bp_code) dari array
+    const addedItems = (result.addedItems || []).map((item, index) => ({
+        no: index + 1,
+        item_code: item, // Menyimpan nilai string bp_code ke properti bp_code
+    }));
+
+    // Perbaikan untuk invalidItems:
+    // Setiap item adalah objek { 'bp_code': '...', 'reason': '...' }
+    // Kita perlu mengambil properti bp_code dan reason dari setiap objek
+    const invalidItems = (result.invalidItems || []).map((item, index) => ({
+        no: index + 1,
+        item_code: item.item_code,
+        price: item.price,
+        description: item.description,
+        reason: item.reason,
+    }));
+
+    return {
+        addedItems: addedItems,
+        invalidItems: invalidItems,
+    };
+});
 </script>
 
 <template>
@@ -710,6 +751,7 @@ watch(
                 <h2 class="mb-2 text-start text-3xl font-bold text-gray-900 dark:text-white">Bill of Material</h2>
                 <p class="text-start text-gray-600 dark:text-gray-400">Calculating Bill of Material</p>
             </div>
+
             <!-- Header Section -->
             <div class="mt-4 mb-8">
                 <div class="relative mb-6 text-center">
@@ -776,6 +818,54 @@ watch(
                             Import
                             <strong class="text-green-500">Finish</strong>, it's safe to close window.
                         </p>
+
+                        <div v-if="importResult.invalidItems.length > 0">
+                            <p><span class="text-xl font-semibold text-orange-400">Failed</span> to import:</p>
+                            <table class="w-full border-collapse text-left">
+                                <thead>
+                                    <tr>
+                                        <th
+                                            v-if="importType === 'mat' || importType === 'valve'"
+                                            class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400"
+                                        >
+                                            Item Code
+                                        </th>
+                                        <th v-if="importType === 'mat'" class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">
+                                            Description
+                                        </th>
+                                        <th v-if="importType === 'valve'" class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">
+                                            Price
+                                        </th>
+
+                                        <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Reason</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Menggunakan template v-if dan v-for -->
+                                    <template v-if="importResult.invalidItems.length > 0">
+                                        <tr v-for="item in importResult.invalidItems" :key="item.no">
+                                            <td v-if="importType === 'mat' || importType === 'valve'" class="border-b border-gray-800 px-4 py-2">
+                                                {{ item.item_code }}
+                                            </td>
+                                            <td v-if="importType === 'mat'" class="border-b border-gray-800 px-4 py-2">
+                                                {{ item.description }}
+                                            </td>
+                                            <td v-if="importType === 'valve'" class="border-b border-gray-800 px-4 py-2">
+                                                {{ item.price }}
+                                            </td>
+                                            <td class="border-b border-gray-800 px-4 py-2">
+                                                {{ item.reason }}
+                                            </td>
+                                        </tr>
+                                    </template>
+                                    <tr v-else>
+                                        <td colspan="2" class="border-b border-gray-800 px-4 py-2 text-center text-gray-500">
+                                            There are no invalid items.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                         <div class="flex justify-end gap-3 pt-4">
                             <Button
                                 label=" Close"
@@ -1157,6 +1247,7 @@ watch(
                                     tableStyle="min-width: 50rem"
                                     paginator
                                     :rows="10"
+                                    :rowsPerPageOptions="[10, 20, 50, 100]"
                                     resizableColumns
                                     columnResizeMode="expand"
                                     showGridlines

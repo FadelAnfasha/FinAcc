@@ -10,62 +10,119 @@ class ValveController extends Controller
 {
     public function import(Request $request)
     {
+        // --- Langkah 1: Validasi File yang Diunggah ---
         $request->validate([
-            'file' => 'required|mimes:csv'
+            'file' => 'required|mimes:csv,txt'
         ]);
 
         $file = $request->file('file');
-        $csvData = array_map('str_getcsv', file($file));
 
-        // Lewati baris pertama (header)
-        $header = array_shift($csvData);
-
+        // --- Langkah 2: Inisialisasi Variabel untuk Hasil Impor ---
         $addedItems = [];
-        $updatedItems = [];
-        $total = count($csvData);
+        $invalidItems = [];
+        $codeCounts = [];
 
-        foreach ($csvData as $index => $row) {
-            // Ambil valve berdasarkan item_code
-            $valve = Valve::where('item_code', $row[0])->first();
+        // --- Langkah 3: Membaca File CSV ---
+        $csvData = [];
+        if (($handle = fopen($file->getRealPath(), 'r')) !== FALSE) {
+            $delimiter = ';';
 
-            // Persiapkan data baru untuk dibandingkan
-            $newData = [
-                'price' => is_numeric($row[1]) ? floatval($row[1]) : 0.0,
-            ];
+            // Lewati header
+            $header = fgetcsv($handle, 1000, $delimiter);
 
-            // Jika valve belum ada, maka data baru akan ditambahkan
-            if (!$valve) {
-                $valve = Valve::create([
-                    'item_code' => $row[0],
-                    'price' => is_numeric($row[1]) ? floatval($row[1]) : 0.0,
-                ]);
-                $addedItems[] = $valve->item_code; // Tambahkan ke daftar addedItems
-            } else {
-                // Jika valve ada, periksa apakah ada perubahan pada data
-                $isUpdated = false;
-
-                // Bandingkan data lama dengan data baru
-                foreach ($newData as $key => $value) {
-                    if (round($valve->price, 2) !== round($newData['price'], 2)) {
-                        $isUpdated = true;
-                    }
-                }
-
-                // Jika ada perubahan, update data dan masukkan ke updatedItems
-                if ($isUpdated) {
-                    $valve->update($newData);
-                    $updatedItems[] = $valve->item_code; // Tambahkan ke daftar updatedItems
+            while (($row = fgetcsv($handle, 1000, $delimiter)) !== FALSE) {
+                // Asumsi file CSV memiliki 2 kolom data: 'item_code' dan 'price'
+                if (count($row) >= 2) {
+                    $csvData[] = $row;
+                } else {
+                    $invalidItems[] = [
+                        'item_code' => isset($row[0]) ? trim($row[0]) : null,
+                        'price' => isset($row[1]) ? trim($row[1]) : null,
+                        'reason' => 'Invalid row format'
+                    ];
                 }
             }
+            fclose($handle);
+        } else {
+            return redirect()->route('bom.master')->withErrors(['file' => 'Failed to open the CSV file.']);
+        }
+
+        // --- Langkah 4: Validasi Awal Jumlah Data ---
+        $total = count($csvData);
+        if ($total === 0) {
+            return redirect()->route('bom.master')->withErrors(['file' => 'The CSV file is empty.']);
+        }
+
+        // --- Langkah 5: Mengosongkan tabel Valve sebelum impor ---
+        Valve::truncate();
+
+        // --- Langkah 6: Validasi duplikasi dalam file ---
+        foreach ($csvData as $row) {
+            $itemCode = trim($row[0]); // Asumsi item_code di kolom pertama
+            if (!empty($itemCode)) {
+                $codeCounts[$itemCode] = ($codeCounts[$itemCode] ?? 0) + 1;
+            }
+        }
+
+        // --- Langkah 7: Proses Impor dan Validasi Item Code ---
+        foreach ($csvData as $index => $row) {
+            $itemCode = trim($row[0]);
+            $price = trim($row[1]);
+
+            if (!is_numeric($price)) {
+                $invalidItems[] = [
+                    'item_code' => $itemCode,
+                    'price' => $price,
+                    'reason' => 'Price must be number.'
+                ];
+                continue;
+            }
+
+            // Regex untuk validasi format item_code valve:
+            // Kriteria:
+            // 1. Terdiri dari 6 digit
+            // 2. Dimulai dengan "CGP"
+            // 3. Tiga digit terakhir adalah angka (000-999)
+            if (!preg_match('/^CGP\d{3}$/', $itemCode)) {
+                $invalidItems[] = [
+                    'item_code' => $itemCode,
+                    'price' => $price,
+                    'reason' => 'Invalid item code format.'
+                ];
+                continue;
+            }
+
+            // Pengecekan duplikasi dalam file
+            if (($codeCounts[$itemCode] ?? 0) > 1) {
+                $invalidItems[] = [
+                    'item_code' => $itemCode,
+                    'price' => $price,
+                    'reason' => 'Duplicate in file.'
+                ];
+                // Lanjutkan ke baris berikutnya, jangan simpan duplikat
+                continue;
+            }
+
+            // --- Langkah 8: Menyimpan data yang valid ke database ---
+            Valve::create([
+                'item_code' => $itemCode,
+                'price' => $price,
+            ]);
+            $addedItems[] = $itemCode;
+
+            // --- Langkah 9: Memperbarui progres impor ---
             $progress = intval(($index + 1) / $total * 100);
             Cache::put('import-progress-valve', $progress, now()->addMinutes(5));
         }
+
+        // Setelah loop selesai, set progres ke 100%.
         Cache::put('import-progress-valve', 100, now()->addMinutes(5));
 
-        redirect()->route('pc.master')->with([
-            'success' => 'CSV file imported successfully',
+        // --- Langkah 10: Mengalihkan (Redirect) dengan hasil impor ---
+        return redirect()->route('bom.master')->with([
+            'success' => 'CSV import process completed!',
             'addedItems' => $addedItems,
-            'updatedItems' => $updatedItems,
+            'invalidItems' => $invalidItems
         ]);
     }
 

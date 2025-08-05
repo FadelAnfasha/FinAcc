@@ -10,71 +10,113 @@ class MaterialController extends Controller
 {
     public function import(Request $request)
     {
+        // --- Langkah 1: Validasi File yang Diunggah ---
         $request->validate([
-            'file' => 'required|mimes:csv'
+            'file' => 'required|mimes:csv,txt'
         ]);
 
         $file = $request->file('file');
-        $csvData = array_map('str_getcsv', file($file));
 
-        // Lewati baris pertama (header)
-        $header = array_shift($csvData);
-
+        // --- Langkah 2: Inisialisasi Variabel untuk Hasil Impor ---
         $addedItems = [];
-        $updatedItems = [];
-        $total = count($csvData);
+        $invalidItems = [];
+        $codeCounts = [];
+        // Variabel $nameCounts tidak digunakan, jadi dihapus
 
-        foreach ($csvData as $index => $row) {
-            // Ambil material berdasarkan item_code
-            $material = Material::where('item_code', $row[0])->first();
+        // --- Langkah 3: Membaca File CSV ---
+        $csvData = [];
+        if (($handle = fopen($file->getRealPath(), 'r')) !== FALSE) {
+            $delimiter = ';';
 
-            // Persiapkan data baru untuk dibandingkan
-            $newData = [
-                'in_stock' => is_numeric($row[1]) ? intval($row[1]) : 0,
-                'item_group' => $row[2],
-                'actualPrice' => is_numeric($row[3]) ? floatval($row[3]) : 0.0,
-                'standardPrice' => is_numeric($row[4]) ? floatval($row[4]) : 0.0,
-            ];
+            // Lewati header
+            $header = fgetcsv($handle, 1000, $delimiter);
 
-            // dd($material, $row[0], $newData);
-            // Jika material belum ada, maka data baru akan ditambahkan
-            if (!$material) {
-                $material = Material::create([
-                    'item_code' => $row[0],
-                    'in_stock' => is_numeric($row[1]) ? intval($row[1]) : 0,
-                    'item_group' => $row[2],
-                    'actualPrice' => is_numeric($row[3]) ? floatval($row[3]) : 0.0,
-                    'standardPrice' => is_numeric($row[4]) ? floatval($row[4]) : 0.0,
-                ]);
-                $addedItems[] = $material->item_code; // Tambahkan ke daftar addedItems
-            } else {
-                // Jika material ada, periksa apakah ada perubahan pada data
-                $isUpdated = false;
-
-                // Bandingkan data lama dengan data baru
-                foreach ($newData as $key => $value) {
-                    if ($material->{$key} != $value) {
-                        $isUpdated = true;
-                        break;
-                    }
-                }
-
-                // Jika ada perubahan, update data dan masukkan ke updatedItems
-                if ($isUpdated) {
-                    $material->update($newData);
-                    $updatedItems[] = $material->item_code; // Tambahkan ke daftar updatedItems
+            while (($row = fgetcsv($handle, 1000, $delimiter)) !== FALSE) {
+                // Asumsi file CSV memiliki 2 kolom data: 'item_code' dan 'description'
+                if (count($row) >= 20) {
+                    $csvData[] = $row;
+                } else {
+                    $invalidItems[] = implode(';', $row) . ' (Invalid row format)';
                 }
             }
+            fclose($handle);
+        } else {
+            return redirect()->route('bom.master')->withErrors(['file' => 'Failed to open the CSV file.']);
+        }
+
+        // --- Langkah 4: Validasi Awal Jumlah Data ---
+        $total = count($csvData);
+        if ($total === 0) {
+            return redirect()->route('bom.master')->withErrors(['file' => 'The CSV file is empty.']);
+        }
+
+        // --- Langkah 5: Mengosongkan tabel Material sebelum impor ---
+        Material::truncate();
+
+        // --- Langkah 6: Validasi duplikasi dalam file ---
+        foreach ($csvData as $row) {
+            $itemCode = trim($row[1]); // Asumsi item_code di kolom pertama
+            if (!empty($itemCode)) {
+                $codeCounts[$itemCode] = ($codeCounts[$itemCode] ?? 0) + 1;
+            }
+        }
+
+        // --- Langkah 7: Proses Impor dan Validasi Item Code ---
+        foreach ($csvData as $index => $row) {
+            $itemCode = trim($row[1]);
+            $description = trim($row[2]);
+
+            // Regex untuk validasi format item_code
+            // Kriteria:
+            // 1. Terdiri dari 6 digit
+            // 2. Dimulai dengan huruf 'F'
+            // 3. Digit ke-2 & ke-3 adalah angka 15-24
+            // 4. Digit ke-4 adalah huruf 'D', 'N', 'W', 'R', atau 'T'
+            // 5. Digit ke-5 & ke-6 adalah angka 00-99 (running number)
+            if (!preg_match('/^RF[DRS]\d{3}$/', $itemCode)) {
+                $invalidItems[] = [
+                    'item_code' => $itemCode,
+                    'description' => $description,
+                    'reason' => 'Invalid item code format.'
+                ];
+                continue;
+            }
+
+            // Pengecekan duplikasi dalam file
+            if (($codeCounts[$itemCode] ?? 0) > 1) {
+                $invalidItems[] = [
+                    'item_code' => $itemCode,
+                    'description' => $description,
+                    'reason' => 'Duplicate in file.'
+                ];
+                // Lanjutkan ke baris berikutnya, jangan simpan duplikat
+                continue;
+            }
+
+            // --- Langkah 8: Menyimpan data yang valid ke database ---
+            Material::create([
+                'item_code' => $itemCode,
+                'description' => $description,
+                'in_stock' => $row[3],
+                'item_group' => $row[4],
+                'actualPrice' => $row[5],
+                'standardPrice' => $row[6]
+            ]);
+            $addedItems[] = $itemCode;
+
+            // --- Langkah 9: Memperbarui progres impor ---
             $progress = intval(($index + 1) / $total * 100);
             Cache::put('import-progress-mat', $progress, now()->addMinutes(5));
         }
+
+        // Setelah loop selesai, set progres ke 100%.
         Cache::put('import-progress-mat', 100, now()->addMinutes(5));
 
-        // Kirim data feedback ke view
-        redirect()->route('pc.master')->with([
-            'success' => 'CSV file imported successfully',
+        // --- Langkah 10: Mengalihkan (Redirect) dengan hasil impor ---
+        return redirect()->route('bom.master')->with([
+            'success' => 'CSV import process completed!',
             'addedItems' => $addedItems,
-            'updatedItems' => $updatedItems,
+            'invalidItems' => $invalidItems
         ]);
     }
 
