@@ -255,7 +255,8 @@ function confirmUpdate() {
     const type = updateType.value;
 
     const routes = {
-        bom: 'pc.updateBOM',
+        bom: 'bom.updateBOM',
+        opgin: 'bom.updateOpGin',
     };
 
     const messages = {

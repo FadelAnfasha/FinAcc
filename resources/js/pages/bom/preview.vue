@@ -561,26 +561,28 @@ onMounted(() => {
                     </div>
                     <div class="cost-details-box text-right">
                         <table>
-                            <tr>
-                                <td>Mfg Cost</td>
-                                <td>{{ mfgCost }}</td>
-                            </tr>
-                            <tr>
-                                <td>{{ opex }}% OPEX</td>
-                                <td>{{ opexCost }}</td>
-                            </tr>
-                            <tr>
-                                <td>Total Cost</td>
-                                <td>{{ totalCost }}</td>
-                            </tr>
-                            <tr>
-                                <td>{{ progin }}% Profit Margin</td>
-                                <td>{{ margin }}</td>
-                            </tr>
-                            <tr>
-                                <td>Selling Price</td>
-                                <td>{{ sellingPrice }}</td>
-                            </tr>
+                            <tbody>
+                                <tr>
+                                    <td>Mfg Cost</td>
+                                    <td>{{ mfgCost }}</td>
+                                </tr>
+                                <tr>
+                                    <td>{{ opex }}% OPEX</td>
+                                    <td>{{ opexCost }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Total Cost</td>
+                                    <td>{{ totalCost }}</td>
+                                </tr>
+                                <tr>
+                                    <td>{{ progin }}% Profit Margin</td>
+                                    <td>{{ margin }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Selling Price</td>
+                                    <td>{{ sellingPrice }}</td>
+                                </tr>
+                            </tbody>
                         </table>
                     </div>
                 </div>
