@@ -253,12 +253,9 @@ class BOMController extends Controller
 
         BOM_Report::truncate();
 
-
-
         foreach ($groups as $group) {
             $main = $group->first(); // FG
             $main->load(['processCost', 'materialInfo']);
-            dd($group->disc->materialInfo->quantity);
 
             $disc_price = $group->disc->materialInfo->standardPrice ?? 0;
             $rim_price = $group->rim->materialInfo->standardPrice ?? 0;
