@@ -257,9 +257,9 @@ class BOMController extends Controller
             $main = $group->first(); // FG
             $main->load(['processCost', 'materialInfo']);
 
-            $disc_price = ceil((($group->disc->materialInfo->standardPrice ?? 0) * $group->disc->quantity ?? 0) * 100) / 100;
-            $rim_price = ceil((($group->rim->materialInfo->standardPrice ?? 0) * $group->rim->quantity ?? 0) * 100) / 100;
-            $sidering_price = ceil((($group->sidering->materialInfo->standardPrice ?? 0) * $group->sidering->quantity ?? 0) * 100) / 100;
+            $disc_price = ceil((($group->disc->materialInfo->standardPrice ?? 0) * $group->disc?->quantity ?? 0) * 100) / 100;
+            $rim_price = ceil((($group->rim->materialInfo->standardPrice ?? 0) * $group->rim?->quantity ?? 0) * 100) / 100;
+            $sidering_price = ceil((($group->sidering->materialInfo->standardPrice ?? 0) * $group->sidering?->quantity ?? 0) * 100) / 100;
 
             $pr_cedW_price = ceil(((($main->processCost->max_of_ced ?? null) * 5) / 7) * 100) / 100;
             $pr_cedSR_price = ceil(((($main->processCost->max_of_ced ?? null) * 2) / 7) * 100) / 100;
