@@ -20,22 +20,41 @@ import { computed, nextTick, ref } from 'vue';
 
 const toast = useToast();
 const page = usePage();
-const dtBOM = ref();
+const dtSC = ref();
 const loading = ref(false);
 
-const boms = computed(() =>
-    (page.props.bom as any[]).map((bom, index) => {
-        const typeChar: string = bom.item_code?.charAt(3) ?? '';
+const sc = computed(() =>
+    (page.props.sc as any[]).map((sc, index) => {
+        const typeChar: string = sc.item_code?.charAt(3) ?? '';
         const typeMap: Record<string, string> = {
             D: 'Disc',
             N: 'Sidering',
             W: 'Wheel',
             R: 'Rim',
         };
-        const type_name = typeMap[typeChar] ?? bom.item_code;
+        const type_name = typeMap[typeChar] ?? sc.item_code;
 
         return {
-            ...bom,
+            ...sc,
+            no: index + 1,
+            type_name,
+        };
+    }),
+);
+
+const ac = computed(() =>
+    (page.props.ac as any[]).map((ac, index) => {
+        const typeChar: string = ac.item_code?.charAt(3) ?? '';
+        const typeMap: Record<string, string> = {
+            D: 'Disc',
+            N: 'Sidering',
+            W: 'Wheel',
+            R: 'Rim',
+        };
+        const type_name = typeMap[typeChar] ?? ac.item_code;
+
+        return {
+            ...ac,
             no: index + 1,
             type_name,
         };
@@ -162,16 +181,16 @@ function capitalize(text: string): string {
 //     });
 // });
 
-function exportCSV(type: 'bom') {
-    if (type !== 'bom' || !dtBOM.value) return;
+function exportCSV(type: 'standardCost' | 'actualCost') {
+    if (type !== 'standardCost' || !dtSC.value) return;
     const exportFilename = `Bill-of-Material-${new Date().toISOString().slice(0, 10)}.csv`;
-    dtBOM.value.exportCSV({ selectionOnly: false, filename: exportFilename });
+    dtSC.value.exportCSV({ selectionOnly: false, filename: exportFilename });
 }
 
-function updateReport(type: 'bom') {
-    if (type == 'bom') {
+function updateReport(type: 'standardCost' | 'actualCost') {
+    if (type == 'standardCost') {
         router.post(
-            route('pc.updateBOM'),
+            route('pc.updateSC'),
             {},
             {
                 preserveScroll: true,
@@ -181,7 +200,34 @@ function updateReport(type: 'bom') {
                         severity: 'success',
                         summary: 'Success',
                         group: 'br',
-                        detail: `BOM Report updated successfully`,
+                        detail: `Standard Cost updated successfully`,
+                        life: 3000,
+                    });
+                },
+                onError: () => {
+                    toast.add({
+                        severity: 'warn',
+                        summary: 'Error',
+                        group: 'br',
+                        // detail: `Failed to delete data with ${editedData.value.bp_code} and ${editedData.value.item_code}`,
+                        life: 3000,
+                    });
+                },
+            },
+        );
+    } else if (type == 'actualCost') {
+        router.post(
+            route('pc.updateAC'),
+            {},
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => {
+                    toast.add({
+                        severity: 'success',
+                        summary: 'Success',
+                        group: 'br',
+                        detail: `Actual Cost updated successfully`,
                         life: 3000,
                     });
                 },
@@ -200,10 +246,13 @@ function updateReport(type: 'bom') {
 }
 
 const lastUpdate = computed(() => {
-    const BOM_update = ((page.props.bom as any[]) ?? []).map((BOM) => new Date(BOM.updated_at));
-    const Max_BOMUpdate = BOM_update.length ? new Date(Math.max(...BOM_update.map((d) => d.getTime()))) : null;
+    const SC_update = ((page.props.sc as any[]) ?? []).map((SC) => new Date(SC.updated_at));
+    const Max_SCUpdate = SC_update.length ? new Date(Math.max(...SC_update.map((d) => d.getTime()))) : null;
 
-    return [Max_BOMUpdate];
+    const AC_update = ((page.props.ac as any[]) ?? []).map((AC) => new Date(AC.updated_at));
+    const Max_ACUpdate = AC_update.length ? new Date(Math.max(...AC_update.map((d) => d.getTime()))) : null;
+
+    return [Max_SCUpdate, Max_ACUpdate];
 });
 
 const lastMaster = computed(() => page.props.lastMaster as any);
@@ -217,9 +266,9 @@ const updateConstDialog = ref(false);
 type UpdateStatus = 'idle' | 'updating' | 'done';
 const updateStatus = ref<UpdateStatus>('idle');
 const userName = computed(() => page.props.auth?.user?.name ?? '');
-const updateType = ref<'bom' | 'opgin' | null>(null);
+const updateType = ref<'standardCost' | 'actualCost' | 'opgin' | null>(null);
 
-function showUpdateDialog(type: 'bom' | 'opgin') {
+function showUpdateDialog(type: 'standardCost' | 'actualCost' | 'opgin') {
     updateType.value = type;
     updateStatus.value = 'idle';
 
@@ -255,12 +304,14 @@ function confirmUpdate() {
     const type = updateType.value;
 
     const routes = {
-        bom: 'bom.updateBOM',
+        standardCost: 'bom.updateSC',
+        actualCost: 'bom.updateAC',
         opgin: 'bom.updateOpGin',
     };
 
     const messages = {
-        bom: 'Bill of Material Report',
+        standardCost: 'Standard Cost',
+        actualCost: 'Actual Cost',
         opgin: 'OPEX / Profit Margin',
     };
 
@@ -300,14 +351,27 @@ function closeDialog() {
     updateType.value = null;
 }
 
-function openPreviewTab(item_code: string, opex: number, progin: number) {
-    const previewUrl = route('preview.item', {
-        item_code: item_code,
-        opex: opex,
-        progin: progin,
-    });
+function openPreviewTab(item_code: string, opex: number, progin: number, previewType: string) {
+    let previewUrl;
 
-    window.open(previewUrl, '_blank'); // Membuka URL di tab baru
+    // Memeriksa nilai `previewType` untuk menentukan route yang benar
+    if (previewType === 'actualCost') {
+        previewUrl = route('preview.ac', {
+            item_code: item_code,
+            opex: opex,
+            progin: progin,
+        });
+    } else {
+        // Default ke 'standardCost' jika tidak ada atau tidak cocok
+        previewUrl = route('preview.sc', {
+            item_code: item_code,
+            opex: opex,
+            progin: progin,
+        });
+    }
+
+    // Buka URL di tab baru
+    window.open(previewUrl, '_blank');
 }
 
 let opexDef = ref(6);
@@ -345,7 +409,7 @@ const tempProgin = ref<number | null>(null);
                         <p>Are you sure you want to update the report?</p>
                         <p class="mt-6 mb-2 font-semibold">Make sure this data is up to date:</p>
                         <div class="overflow-x-auto">
-                            <table v-if="updateType === 'bom'" class="w-full border-collapse text-left">
+                            <table v-if="updateType === 'standardCost'" class="w-full border-collapse text-left">
                                 <thead>
                                     <tr>
                                         <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Data</th>
@@ -460,14 +524,447 @@ const tempProgin = ref<number | null>(null);
             <div class="mx-26 mb-26">
                 <Tabs value="0">
                     <TabList>
-                        <Tab value="0">Generate/Explode BOM</Tab>
+                        <Tab value="0">Standard Cost 2025</Tab>
+                        <Tab value="1">Actual Cost</Tab>
                     </TabList>
                     <TabPanels>
                         <TabPanel value="0">
                             <section class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
                                     <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
-                                        Bill of Material
+                                        Standard Cost
+                                    </h2>
+
+                                    <div class="mb-4 flex flex-col gap-4 md:flex-row md:items-start md:justify-end">
+                                        <div class="flex flex-col items-center gap-4 sm:flex-row md:w-auto">
+                                            <Button
+                                                icon="pi pi-download"
+                                                label=" Export"
+                                                unstyled
+                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-orange-700 sm:w-28"
+                                                @click="exportCSV('standardCost')"
+                                            />
+                                            <Button
+                                                icon="pi pi-sync"
+                                                label=" Update Report?"
+                                                unstyled
+                                                class="w-full cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-cyan-700 sm:w-36"
+                                                @click="showUpdateDialog('standardCost')"
+                                            />
+                                        </div>
+
+                                        <div class="flex flex-col items-center gap-4 sm:flex-row md:w-auto">
+                                            <div class="flex items-center gap-2">
+                                                <label for="opex" class="whitespace-nowrap">OPEX :</label>
+                                                <InputNumber v-model="opexDef" inputId="percent" suffix="%" fluid disabled />
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <label for="progin" class="whitespace-nowrap">Profit Margin :</label>
+                                                <InputNumber v-model="proginDef" inputId="percent" suffix="%" fluid disabled />
+                                            </div>
+                                            <Button
+                                                icon="pi pi-sync"
+                                                label=" Update Value?"
+                                                unstyled
+                                                class="w-full cursor-pointer rounded-xl bg-emerald-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-emerald-700 sm:w-36"
+                                                @click="showUpdateDialog('opgin')"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div class="text-right text-gray-700 dark:text-gray-300">
+                                        <div>
+                                            Last Update :
+                                            <span class="text-red-300">{{ lastUpdate[0] ? formatlastUpdate(lastUpdate[0]) : '-' }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <DataTable
+                                    :value="sc"
+                                    tableStyle="min-width: 50rem"
+                                    paginator
+                                    :rows="10"
+                                    :rowsPerPageOptions="[5, 10, 20, 50]"
+                                    resizableColumns
+                                    columnResizeMode="expand"
+                                    showGridlines
+                                    removableSort
+                                    v-model:filters="filters"
+                                    filterDisplay="row"
+                                    :loading="loading"
+                                    :globalFilterFields="['item_code', 'type_name', 'description']"
+                                    class="text-md"
+                                    ref="dtBOM"
+                                >
+                                    <Column field="no" sortable header="#" :showFilterMenu="true" v-bind="tbStyle('main')"></Column>
+
+                                    <Column field="item_code" header="Item Code" :showFilterMenu="false" sortable v-bind="tbStyle('main')">
+                                        <template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search item code"
+                                                class="w-full"
+                                            />
+                                        </template>
+                                    </Column>
+
+                                    <Column field="type_name" :showFilterMenu="false" sortable header="Type" v-bind="tbStyle('main')">
+                                        <template #filter="{ filterModel, filterCallback }">
+                                            <div class="flex justify-center">
+                                                <Select
+                                                    v-model="filterModel.value"
+                                                    :options="type"
+                                                    placeholder="Select priority"
+                                                    class="w-40"
+                                                    @change="
+                                                        () => {
+                                                            if (filterModel.value === 'All') {
+                                                                filterModel.value = null;
+                                                            }
+                                                            filterCallback();
+                                                        }
+                                                    "
+                                                >
+                                                    <!-- Selected value -->
+                                                    <template #value="{ value }">
+                                                        <span v-if="!value || value === 'All'" class="w-full text-center text-gray-500">
+                                                            Select priority
+                                                        </span>
+                                                        <span
+                                                            v-else
+                                                            :class="getTypeClass(value)"
+                                                            class="inline-block w-full rounded-full px-2 py-1 text-center text-xs font-semibold"
+                                                        >
+                                                            {{ capitalize(value) }}
+                                                        </span>
+                                                    </template>
+
+                                                    <!-- Dropdown options -->
+                                                    <template #option="{ option }">
+                                                        <span
+                                                            v-if="option === 'All'"
+                                                            class="inline-block w-full rounded-full bg-gray-100 px-2 py-1 text-center text-xs font-semibold text-gray-800"
+                                                        >
+                                                            All
+                                                        </span>
+                                                        <span
+                                                            v-else
+                                                            :class="getTypeClass(option)"
+                                                            class="inline-block w-full rounded-full px-2 py-1 text-center text-xs font-semibold"
+                                                        >
+                                                            {{ capitalize(option) }}
+                                                        </span>
+                                                    </template>
+                                                </Select>
+                                            </div>
+                                        </template></Column
+                                    >
+
+                                    <Column field="bom.description" header="Name" :showFilterMenu="false" sortable v-bind="tbStyle('main')">
+                                        <template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search description"
+                                                class="w-full"
+                                            />
+                                        </template>
+                                        <template #body="{ data }">
+                                            {{ data.bom ? data.bom.description : 'N/A' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="disc_qty" sortable header="Qty" v-bind="tbStyle('rm')"></Column>
+                                    <Column field="disc_code" sortable header="Disc" v-bind="tbStyle('rm')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.disc_code || '-' }}
+                                        </template>
+                                    </Column>
+                                    <Column field="disc_price" sortable header="Price" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.disc_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="rim_qty" sortable header="Qty" v-bind="tbStyle('rm')"></Column>
+                                    <Column field="rim_code" sortable header="Rim" v-bind="tbStyle('rm')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.rim_code || '-' }}
+                                        </template>
+                                    </Column>
+                                    <Column field="rim_price" sortable header="Price" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.rim_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="sidering_qty" sortable header="Qty" v-bind="tbStyle('rm')"></Column>
+
+                                    <Column field="sidering_code" sortable header="Sidering" v-bind="tbStyle('rm')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.sidering_code || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="sidering_price" sortable header="Price" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.sidering_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="pr_disc" sortable header="Pr Disc" v-bind="tbStyle('pr')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.pr_disc || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="pr_disc_price" sortable header="Price" v-bind="tbStyle('pr')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.pr_disc_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="pr_rim" sortable header="Pr Rim" v-bind="tbStyle('pr')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.pr_rim || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="pr_rim_price" sortable header="Price" v-bind="tbStyle('pr')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.pr_rim_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="pr_sidering" sortable header="Pr Sidering" v-bind="tbStyle('pr')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.pr_sidering || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="pr_sidering_price" sortable header="Price" v-bind="tbStyle('pr')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.pr_sidering_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="pr_assy" sortable header="Pr Assy" v-bind="tbStyle('pr')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.pr_assy || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="pr_assy_price" sortable header="Price" v-bind="tbStyle('pr')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.pr_assy_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="pr_cedW" sortable header="Pr CED W" v-bind="tbStyle('pr')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.pr_cedW || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="pr_cedW_price" sortable header="Price" v-bind="tbStyle('pr')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.pr_cedW_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="pr_cedSR" sortable header="Pr CED SR" v-bind="tbStyle('pr')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.pr_cedSR || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="pr_cedSR_price" sortable header="Price" v-bind="tbStyle('pr')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.pr_cedSR_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="pr_tcW" sortable header="Pr Topcoat W" v-bind="tbStyle('pr')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.pr_tcW || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="pr_tcW_price" sortable header="Price" v-bind="tbStyle('pr')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.pr_tcW_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="pr_tcSR" sortable header="Pr tcSR" v-bind="tbStyle('pr')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.pr_tcSR || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="pr_tcSR_price" sortable header="Price" v-bind="tbStyle('pr')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.pr_tcSR_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="pack_price" sortable header="Packing Price" v-bind="tbStyle('pr')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.pack_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_disc" sortable header="WiP Disc" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_disc || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_disc_price" sortable header="Cost" v-bind="tbStyle('wip')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.wip_disc_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_rim" sortable header="WiP Rim" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_rim || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_rim_price" sortable header="Cost" v-bind="tbStyle('wip')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.wip_rim_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_sidering" sortable header="WiP Sidering" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_sidering || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_sidering_price" sortable header="Cost" v-bind="tbStyle('wip')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.wip_sidering_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_assy" sortable header="WiP Assy" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_assy || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_assy_price" sortable header="Cost" v-bind="tbStyle('wip')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.wip_assy_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_cedW" sortable header="WiP CED W" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_cedW || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_cedW_price" sortable header="Cost" v-bind="tbStyle('wip')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.wip_cedW_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_cedSR" sortable header="WiP CED SR" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_cedSR || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_cedSR_price" sortable header="Cost" v-bind="tbStyle('wip')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.wip_cedSR_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_tcW" sortable header="WiP Topcoat W" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_tcW || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_tcW_price" sortable header="Cost" v-bind="tbStyle('wip')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.wip_tcW_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_tcSR" sortable header="WiP Topcoat SR" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_tcSR || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_tcSR_price" sortable header="Cost" v-bind="tbStyle('wip')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.wip_tcSR_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_valve" sortable header="WiP Valve" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_valve || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_valve_price" sortable header="Cost" v-bind="tbStyle('wip')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.wip_valve_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="total_raw_material" sortable header="Total Raw Material" v-bind="tbStyle('fg')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.total_raw_material).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="total_process" sortable header="Total Process" v-bind="tbStyle('fg')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.total_process).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="total" sortable header="Total" v-bind="tbStyle('fg')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.total).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="action" header="Action" :exportable="false" v-bind="tbStyle('fg')">
+                                        <template #body="data">
+                                            <div class="flex gap-2">
+                                                <Button
+                                                    v-tooltip="'Preview Product'"
+                                                    icon="pi pi-eye"
+                                                    severity="info"
+                                                    rounded
+                                                    text
+                                                    @click="openPreviewTab(data.data.item_code, opexDef, proginDef, 'standardCost')"
+                                                />
+                                            </div>
+                                        </template>
+                                    </Column>
+                                </DataTable>
+                            </section>
+                        </TabPanel>
+
+                        <TabPanel value="1">
+                            <section class="p-2">
+                                <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
+                                        Actual Cost
                                     </h2>
 
                                     <div class="mb-4 flex flex-col gap-4 md:flex-row md:items-start md:justify-end">
@@ -477,14 +974,14 @@ const tempProgin = ref<number | null>(null);
                                                 label=" Export"
                                                 unstyled
                                                 class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-orange-700 sm:w-28"
-                                                @click="exportCSV('bom')"
+                                                @click="exportCSV('actualCost')"
                                             />
                                             <Button
                                                 icon="pi pi-sync"
                                                 label=" Update Report?"
                                                 unstyled
                                                 class="w-full cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-cyan-700 sm:w-36"
-                                                @click="showUpdateDialog('bom')"
+                                                @click="showUpdateDialog('actualCost')"
                                             />
                                         </div>
 
@@ -510,13 +1007,13 @@ const tempProgin = ref<number | null>(null);
                                     <div class="text-right text-gray-700 dark:text-gray-300">
                                         <div>
                                             Last Update :
-                                            <span class="text-red-300">{{ lastUpdate[0] ? formatlastUpdate(lastUpdate[0]) : '-' }}</span>
+                                            <span class="text-red-300">{{ lastUpdate[1] ? formatlastUpdate(lastUpdate[1]) : '-' }}</span>
                                         </div>
                                     </div>
                                 </div>
 
                                 <DataTable
-                                    :value="boms"
+                                    :value="ac"
                                     tableStyle="min-width: 50rem"
                                     paginator
                                     :rows="10"
@@ -868,7 +1365,7 @@ const tempProgin = ref<number | null>(null);
                                                     severity="info"
                                                     rounded
                                                     text
-                                                    @click="openPreviewTab(data.data.item_code, opexDef, proginDef)"
+                                                    @click="openPreviewTab(data.data.item_code, opexDef, proginDef, 'actualCost')"
                                                 />
                                             </div>
                                         </template>

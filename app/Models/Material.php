@@ -20,7 +20,6 @@ class Material extends Model
         'item_group',
         'actualPrice',
         'standardPrice',
-        'date_of_update',
         'manufacturer',
     ];
 

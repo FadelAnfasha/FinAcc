@@ -74,14 +74,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/bom/master', [BOMController::class, 'master'])
         ->name('bom.master');
 
-
     // Report page
     Route::get('/bom/report', [BOMController::class, 'report'])
         ->name('bom.report');
 
-    Route::post('/bom/update/BOM', [BOMController::class, 'updateBOM'])->name('bom.updateBOM');
+    Route::post('/bom/update/SC', [BOMController::class, 'updateStandardCost'])->name('bom.updateSC');
+    Route::post('/bom/update/AC', [BOMController::class, 'updateActualCost'])->name('bom.updateAC');
 
-    Route::get('/bom/preview/{item_code}', action: [BOMController::class, 'previewData'])->name('preview.item');
+
+    Route::get('/bom/previewSC/{item_code}', action: [BOMController::class, 'previewSC'])->name('preview.sc');
+    Route::get('/bom/previewAC/{item_code}', action: [BOMController::class, 'previewAC'])->name('preview.ac');
+
     Route::get('/bom/download/{item_code}', [BOMController::class, 'downloadReport'])->name('report.download');
 });
 

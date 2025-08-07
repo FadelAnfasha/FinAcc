@@ -4,9 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class BOM_Report extends Model
+class ActualCost extends Model
 {
-    protected $table = 'bom_reports';
+    protected $table = 'actual_cost';
     protected $primaryKey = 'item_code';
     public $incrementing = false; // Karena bp_code bukan integer auto-increment
     protected $keyType = 'string';

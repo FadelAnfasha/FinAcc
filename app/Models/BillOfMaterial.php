@@ -50,8 +50,13 @@ class BillOfMaterial extends Model
         return $this->hasOne(ProcessCost::class, 'item_code', 'item_code');
     }
 
-    public function bomReport(): HasOne
+    public function SCReport(): HasOne
     {
-        return $this->hasOne(BOM_Report::class, 'item_code', 'item_code');
+        return $this->hasOne(StandardCost::class, 'item_code', 'item_code');
+    }
+
+    public function ACReport(): HasOne
+    {
+        return $this->hasOne(ActualCost::class, 'item_code', 'item_code');
     }
 }
