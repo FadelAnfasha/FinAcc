@@ -14,6 +14,8 @@ return new class extends Migration
         Schema::create('standard_cost', function (Blueprint $table) {
             $table->id();
             $table->string('item_code');
+            $table->integer('report_year'); // Tambah kolom ini
+            $table->integer('report_month'); // Tambah kolom ini
 
             // Disc
             $table->float('disc_qty')->nullable();
@@ -75,6 +77,8 @@ return new class extends Migration
             $table->double('total')->nullable();
 
             $table->timestamps();
+
+            $table->unique(['item_code', 'report_year', 'report_month']);
         });
     }
 

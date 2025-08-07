@@ -13,6 +13,7 @@ use App\Models\Packing;
 use App\Models\Valve;
 use App\Models\StandardCost;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Session;
 
 
@@ -116,6 +117,14 @@ class BOMController extends Controller
     {
         // Ambil semua data BOM yang sudah terurut
         $bomData = BillOfMaterial::all();
+
+        $validatedData = $request->validate([
+            'year' => 'required|integer',
+            'month' => 'required|integer|min:1|max:12',
+        ]);
+
+        $reportYear = $validatedData['year'];
+        $reportMonth = $validatedData['month'];
 
         // Group data berdasarkan depth = 1 sebagai main, sisanya sebagai komponennya
         $groups = collect();
@@ -257,7 +266,8 @@ class BOMController extends Controller
             });
         }
 
-        StandardCost::truncate();
+        // StandardCost::truncate();
+        // dump($reportMonth);
 
         foreach ($groups as $group) {
             $main = $group->first(); // FG
@@ -446,7 +456,11 @@ class BOMController extends Controller
 
             // Simpan ke DB
             StandardCost::updateOrCreate(
-                ['item_code' => $main->item_code],
+                [
+                    'item_code' => $main->item_code,
+                    'report_year' => $reportYear,
+                    'report_month' => $reportMonth,
+                ],
                 $data
             );
         }

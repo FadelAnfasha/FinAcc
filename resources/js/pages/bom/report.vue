@@ -6,6 +6,7 @@ import dayjs from 'dayjs';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
+import DatePicker from 'primevue/datepicker';
 import Dialog from 'primevue/dialog';
 import InputNumber from 'primevue/inputnumber';
 import InputText from 'primevue/inputtext';
@@ -22,6 +23,8 @@ const toast = useToast();
 const page = usePage();
 const dtSC = ref();
 const loading = ref(false);
+const year = ref();
+const month = ref();
 
 const sc = computed(() =>
     (page.props.sc as any[]).map((sc, index) => {
@@ -187,64 +190,6 @@ function exportCSV(type: 'standardCost' | 'actualCost') {
     dtSC.value.exportCSV({ selectionOnly: false, filename: exportFilename });
 }
 
-function updateReport(type: 'standardCost' | 'actualCost') {
-    if (type == 'standardCost') {
-        router.post(
-            route('pc.updateSC'),
-            {},
-            {
-                preserveScroll: true,
-                preserveState: true,
-                onSuccess: () => {
-                    toast.add({
-                        severity: 'success',
-                        summary: 'Success',
-                        group: 'br',
-                        detail: `Standard Cost updated successfully`,
-                        life: 3000,
-                    });
-                },
-                onError: () => {
-                    toast.add({
-                        severity: 'warn',
-                        summary: 'Error',
-                        group: 'br',
-                        // detail: `Failed to delete data with ${editedData.value.bp_code} and ${editedData.value.item_code}`,
-                        life: 3000,
-                    });
-                },
-            },
-        );
-    } else if (type == 'actualCost') {
-        router.post(
-            route('pc.updateAC'),
-            {},
-            {
-                preserveScroll: true,
-                preserveState: true,
-                onSuccess: () => {
-                    toast.add({
-                        severity: 'success',
-                        summary: 'Success',
-                        group: 'br',
-                        detail: `Actual Cost updated successfully`,
-                        life: 3000,
-                    });
-                },
-                onError: () => {
-                    toast.add({
-                        severity: 'warn',
-                        summary: 'Error',
-                        group: 'br',
-                        // detail: `Failed to delete data with ${editedData.value.bp_code} and ${editedData.value.item_code}`,
-                        life: 3000,
-                    });
-                },
-            },
-        );
-    }
-}
-
 const lastUpdate = computed(() => {
     const SC_update = ((page.props.sc as any[]) ?? []).map((SC) => new Date(SC.updated_at));
     const Max_SCUpdate = SC_update.length ? new Date(Math.max(...SC_update.map((d) => d.getTime()))) : null;
@@ -268,6 +213,76 @@ const updateStatus = ref<UpdateStatus>('idle');
 const userName = computed(() => page.props.auth?.user?.name ?? '');
 const updateType = ref<'standardCost' | 'actualCost' | 'opgin' | null>(null);
 
+// function updateReport(type: 'standardCost' | 'actualCost') {
+//     if (type == 'standardCost') {
+//         router.post(
+//             route('pc.updateSC'),
+//             {},
+//             {
+//                 preserveScroll: true,
+//                 preserveState: true,
+//                 onSuccess: () => {
+//                     toast.add({
+//                         severity: 'success',
+//                         summary: 'Success',
+//                         group: 'br',
+//                         detail: `Standard Cost updated successfully`,
+//                         life: 3000,
+//                     });
+//                 },
+//                 onError: () => {
+//                     toast.add({
+//                         severity: 'warn',
+//                         summary: 'Error',
+//                         group: 'br',
+//                         // detail: `Failed to delete data with ${editedData.value.bp_code} and ${editedData.value.item_code}`,
+//                         life: 3000,
+//                     });
+//                 },
+//             },
+//         );
+//     } else if (type == 'actualCost') {
+//         router.post(
+//             route('pc.updateAC'),
+//             {},
+//             {
+//                 preserveScroll: true,
+//                 preserveState: true,
+//                 onSuccess: () => {
+//                     toast.add({
+//                         severity: 'success',
+//                         summary: 'Success',
+//                         group: 'br',
+//                         detail: `Actual Cost updated successfully`,
+//                         life: 3000,
+//                     });
+//                 },
+//                 onError: () => {
+//                     toast.add({
+//                         severity: 'warn',
+//                         summary: 'Error',
+//                         group: 'br',
+//                         // detail: `Failed to delete data with ${editedData.value.bp_code} and ${editedData.value.item_code}`,
+//                         life: 3000,
+//                     });
+//                 },
+//             },
+//         );
+//     }
+// }
+
+const saveOpexProgin = () => {
+    if (tempOpex.value !== null && tempProgin.value !== null) {
+        opexDef.value = tempOpex.value;
+        proginDef.value = tempProgin.value;
+    }
+    updateConstDialog.value = false;
+};
+
+const cancelOpexProgin = () => {
+    updateConstDialog.value = false; // Tutup dialog
+};
+
 function showUpdateDialog(type: 'standardCost' | 'actualCost' | 'opgin') {
     updateType.value = type;
     updateStatus.value = 'idle';
@@ -285,20 +300,20 @@ function showUpdateDialog(type: 'standardCost' | 'actualCost' | 'opgin') {
     }
 }
 
-const saveOpexProgin = () => {
-    if (tempOpex.value !== null && tempProgin.value !== null) {
-        opexDef.value = tempOpex.value;
-        proginDef.value = tempProgin.value;
-    }
-    updateConstDialog.value = false;
-};
-
-const cancelOpexProgin = () => {
-    updateConstDialog.value = false; // Tutup dialog
-};
-
 function confirmUpdate() {
     if (!updateType.value) return;
+    if (!updateType.value) return;
+
+    if (!year.value || !month.value) {
+        toast.add({
+            severity: 'warn',
+            summary: 'Peringatan',
+            group: 'br',
+            detail: 'Silakan pilih tahun dan bulan terlebih dahulu',
+            life: 3000,
+        });
+        return;
+    }
 
     updateStatus.value = 'updating';
     const type = updateType.value;
@@ -315,9 +330,18 @@ function confirmUpdate() {
         opgin: 'OPEX / Profit Margin',
     };
 
+    const payload = {
+        // Karena DatePicker dengan view="year" dan dateFormat="yy"
+        // akan mengembalikan objek Date, kita ambil tahunnya
+        year: year.value.getFullYear(),
+        // Begitu juga dengan bulan. getMonth() mengembalikan 0-11,
+        // jadi kita tambahkan 1 agar sesuai dengan format 1-12
+        month: month.value.getMonth() + 1,
+    };
+
     router.post(
         route(routes[type]),
-        {},
+        payload, // Menggunakan payload baru yang berisi tahun dan bulan
         {
             preserveScroll: true,
             preserveState: true,
@@ -407,6 +431,18 @@ const tempProgin = ref<number | null>(null);
                             >,
                         </p>
                         <p>Are you sure you want to update the report?</p>
+                        <!-- Menambahkan dropdown untuk memilih tahun dan bulan -->
+                        <div class="mt-6 mb-2 font-semibold">Select Period:</div>
+                        <div class="flex space-x-4">
+                            <div class="flex-1">
+                                <label for="report-month" class="block text-sm font-medium text-gray-400">Month</label>
+                                <DatePicker v-model="month" view="month" dateFormat="mm" />
+                            </div>
+                            <div class="flex-1">
+                                <label for="report-year" class="block text-sm font-medium text-gray-400">Year</label>
+                                <DatePicker v-model="year" view="year" dateFormat="yy" />
+                            </div>
+                        </div>
                         <p class="mt-6 mb-2 font-semibold">Make sure this data is up to date:</p>
                         <div class="overflow-x-auto">
                             <table v-if="updateType === 'standardCost'" class="w-full border-collapse text-left">
@@ -539,7 +575,7 @@ const tempProgin = ref<number | null>(null);
                                         <div class="flex flex-col items-center gap-4 sm:flex-row md:w-auto">
                                             <Button
                                                 icon="pi pi-download"
-                                                label=" Export"
+                                                label=" Export Report"
                                                 unstyled
                                                 class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-orange-700 sm:w-28"
                                                 @click="exportCSV('standardCost')"
@@ -548,7 +584,7 @@ const tempProgin = ref<number | null>(null);
                                                 icon="pi pi-sync"
                                                 label=" Update Report?"
                                                 unstyled
-                                                class="w-full cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-cyan-700 sm:w-36"
+                                                class="w-full cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-cyan-700 sm:w-28"
                                                 @click="showUpdateDialog('standardCost')"
                                             />
                                         </div>
