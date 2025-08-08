@@ -25,9 +25,7 @@ class BOMController extends Controller
         $bom = BillOfMaterial::where('depth', 1)->get();
         $packings = Packing::all();
         $valve = Valve::all();
-
         $processes = Process::all();
-
         $componentItems = collect();
         $finishGood = null;
 
@@ -472,6 +470,14 @@ class BOMController extends Controller
         // Ambil semua data BOM yang sudah terurut
         $bomData = BillOfMaterial::all();
 
+        $validatedData = $request->validate([
+            'year' => 'required|integer',
+            'month' => 'required|integer|min:1|max:12',
+        ]);
+
+        $reportYear = $validatedData['year'];
+        $reportMonth = $validatedData['month'];
+
         // Group data berdasarkan depth = 1 sebagai main, sisanya sebagai komponennya
         $groups = collect();
         $currentGroup = collect();
@@ -611,8 +617,6 @@ class BOMController extends Controller
                     );
             });
         }
-
-        ActualCost::truncate();
 
         foreach ($groups as $group) {
             $main = $group->first(); // FG
@@ -801,7 +805,11 @@ class BOMController extends Controller
 
             // Simpan ke DB
             ActualCost::updateOrCreate(
-                ['item_code' => $main->item_code],
+                [
+                    'item_code' => $main->item_code,
+                    'report_year' => $reportYear,
+                    'report_month' => $reportMonth,
+                ],
                 $data
             );
         }

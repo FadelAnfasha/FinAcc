@@ -5,11 +5,13 @@ import { FilterMatchMode } from '@primevue/core/api';
 import dayjs from 'dayjs';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
+import ColumnGroup from 'primevue/columngroup';
 import DataTable from 'primevue/datatable';
 import DatePicker from 'primevue/datepicker';
 import Dialog from 'primevue/dialog';
 import InputNumber from 'primevue/inputnumber';
 import InputText from 'primevue/inputtext';
+import Row from 'primevue/row';
 import Select from 'primevue/select';
 import Tab from 'primevue/tab';
 import TabList from 'primevue/tablist';
@@ -17,7 +19,7 @@ import TabPanel from 'primevue/tabpanel';
 import TabPanels from 'primevue/tabpanels';
 import Tabs from 'primevue/tabs';
 import { useToast } from 'primevue/usetoast';
-import { computed, nextTick, ref } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 
 const toast = useToast();
 const page = usePage();
@@ -44,6 +46,7 @@ const sc = computed(() =>
         };
     }),
 );
+const standardCostRaw = ref(page.props.sc);
 
 const ac = computed(() =>
     (page.props.ac as any[]).map((ac, index) => {
@@ -63,11 +66,159 @@ const ac = computed(() =>
         };
     }),
 );
+const actualCostRaw = ref(page.props.ac);
+
+const selectedStandardYear = ref<Date | null>(new Date());
+const selectedActualYear = ref<Date | null>(new Date());
+const selectedStandardMonth = ref<Date | null>(new Date());
+const selectedActualMonth = ref<Date | null>(new Date());
+
+watch(selectedActualYear, (newValue) => {
+    if (newValue) {
+        console.log('Actual Cost Year berubah:', newValue.getFullYear());
+    } else {
+        console.log('Actual Cost Year disetel ke null.');
+    }
+});
+
+watch(selectedActualMonth, (newValue) => {
+    if (newValue) {
+        // Nilai bulan (0-11) + 1 untuk mendapatkan bulan (1-12)
+        console.log('Actual Cost Month berubah:', newValue.getMonth() + 1);
+    } else {
+        console.log('Actual Cost Month disetel ke null.');
+    }
+});
+
+const combinedData = computed(() => {
+    // Cek apakah semua datepicker sudah dipilih.
+    if (!selectedStandardYear.value || !selectedStandardMonth.value || !selectedActualYear.value || !selectedActualMonth.value) {
+        return [];
+    }
+
+    // Ambil tahun dan bulan dari DatePicker
+    const standardYear = selectedStandardYear.value.getFullYear();
+    const standardMonth = selectedStandardMonth.value.getMonth() + 1;
+    const actualYear = selectedActualYear.value.getFullYear();
+    const actualMonth = selectedActualMonth.value.getMonth() + 1;
+
+    // Filter data Standard Cost
+    const filteredStandard = (page.props.sc as any[]).filter((item) => {
+        return item.report_year === standardYear && item.report_month === standardMonth;
+    });
+
+    // Filter data Actual Cost
+    const filteredActual = (page.props.ac as any[]).filter((item) => {
+        return item.report_year === actualYear && item.report_month === actualMonth;
+    });
+
+    console.log('Jumlah data Standard Cost yang terfilter:', filteredStandard.length);
+    console.log('Jumlah data Actual Cost yang terfilter:', filteredActual.length);
+
+    if (filteredActual.length === 0) {
+        console.warn('Filtered Actual Cost data is empty. Cek ketersediaan data untuk periode yang dipilih.');
+    }
+
+    // Buat map dari filteredStandard untuk pencarian cepat
+    const standardCostMap = new Map(filteredStandard.map((item) => [item.item_code, item]));
+
+    // Gabungkan data dan hitung selisih
+    return filteredActual.map((ac_item, index) => {
+        const sc_item = standardCostMap.get(ac_item.item_code);
+
+        const standard_cost = sc_item
+            ? {
+                  total_raw_material: sc_item.total_raw_material,
+                  total_process: sc_item.total_process,
+                  total: sc_item.total,
+                  month: sc_item.report_month,
+                  year: sc_item.report_year,
+              }
+            : {
+                  total_raw_material: 0,
+                  total_process: 0,
+                  total: 0,
+                  month: null,
+                  year: null,
+              };
+
+        const actual_cost = {
+            total_raw_material: ac_item.total_raw_material,
+            total_process: ac_item.total_process,
+            total: ac_item.total,
+            month: ac_item.report_month,
+            year: ac_item.report_year,
+        };
+
+        const difference_cost = {
+            total_raw_material: standard_cost.total_raw_material - actual_cost.total_raw_material,
+            total_process: standard_cost.total_process - actual_cost.total_process,
+            total: standard_cost.total - actual_cost.total,
+        };
+
+        return {
+            no: index + 1,
+            item_code: ac_item.item_code,
+            standard_cost,
+            actual_cost,
+            difference_cost,
+        };
+    });
+});
 
 const filters = ref({
     item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
     type_name: { value: null, matchMode: FilterMatchMode.EQUALS },
     'bom.description': { value: null, matchMode: FilterMatchMode.CONTAINS },
+    report_year: { value: null as number | null, matchMode: FilterMatchMode.EQUALS },
+    report_month: { value: null as number | null, matchMode: FilterMatchMode.EQUALS },
+});
+
+const getMonthName = (monthNumber: number): string => {
+    if (typeof monthNumber !== 'number' || monthNumber < 1 || monthNumber > 12) {
+        return '-';
+    }
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    // Kurangi 1 karena array berbasis 0
+    return monthNames[monthNumber - 1];
+};
+
+watch(selectedStandardYear, (newValue: Date | null) => {
+    if (newValue instanceof Date) {
+        // This check is now valid because newValue can be a Date
+        filters.value.report_year.value = newValue.getFullYear();
+    } else {
+        filters.value.report_year.value = null;
+    }
+});
+
+watch(selectedStandardMonth, (newValue: Date | null) => {
+    if (newValue instanceof Date) {
+        // .getMonth() mengembalikan nilai 0-11.
+        // Jika data Anda 1-12, tambahkan +1.
+        filters.value.report_month.value = newValue.getMonth() + 1;
+    } else {
+        filters.value.report_month.value = null;
+    }
+});
+
+watch(selectedActualYear, (newValue: Date | null) => {
+    if (newValue instanceof Date) {
+        // This check is now valid because newValue can be a Date
+        filters.value.report_year.value = newValue.getFullYear();
+    } else {
+        filters.value.report_year.value = null;
+    }
+});
+
+watch(selectedActualMonth, (newValue: Date | null) => {
+    if (newValue instanceof Date) {
+        // .getMonth() mengembalikan nilai 0-11.
+        // Jika data Anda 1-12, tambahkan +1.
+        filters.value.report_month.value = newValue.getMonth() + 1;
+    } else {
+        filters.value.report_month.value = null;
+    }
 });
 
 function tbStyle(section: 'main' | 'rm' | 'pr' | 'wip' | 'fg') {
@@ -108,82 +259,6 @@ function capitalize(text: string): string {
     return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-// onMounted(() => {
-//     bom.value = (page.props.bom as any[]).map((bom, index) => {
-//         const getQty = (item: any, field: string) => Number(item?.[field] ?? 0);
-//         const ceil2 = (val: number) => Math.ceil(val * 100) / 100;
-//         const pc = bom.main?.process_cost ?? {};
-
-//         const disc_qty = getQty(bom.disc, 'quantity');
-//         const disc_price = getQty(bom, 'disc_price');
-//         const discXqty = ceil2(disc_qty * disc_price);
-
-//         const rim_qty = getQty(bom.rim, 'quantity');
-//         const rim_price = getQty(bom, 'rim_price');
-//         const rimXqty = ceil2(rim_qty * rim_price);
-
-//         const sr_qty = getQty(bom.sidering, 'quantity');
-//         const sr_price = getQty(bom, 'sr_price');
-//         const srXqty = ceil2(sr_qty * sr_price);
-
-//         const pr_disc = Number(pc.max_of_disc ?? 0);
-//         const pr_rim = Number(pc.max_of_rim ?? 0);
-//         const pr_sr = Number(pc.max_of_sidering ?? 0);
-//         const pr_assy = Number(pc.max_of_assy ?? 0);
-//         const pr_ced = Number(pc.max_of_ced ?? 0);
-//         const pr_tc = Number(pc.max_of_topcoat ?? 0);
-//         const pr_packaging = Number(pc.max_of_packaging ?? 0);
-
-//         const pr_cedW = ceil2((pr_ced * 5) / 7);
-//         const pr_cedSR = ceil2((pr_ced * 2) / 7);
-//         const pr_tcW = ceil2((pr_tc * 5) / 7);
-//         const pr_tcSR = ceil2((pr_tc * 2) / 7);
-
-//         const wip_disc_cost = ceil2(discXqty + pr_disc);
-//         const wip_rim_cost = ceil2(rimXqty + pr_rim);
-//         const wip_sr_cost = ceil2(srXqty + pr_sr);
-//         const wip_assy_cost = ceil2(wip_disc_cost + wip_rim_cost + pr_assy);
-//         const wip_cedW_cost = ceil2(wip_assy_cost + pr_cedW);
-//         const wip_cedSR_cost = ceil2(wip_sr_cost + pr_cedSR);
-//         const wip_tcW_cost = ceil2(wip_cedW_cost + pr_tcW);
-//         const wip_tcSR_cost = ceil2(wip_cedSR_cost + pr_tcSR);
-
-//         const valveCode = bom.wip_valve?.item_code?.trim();
-//         let wip_valve_cost = 0;
-//         if (valveCode === 'CGP089') wip_valve_cost = 25815;
-//         else if (valveCode === 'CGP064') wip_valve_cost = 14985;
-//         else if (valveCode === 'CGP064/CGP118') wip_valve_cost = 5099850;
-
-//         const total_rm = ceil2(discXqty + rimXqty + srXqty);
-//         const total_pr = ceil2(pr_disc + pr_rim + pr_sr + pr_assy + pr_cedW + pr_cedSR + pr_tcW + pr_tcSR + pr_packaging + wip_valve_cost);
-//         const total = ceil2(total_rm + total_pr);
-
-//         return {
-//             ...bom,
-//             no: index + 1,
-//             discXqty,
-//             rimXqty,
-//             srXqty,
-//             max_of_cedW: pr_cedW,
-//             max_of_cedSR: pr_cedSR,
-//             max_of_tcW: pr_tcW,
-//             max_of_tcSR: pr_tcSR,
-//             wip_disc_cost,
-//             wip_rim_cost,
-//             wip_sr_cost,
-//             wip_assy_cost,
-//             wip_cedW_cost,
-//             wip_cedSR_cost,
-//             wip_tcW_cost,
-//             wip_tcSR_cost,
-//             wip_valve_cost,
-//             total_rm,
-//             total_pr,
-//             total,
-//         };
-//     });
-// });
-
 function exportCSV(type: 'standardCost' | 'actualCost') {
     if (type !== 'standardCost' || !dtSC.value) return;
     const exportFilename = `Bill-of-Material-${new Date().toISOString().slice(0, 10)}.csv`;
@@ -212,64 +287,6 @@ type UpdateStatus = 'idle' | 'updating' | 'done';
 const updateStatus = ref<UpdateStatus>('idle');
 const userName = computed(() => page.props.auth?.user?.name ?? '');
 const updateType = ref<'standardCost' | 'actualCost' | 'opgin' | null>(null);
-
-// function updateReport(type: 'standardCost' | 'actualCost') {
-//     if (type == 'standardCost') {
-//         router.post(
-//             route('pc.updateSC'),
-//             {},
-//             {
-//                 preserveScroll: true,
-//                 preserveState: true,
-//                 onSuccess: () => {
-//                     toast.add({
-//                         severity: 'success',
-//                         summary: 'Success',
-//                         group: 'br',
-//                         detail: `Standard Cost updated successfully`,
-//                         life: 3000,
-//                     });
-//                 },
-//                 onError: () => {
-//                     toast.add({
-//                         severity: 'warn',
-//                         summary: 'Error',
-//                         group: 'br',
-//                         // detail: `Failed to delete data with ${editedData.value.bp_code} and ${editedData.value.item_code}`,
-//                         life: 3000,
-//                     });
-//                 },
-//             },
-//         );
-//     } else if (type == 'actualCost') {
-//         router.post(
-//             route('pc.updateAC'),
-//             {},
-//             {
-//                 preserveScroll: true,
-//                 preserveState: true,
-//                 onSuccess: () => {
-//                     toast.add({
-//                         severity: 'success',
-//                         summary: 'Success',
-//                         group: 'br',
-//                         detail: `Actual Cost updated successfully`,
-//                         life: 3000,
-//                     });
-//                 },
-//                 onError: () => {
-//                     toast.add({
-//                         severity: 'warn',
-//                         summary: 'Error',
-//                         group: 'br',
-//                         // detail: `Failed to delete data with ${editedData.value.bp_code} and ${editedData.value.item_code}`,
-//                         life: 3000,
-//                     });
-//                 },
-//             },
-//         );
-//     }
-// }
 
 const saveOpexProgin = () => {
     if (tempOpex.value !== null && tempProgin.value !== null) {
@@ -445,7 +462,7 @@ const tempProgin = ref<number | null>(null);
                         </div>
                         <p class="mt-6 mb-2 font-semibold">Make sure this data is up to date:</p>
                         <div class="overflow-x-auto">
-                            <table v-if="updateType === 'standardCost'" class="w-full border-collapse text-left">
+                            <table v-if="updateType === 'standardCost' || 'actualCost'" class="w-full border-collapse text-left">
                                 <thead>
                                     <tr>
                                         <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Data</th>
@@ -562,57 +579,76 @@ const tempProgin = ref<number | null>(null);
                     <TabList>
                         <Tab value="0">Standard Cost 2025</Tab>
                         <Tab value="1">Actual Cost</Tab>
+                        <Tab value="2">Difference</Tab>
                     </TabList>
+
                     <TabPanels>
                         <TabPanel value="0">
                             <section class="p-2">
-                                <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
-                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
-                                        Standard Cost
-                                    </h2>
+                                <div class="mb-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                                    <!-- Title -->
+                                    <h2 class="text-3xl font-semibold text-gray-900 hover:text-indigo-500 dark:text-white">Standard Cost</h2>
 
-                                    <div class="mb-4 flex flex-col gap-4 md:flex-row md:items-start md:justify-end">
-                                        <div class="flex flex-col items-center gap-4 sm:flex-row md:w-auto">
+                                    <!-- Main Controls Container -->
+                                    <div class="flex flex-col gap-4 lg:flex-row lg:items-center">
+                                        <!-- Export and Update Report Buttons -->
+                                        <div class="flex flex-col gap-2 sm:flex-row sm:gap-4">
                                             <Button
                                                 icon="pi pi-download"
                                                 label=" Export Report"
                                                 unstyled
-                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-orange-700 sm:w-28"
+                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-orange-700 sm:w-auto"
                                                 @click="exportCSV('standardCost')"
                                             />
                                             <Button
                                                 icon="pi pi-sync"
                                                 label=" Update Report?"
                                                 unstyled
-                                                class="w-full cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-cyan-700 sm:w-28"
+                                                class="w-full cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-cyan-700 sm:w-auto"
                                                 @click="showUpdateDialog('standardCost')"
                                             />
                                         </div>
 
-                                        <div class="flex flex-col items-center gap-4 sm:flex-row md:w-auto">
+                                        <!-- OPEX and Profit Margin Section -->
+                                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
                                             <div class="flex items-center gap-2">
-                                                <label for="opex" class="whitespace-nowrap">OPEX :</label>
-                                                <InputNumber v-model="opexDef" inputId="percent" suffix="%" fluid disabled />
+                                                <label for="opex" class="text-sm font-medium whitespace-nowrap">OPEX :</label>
+                                                <InputNumber v-model="opexDef" inputId="percent" suffix="%" fluid disabled class="w-20" />
                                             </div>
                                             <div class="flex items-center gap-2">
-                                                <label for="progin" class="whitespace-nowrap">Profit Margin :</label>
-                                                <InputNumber v-model="proginDef" inputId="percent" suffix="%" fluid disabled />
+                                                <label for="progin" class="text-sm font-medium whitespace-nowrap">Profit Margin :</label>
+                                                <InputNumber v-model="proginDef" inputId="percent" suffix="%" fluid disabled class="w-20" />
                                             </div>
                                             <Button
                                                 icon="pi pi-sync"
                                                 label=" Update Value?"
                                                 unstyled
-                                                class="w-full cursor-pointer rounded-xl bg-emerald-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-emerald-700 sm:w-36"
+                                                class="w-full cursor-pointer rounded-xl bg-emerald-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-emerald-700 sm:w-auto"
                                                 @click="showUpdateDialog('opgin')"
                                             />
                                         </div>
-                                    </div>
 
-                                    <div class="text-right text-gray-700 dark:text-gray-300">
-                                        <div>
-                                            Last Update :
-                                            <span class="text-red-300">{{ lastUpdate[0] ? formatlastUpdate(lastUpdate[0]) : '-' }}</span>
+                                        <!-- Date Pickers -->
+                                        <div class="flex gap-2">
+                                            <div class="flex-1">
+                                                <label for="report-month" class="block text-sm font-medium text-gray-400">Month Filter</label>
+                                                <DatePicker v-model="selectedStandardMonth" view="month" dateFormat="mm" class="w-full" />
+                                            </div>
+                                            <div class="flex-1">
+                                                <div class="flex-1">
+                                                    <label for="report-year" class="block text-sm font-medium text-gray-400">Year Filter</label>
+                                                    <DatePicker v-model="selectedStandardYear" view="year" dateFormat="yy" class="w-full" />
+                                                </div>
+                                            </div>
                                         </div>
+                                    </div>
+                                </div>
+
+                                <!-- Last Update Info -->
+                                <div class="mb-4 text-right text-gray-700 dark:text-gray-300">
+                                    <div>
+                                        Last Update :
+                                        <span class="text-red-300">{{ lastUpdate[0] ? formatlastUpdate(lastUpdate[0]) : '-' }}</span>
                                     </div>
                                 </div>
 
@@ -629,7 +665,7 @@ const tempProgin = ref<number | null>(null);
                                     v-model:filters="filters"
                                     filterDisplay="row"
                                     :loading="loading"
-                                    :globalFilterFields="['item_code', 'type_name', 'description']"
+                                    :globalFilterFields="['item_code', 'type_name', 'description', 'report_year', 'report_month']"
                                     class="text-md"
                                     ref="dtBOM"
                                 >
@@ -975,6 +1011,18 @@ const tempProgin = ref<number | null>(null);
                                     <Column field="total" sortable header="Total" v-bind="tbStyle('fg')">
                                         <template #body="{ data }">
                                             {{ Number(data.total).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="report_month" sortable header="Month" v-bind="tbStyle('fg')">
+                                        <template #body="slotProps">
+                                            {{ getMonthName(slotProps.data.report_month) }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="report_year" sortable header="Year" v-bind="tbStyle('fg')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.report_year || '-' }}
                                         </template>
                                     </Column>
 
@@ -998,53 +1046,70 @@ const tempProgin = ref<number | null>(null);
 
                         <TabPanel value="1">
                             <section class="p-2">
-                                <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
-                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
-                                        Actual Cost
-                                    </h2>
+                                <div class="mb-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                                    <!-- Title -->
+                                    <h2 class="text-3xl font-semibold text-gray-900 hover:text-indigo-500 dark:text-white">Standard Cost</h2>
 
-                                    <div class="mb-4 flex flex-col gap-4 md:flex-row md:items-start md:justify-end">
-                                        <div class="flex w-full flex-col items-center gap-4 sm:flex-row md:w-auto">
+                                    <!-- Main Controls Container -->
+                                    <div class="flex flex-col gap-4 lg:flex-row lg:items-center">
+                                        <!-- Export and Update Report Buttons -->
+                                        <div class="flex flex-col gap-2 sm:flex-row sm:gap-4">
                                             <Button
                                                 icon="pi pi-download"
-                                                label=" Export"
+                                                label=" Export Report"
                                                 unstyled
-                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-orange-700 sm:w-28"
+                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-orange-700 sm:w-auto"
                                                 @click="exportCSV('actualCost')"
                                             />
                                             <Button
                                                 icon="pi pi-sync"
                                                 label=" Update Report?"
                                                 unstyled
-                                                class="w-full cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-cyan-700 sm:w-36"
+                                                class="w-full cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-cyan-700 sm:w-auto"
                                                 @click="showUpdateDialog('actualCost')"
                                             />
                                         </div>
 
-                                        <div class="flex w-full flex-col items-center gap-4 sm:flex-row md:w-auto">
+                                        <!-- OPEX and Profit Margin Section -->
+                                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
                                             <div class="flex items-center gap-2">
-                                                <label for="opex" class="whitespace-nowrap">OPEX :</label>
-                                                <InputNumber v-model="opexDef" inputId="percent" suffix="%" fluid class="w-28" disabled />
+                                                <label for="opex" class="text-sm font-medium whitespace-nowrap">OPEX :</label>
+                                                <InputNumber v-model="opexDef" inputId="percent" suffix="%" fluid disabled class="w-20" />
                                             </div>
                                             <div class="flex items-center gap-2">
-                                                <label for="progin" class="whitespace-nowrap">Profit Margin :</label>
-                                                <InputNumber v-model="proginDef" inputId="percent" suffix="%" fluid class="w-28" disabled />
+                                                <label for="progin" class="text-sm font-medium whitespace-nowrap">Profit Margin :</label>
+                                                <InputNumber v-model="proginDef" inputId="percent" suffix="%" fluid disabled class="w-20" />
                                             </div>
                                             <Button
                                                 icon="pi pi-sync"
                                                 label=" Update Value?"
                                                 unstyled
-                                                class="w-full cursor-pointer rounded-xl bg-emerald-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-emerald-700 sm:w-36"
+                                                class="w-full cursor-pointer rounded-xl bg-emerald-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-emerald-700 sm:w-auto"
                                                 @click="showUpdateDialog('opgin')"
                                             />
                                         </div>
-                                    </div>
 
-                                    <div class="text-right text-gray-700 dark:text-gray-300">
-                                        <div>
-                                            Last Update :
-                                            <span class="text-red-300">{{ lastUpdate[1] ? formatlastUpdate(lastUpdate[1]) : '-' }}</span>
+                                        <!-- Date Pickers -->
+                                        <div class="flex gap-2">
+                                            <div class="flex-1">
+                                                <label for="report-month" class="block text-sm font-medium text-gray-400">Month Filter</label>
+                                                <DatePicker v-model="selectedActualMonth" view="month" dateFormat="mm" class="w-full" />
+                                            </div>
+                                            <div class="flex-1">
+                                                <div class="flex-1">
+                                                    <label for="report-year" class="block text-sm font-medium text-gray-400">Year Filter</label>
+                                                    <DatePicker v-model="selectedActualYear" view="year" dateFormat="yy" class="w-full" />
+                                                </div>
+                                            </div>
                                         </div>
+                                    </div>
+                                </div>
+
+                                <!-- Last Update Info -->
+                                <div class="mb-4 text-right text-gray-700 dark:text-gray-300">
+                                    <div>
+                                        Last Update :
+                                        <span class="text-red-300">{{ lastUpdate[1] ? formatlastUpdate(lastUpdate[1]) : '-' }}</span>
                                     </div>
                                 </div>
 
@@ -1061,7 +1126,7 @@ const tempProgin = ref<number | null>(null);
                                     v-model:filters="filters"
                                     filterDisplay="row"
                                     :loading="loading"
-                                    :globalFilterFields="['item_code', 'type_name', 'description']"
+                                    :globalFilterFields="['item_code', 'type_name', 'description', 'report_year', 'report_month']"
                                     class="text-md"
                                     ref="dtBOM"
                                 >
@@ -1392,6 +1457,18 @@ const tempProgin = ref<number | null>(null);
                                         </template>
                                     </Column>
 
+                                    <Column field="report_month" sortable header="Month" v-bind="tbStyle('fg')">
+                                        <template #body="slotProps">
+                                            {{ getMonthName(slotProps.data.report_month) }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="report_year" sortable header="Year" v-bind="tbStyle('fg')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.report_year || '-' }}
+                                        </template>
+                                    </Column>
+
                                     <Column field="action" header="Action" :exportable="false" v-bind="tbStyle('fg')">
                                         <template #body="data">
                                             <div class="flex gap-2">
@@ -1406,6 +1483,192 @@ const tempProgin = ref<number | null>(null);
                                             </div>
                                         </template>
                                     </Column>
+                                </DataTable>
+                            </section>
+                        </TabPanel>
+
+                        <TabPanel value="2">
+                            <section class="p-2">
+                                <div class="mb-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                                    <!-- Title -->
+                                    <h2 class="text-3xl font-semibold text-gray-900 hover:text-indigo-500 dark:text-white">Difference Cost</h2>
+
+                                    <!-- Main Controls Container -->
+                                    <div class="flex flex-col gap-4 lg:flex-row lg:items-center">
+                                        <div class="flex gap-2">
+                                            <div class="flex-1">
+                                                <label class="block text-sm font-medium text-gray-400">Standard Cost Year</label>
+                                                <DatePicker v-model="selectedStandardYear" view="year" dateFormat="yy" class="w-full" />
+                                            </div>
+                                            <div class="flex-1">
+                                                <label class="block text-sm font-medium text-gray-400">Standard Cost Month</label>
+                                                <DatePicker v-model="selectedStandardMonth" view="month" dateFormat="mm" class="w-full" />
+                                            </div>
+                                            <div class="flex-1">
+                                                <label class="block text-sm font-medium text-gray-400">Actual Cost Year</label>
+                                                <DatePicker v-model="selectedActualYear" view="year" dateFormat="yy" class="w-full" />
+                                            </div>
+                                            <div class="flex-1">
+                                                <label class="block text-sm font-medium text-gray-400">Actual Cost Month</label>
+                                                <DatePicker v-model="selectedActualMonth" view="month" dateFormat="mm" class="w-full" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <DataTable
+                                    :value="combinedData"
+                                    tableStyle="min-width: 50rem"
+                                    paginator
+                                    :rows="10"
+                                    :rowsPerPageOptions="[5, 10, 20, 50]"
+                                    resizableColumns
+                                    columnResizeMode="expand"
+                                    showGridlines
+                                    removableSort
+                                    v-model:filters="filters"
+                                    filterDisplay="row"
+                                    :loading="loading"
+                                    :globalFilterFields="['item_code', 'report_year', ' report_month']"
+                                    class="text-md"
+                                    ref="dtBOM"
+                                >
+                                    <Column field="no" sortable header="#" :showFilterMenu="true" v-bind="tbStyle('main')" :rowspan="2"></Column>
+
+                                    <Column
+                                        field="item_code"
+                                        header="Item Code"
+                                        :showFilterMenu="false"
+                                        sortable
+                                        v-bind="tbStyle('main')"
+                                        :rowspan="2"
+                                    >
+                                        <template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search item code"
+                                                class="w-full"
+                                            />
+                                        </template>
+                                    </Column>
+
+                                    <Column field="standard_cost.total_raw_material" sortable header="Total Raw Material" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.standard_cost.total_raw_material).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="standard_cost.total_process" sortable header="Total Process" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.standard_cost.total_process).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="standard_cost.total" sortable header="Total" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.standard_cost.total).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="actual_cost.total_raw_material" sortable header="Total Raw Material" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.actual_cost.total_raw_material).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="actual_cost.total_process" sortable header="Total Process" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.actual_cost.total_process).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="actual_cost.total" sortable header="Total" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.actual_cost.total).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="difference_cost.total_raw_material" sortable header="Total Raw Material" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            <span :class="{ 'text-red-500': data.difference_cost.total_raw_material < 0 }">
+                                                {{ Number(data.difference_cost.total_raw_material).toLocaleString('id-ID') }}
+                                            </span>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="difference_cost.total_process" sortable header="Total Process" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            <span :class="{ 'text-red-500': data.difference_cost.total_process < 0 }">
+                                                {{ Number(data.difference_cost.total_process).toLocaleString('id-ID') }}
+                                            </span>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="difference_cost.total" sortable header="Total" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            <span :class="{ 'text-red-500': data.difference_cost.total < 0 }">
+                                                {{ Number(data.difference_cost.total).toLocaleString('id-ID') }}
+                                            </span>
+                                        </template>
+                                    </Column>
+
+                                    <ColumnGroup type="header">
+                                        <Row>
+                                            <Column field="no" sortable header="#" v-bind="tbStyle('main')" :rowspan="2"></Column>
+                                            <Column field="item_code" header="Item Code" sortable v-bind="tbStyle('main')" :rowspan="2">
+                                                <template #filter="{ filterModel, filterCallback }">
+                                                    <InputText
+                                                        v-model="filterModel.value"
+                                                        @input="filterCallback()"
+                                                        placeholder="Search item code"
+                                                        class="w-full"
+                                                    />
+                                                </template>
+                                            </Column>
+                                            <Column header="Standard Cost" :colspan="3" v-bind="tbStyle('rm')"></Column>
+                                            <Column header="Actual Cost" :colspan="3" v-bind="tbStyle('pr')"></Column>
+                                            <Column header="Difference Cost" :colspan="3" v-bind="tbStyle('fg')"></Column>
+                                        </Row>
+                                        <Row>
+                                            <Column
+                                                field="standard_cost.total_raw_material"
+                                                sortable
+                                                header="Total Raw Material"
+                                                v-bind="tbStyle('rm')"
+                                            ></Column>
+                                            <Column
+                                                field="standard_cost.total_process"
+                                                sortable
+                                                header="Total Process"
+                                                v-bind="tbStyle('rm')"
+                                            ></Column>
+                                            <Column field="standard_cost.total" sortable header="Total" v-bind="tbStyle('rm')"></Column>
+
+                                            <Column
+                                                field="actual_cost.total_raw_material"
+                                                sortable
+                                                header="Total Raw Material"
+                                                v-bind="tbStyle('pr')"
+                                            ></Column>
+                                            <Column field="actual_cost.total_process" sortable header="Total Process" v-bind="tbStyle('pr')"></Column>
+                                            <Column field="actual_cost.total" sortable header="Total" v-bind="tbStyle('pr')"></Column>
+
+                                            <Column
+                                                field="difference_cost.total_raw_material"
+                                                sortable
+                                                header="Total Raw Material"
+                                                v-bind="tbStyle('fg')"
+                                            ></Column>
+                                            <Column
+                                                field="difference_cost.total_process"
+                                                sortable
+                                                header="Total Process"
+                                                v-bind="tbStyle('fg')"
+                                            ></Column>
+                                            <Column field="difference_cost.total" sortable header="Total" v-bind="tbStyle('fg')"></Column>
+                                        </Row>
+                                    </ColumnGroup>
                                 </DataTable>
                             </section>
                         </TabPanel>

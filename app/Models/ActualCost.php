@@ -12,6 +12,8 @@ class ActualCost extends Model
     protected $keyType = 'string';
     protected $fillable = [
         'item_code',
+        'report_year',
+        'report_month',
         'disc_qty',
         'disc_code',
         'disc_price',
