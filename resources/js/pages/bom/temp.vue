@@ -24,38 +24,9 @@ import { computed, nextTick, ref, watch } from 'vue';
 const toast = useToast();
 const page = usePage();
 const dtSC = ref();
-const dtAC = ref();
-const dtDIFF = ref(null);
 const loading = ref(false);
 const year = ref();
 const month = ref();
-
-interface CombinedDataItem {
-    no: number;
-    item_code: any;
-    standard_cost: {
-        total_raw_material: any;
-        total_process: any;
-        total: any;
-        month: any;
-        year: any;
-    };
-    actual_cost: {
-        total_raw_material: any;
-        total_process: any;
-        total: any;
-        month: any;
-        year: any;
-    };
-    difference_cost: {
-        total_raw_material: any;
-        total_process: any;
-        total: any;
-    };
-}
-
-// Beri tahu TypeScript bahwa `tableData` akan menyimpan array dari objek-objek ini.
-const tableData = ref<CombinedDataItem[]>([]);
 
 const sc = computed(() =>
     (page.props.sc as any[]).map((sc, index) => {
@@ -98,14 +69,9 @@ const ac = computed(() =>
 const actualCostRaw = ref(page.props.ac);
 
 const selectedStandardYear = ref<Date | null>(new Date());
-const selectedStandardMonth = ref<Date | null>(new Date());
-selectedStandardYear.value = new Date(2025, 0, 1); // 0 adalah Januari
-selectedStandardMonth.value = new Date(2025, 0, 1); // 0 adalah Januari
-
 const selectedActualYear = ref<Date | null>(new Date());
+const selectedStandardMonth = ref<Date | null>(new Date());
 const selectedActualMonth = ref<Date | null>(new Date());
-selectedActualYear.value = new Date(2025, 0, 1); // 0 adalah Januari
-selectedActualMonth.value = new Date(2025, 0, 1); // 0 adalah Januari
 
 watch(selectedActualYear, (newValue) => {
     if (newValue) {
@@ -113,7 +79,6 @@ watch(selectedActualYear, (newValue) => {
     } else {
         console.log('Actual Cost Year disetel ke null.');
     }
-    console.log('Nilai combinedData setelah perubahan Actual Year:', combinedData.value);
 });
 
 watch(selectedActualMonth, (newValue) => {
@@ -123,136 +88,43 @@ watch(selectedActualMonth, (newValue) => {
     } else {
         console.log('Actual Cost Month disetel ke null.');
     }
-    console.log('Nilai combinedData setelah perubahan Actual Month:', combinedData.value);
 });
 
-const tableKey = ref(0);
-
-watch(
-    [selectedStandardYear, selectedStandardMonth, selectedActualYear, selectedActualMonth],
-    () => {
-        // Pastikan semua tanggal telah dipilih
-        if (!selectedStandardYear.value || !selectedStandardMonth.value || !selectedActualYear.value || !selectedActualMonth.value) {
-            tableData.value = [];
-            return;
-        }
-
-        const standardYear = selectedStandardYear.value.getFullYear();
-        const standardMonth = selectedStandardMonth.value.getMonth() + 1;
-        const actualYear = selectedActualYear.value.getFullYear();
-        const actualMonth = selectedActualMonth.value.getMonth() + 1;
-
-        console.log(`Menganalisis data: Standard ${standardYear}-${standardMonth}, Actual ${actualYear}-${actualMonth}`);
-
-        const filteredStandard = (page.props.sc as any[]).filter((item) => {
-            return item.report_year === standardYear && item.report_month === standardMonth;
-        });
-
-        const filteredActual = (page.props.ac as any[]).filter((item) => {
-            return item.report_year === actualYear && item.report_month === actualMonth;
-        });
-
-        console.log('Jumlah data Standard Cost yang terfilter:', filteredStandard.length);
-        console.log('Jumlah data Actual Cost yang terfilter:', filteredActual.length);
-
-        if (filteredActual.length === 0) {
-            console.warn('Filtered Actual Cost data is empty. Cek ketersediaan data untuk periode yang dipilih.');
-        }
-
-        const standardCostMap = new Map(filteredStandard.map((item) => [item.item_code, item]));
-
-        console.log('Ukuran Standard Cost Map:', standardCostMap.size);
-
-        const mappedData = filteredActual.map((ac_item, index) => {
-            const sc_item = standardCostMap.get(ac_item.item_code);
-
-            if (!sc_item) {
-                console.log(`Item code ${ac_item.item_code} dari Actual Cost tidak ditemukan di Standard Cost Map.`);
-            }
-
-            const standard_cost = sc_item
-                ? {
-                      total_raw_material: sc_item.total_raw_material,
-                      total_process: sc_item.total_process,
-                      total: sc_item.total,
-                      month: sc_item.report_month,
-                      year: sc_item.report_year,
-                  }
-                : {
-                      total_raw_material: 0,
-                      total_process: 0,
-                      total: 0,
-                      month: null,
-                      year: null,
-                  };
-
-            const actual_cost = {
-                total_raw_material: ac_item.total_raw_material,
-                total_process: ac_item.total_process,
-                total: ac_item.total,
-                month: ac_item.report_month,
-                year: ac_item.report_year,
-            };
-
-            const difference_cost = {
-                total_raw_material: standard_cost.total_raw_material - actual_cost.total_raw_material,
-                total_process: standard_cost.total_process - actual_cost.total_process,
-                total: standard_cost.total - actual_cost.total,
-            };
-
-            return {
-                no: index + 1,
-                item_code: ac_item.item_code,
-                standard_cost,
-                actual_cost,
-                difference_cost,
-            };
-        });
-
-        // PENTING: tetapkan nilai `tableData` di sini
-        tableData.value = mappedData;
-        console.log('Data yang dimasukkan ke DataTable:', tableData.value);
-    },
-    { immediate: true },
-);
-
 const combinedData = computed(() => {
+    // Cek apakah semua datepicker sudah dipilih.
     if (!selectedStandardYear.value || !selectedStandardMonth.value || !selectedActualYear.value || !selectedActualMonth.value) {
         return [];
     }
 
+    // Ambil tahun dan bulan dari DatePicker
     const standardYear = selectedStandardYear.value.getFullYear();
     const standardMonth = selectedStandardMonth.value.getMonth() + 1;
     const actualYear = selectedActualYear.value.getFullYear();
-    const actualMonth = selectedActualMonth.value.getMonth() + 1; // Filter data Standard Cost
+    const actualMonth = selectedActualMonth.value.getMonth() + 1;
 
-    console.log(`Menganalisis data: Standard ${standardYear}-${standardMonth}, Actual ${actualYear}-${actualMonth}`);
-
+    // Filter data Standard Cost
     const filteredStandard = (page.props.sc as any[]).filter((item) => {
         return item.report_year === standardYear && item.report_month === standardMonth;
-    }); // Filter data Actual Cost
+    });
 
+    // Filter data Actual Cost
     const filteredActual = (page.props.ac as any[]).filter((item) => {
         return item.report_year === actualYear && item.report_month === actualMonth;
     });
 
-    if (filteredActual.length === 0) {
-        console.warn('Filtered Actual Cost data is empty. Cek ketersediaan data untuk periode yang dipilih.');
-    } // Buat map dari filteredStandard untuk pencarian cepat
-
     console.log('Jumlah data Standard Cost yang terfilter:', filteredStandard.length);
     console.log('Jumlah data Actual Cost yang terfilter:', filteredActual.length);
 
-    const standardCostMap = new Map(filteredStandard.map((item) => [item.item_code, item])); // Gabungkan data dan hitung selisih
+    if (filteredActual.length === 0) {
+        console.warn('Filtered Actual Cost data is empty. Cek ketersediaan data untuk periode yang dipilih.');
+    }
 
-    console.log('Ukuran Standard Cost Map:', standardCostMap.size);
+    // Buat map dari filteredStandard untuk pencarian cepat
+    const standardCostMap = new Map(filteredStandard.map((item) => [item.item_code, item]));
 
+    // Gabungkan data dan hitung selisih
     return filteredActual.map((ac_item, index) => {
         const sc_item = standardCostMap.get(ac_item.item_code);
-
-        if (!sc_item) {
-            console.log(`Item code ${ac_item.item_code} dari Actual Cost tidak ditemukan di Standard Cost Map.`);
-        }
 
         const standard_cost = sc_item
             ? {
@@ -388,16 +260,9 @@ function capitalize(text: string): string {
 }
 
 function exportCSV(type: 'standardCost' | 'actualCost') {
-    // Periksa apakah tipenya 'standardCost' DAN ref dtSC sudah ada
-    if (type === 'standardCost' && dtSC.value) {
-        const exportFilename = `Bill-of-Material-StandardCost-${new Date().toISOString().slice(0, 10)}.csv`;
-        dtSC.value.exportCSV({ selectionOnly: false, filename: exportFilename });
-    }
-    // Jika tidak, periksa apakah tipenya 'actualCost' DAN ref dtAC sudah ada
-    else if (type === 'actualCost' && dtAC.value) {
-        const exportFilename = `Bill-of-Material-ActualCost-${new Date().toISOString().slice(0, 10)}.csv`;
-        dtAC.value.exportCSV({ selectionOnly: false, filename: exportFilename });
-    }
+    if (type !== 'standardCost' || !dtSC.value) return;
+    const exportFilename = `Bill-of-Material-${new Date().toISOString().slice(0, 10)}.csv`;
+    dtSC.value.exportCSV({ selectionOnly: false, filename: exportFilename });
 }
 
 const lastUpdate = computed(() => {
@@ -802,7 +667,7 @@ const tempProgin = ref<number | null>(null);
                                     :loading="loading"
                                     :globalFilterFields="['item_code', 'type_name', 'description', 'report_year', 'report_month']"
                                     class="text-md"
-                                    ref="dtSC"
+                                    ref="dtBOM"
                                 >
                                     <Column field="no" sortable header="#" :showFilterMenu="true" v-bind="tbStyle('main')"></Column>
 
@@ -1263,7 +1128,7 @@ const tempProgin = ref<number | null>(null);
                                     :loading="loading"
                                     :globalFilterFields="['item_code', 'type_name', 'description', 'report_year', 'report_month']"
                                     class="text-md"
-                                    ref="dtAC"
+                                    ref="dtBOM"
                                 >
                                     <Column field="no" sortable header="#" :showFilterMenu="true" v-bind="tbStyle('main')"></Column>
 
@@ -1652,7 +1517,6 @@ const tempProgin = ref<number | null>(null);
                                 </div>
 
                                 <DataTable
-                                    :key="tableKey"
                                     :value="combinedData"
                                     tableStyle="min-width: 50rem"
                                     paginator
@@ -1665,14 +1529,108 @@ const tempProgin = ref<number | null>(null);
                                     v-model:filters="filters"
                                     filterDisplay="row"
                                     :loading="loading"
-                                    :globalFilterFields="['item_code']"
+                                    :globalFilterFields="['item_code', 'report_year', ' report_month']"
                                     class="text-md"
-                                    ref="dtDIFF"
+                                    ref="dtBOM"
                                 >
+                                    <Column field="no" sortable header="#" :showFilterMenu="true" v-bind="tbStyle('main')" :rowspan="2"></Column>
+
+                                    <Column
+                                        field="item_code"
+                                        header="Item Code"
+                                        :showFilterMenu="false"
+                                        sortable
+                                        v-bind="tbStyle('main')"
+                                        :rowspan="2"
+                                    >
+                                        <template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search item code"
+                                                class="w-full"
+                                            />
+                                        </template>
+                                    </Column>
+
+                                    <Column field="standard_cost.total_raw_material" sortable header="Total Raw Material" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.standard_cost.total_raw_material).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="standard_cost.total_process" sortable header="Total Process" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.standard_cost.total_process).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="standard_cost.total" sortable header="Total" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.standard_cost.total).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="actual_cost.total_raw_material" sortable header="Total Raw Material" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.actual_cost.total_raw_material).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="actual_cost.total_process" sortable header="Total Process" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.actual_cost.total_process).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="actual_cost.total" sortable header="Total" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.actual_cost.total).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="difference_cost.total_raw_material" sortable header="Total Raw Material" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            <span
+                                                :class="{
+                                                    'text-green-500': data.difference_cost.total_raw_material > 0,
+                                                    'text-red-500': data.difference_cost.total_raw_material < 0,
+                                                }"
+                                            >
+                                                {{ Number(data.difference_cost.total_raw_material).toLocaleString('id-ID') }}
+                                            </span>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="difference_cost.total_process" sortable header="Total Process" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            <span :class="{ 'text-red-500': data.difference_cost.total_process < 0 }">
+                                                {{ Number(data.difference_cost.total_process).toLocaleString('id-ID') }}
+                                            </span>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="difference_cost.total" sortable header="Total" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            <span :class="{ 'text-red-500': data.difference_cost.total < 0 }">
+                                                {{ Number(data.difference_cost.total).toLocaleString('id-ID') }}
+                                            </span>
+                                        </template>
+                                    </Column>
+
                                     <ColumnGroup type="header">
                                         <Row>
-                                            <Column field="no" header="#" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
-                                            <Column field="item_code" header="Item Code" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
+                                            <Column field="no" sortable header="#" v-bind="tbStyle('main')" :rowspan="2"></Column>
+                                            <Column field="item_code" header="Item Code" sortable v-bind="tbStyle('main')" :rowspan="2">
+                                                <template #filter="{ filterModel, filterCallback }">
+                                                    <InputText
+                                                        v-model="filterModel.value"
+                                                        @input="filterCallback()"
+                                                        placeholder="Search item code"
+                                                        class="w-full"
+                                                    />
+                                                </template>
+                                            </Column>
                                             <Column header="Standard Cost" :colspan="3" v-bind="tbStyle('rm')"></Column>
                                             <Column header="Actual Cost" :colspan="3" v-bind="tbStyle('pr')"></Column>
                                             <Column header="Difference Cost" :colspan="3" v-bind="tbStyle('fg')"></Column>
@@ -1691,6 +1649,7 @@ const tempProgin = ref<number | null>(null);
                                                 v-bind="tbStyle('rm')"
                                             ></Column>
                                             <Column field="standard_cost.total" sortable header="Total" v-bind="tbStyle('rm')"></Column>
+
                                             <Column
                                                 field="actual_cost.total_raw_material"
                                                 sortable
@@ -1699,6 +1658,7 @@ const tempProgin = ref<number | null>(null);
                                             ></Column>
                                             <Column field="actual_cost.total_process" sortable header="Total Process" v-bind="tbStyle('pr')"></Column>
                                             <Column field="actual_cost.total" sortable header="Total" v-bind="tbStyle('pr')"></Column>
+
                                             <Column
                                                 field="difference_cost.total_raw_material"
                                                 sortable
@@ -1714,84 +1674,6 @@ const tempProgin = ref<number | null>(null);
                                             <Column field="difference_cost.total" sortable header="Total" v-bind="tbStyle('fg')"></Column>
                                         </Row>
                                     </ColumnGroup>
-
-                                    <Column field="no" v-bind="tbStyle('main')"></Column>
-                                    <Column field="item_code" v-bind="tbStyle('main')">
-                                        <template #filter="{ filterModel, filterCallback }">
-                                            <InputText
-                                                v-model="filterModel.value"
-                                                @input="filterCallback()"
-                                                placeholder="Search item code"
-                                                class="w-full"
-                                            />
-                                        </template>
-                                    </Column>
-                                    <Column field="standard_cost.total_raw_material" sortable v-bind="tbStyle('rm')">
-                                        <template #body="{ data }">
-                                            {{ Number(data.standard_cost.total_raw_material).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-                                    <Column field="standard_cost.total_process" sortable v-bind="tbStyle('rm')">
-                                        <template #body="{ data }">
-                                            {{ Number(data.standard_cost.total_process).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-                                    <Column field="standard_cost.total" sortable v-bind="tbStyle('rm')">
-                                        <template #body="{ data }">
-                                            {{ Number(data.standard_cost.total).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-                                    <Column field="actual_cost.total_raw_material" sortable v-bind="tbStyle('pr')">
-                                        <template #body="{ data }">
-                                            {{ Number(data.actual_cost.total_raw_material).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-                                    <Column field="actual_cost.total_process" sortable v-bind="tbStyle('pr')">
-                                        <template #body="{ data }">
-                                            {{ Number(data.actual_cost.total_process).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-                                    <Column field="actual_cost.total" sortable v-bind="tbStyle('pr')">
-                                        <template #body="{ data }">
-                                            {{ Number(data.actual_cost.total).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-                                    <Column field="difference_cost.total_raw_material" sortable v-bind="tbStyle('fg')">
-                                        <template #body="{ data }">
-                                            <span
-                                                :class="{
-                                                    'text-red-500': data.difference_cost.total_raw_material < 0,
-                                                    'text-green-500': data.difference_cost.total_raw_material > 0,
-                                                }"
-                                            >
-                                                {{ Number(data.difference_cost.total_raw_material).toLocaleString('id-ID') }}
-                                            </span>
-                                        </template>
-                                    </Column>
-                                    <Column field="difference_cost.total_process" sortable v-bind="tbStyle('fg')">
-                                        <template #body="{ data }">
-                                            <span
-                                                :class="{
-                                                    'text-red-500': data.difference_cost.total_process < 0,
-                                                    'text-green-500': data.difference_cost.total_raw_material > 0,
-                                                }"
-                                            >
-                                                {{ Number(data.difference_cost.total_process).toLocaleString('id-ID') }}
-                                            </span>
-                                        </template>
-                                    </Column>
-                                    <Column field="difference_cost.total" sortable v-bind="tbStyle('fg')">
-                                        <template #body="{ data }">
-                                            <span
-                                                :class="{
-                                                    'text-red-500': data.difference_cost.total < 0,
-                                                    'text-green-500': data.difference_cost.total_raw_material > 0,
-                                                }"
-                                            >
-                                                {{ Number(data.difference_cost.total).toLocaleString('id-ID') }}
-                                            </span>
-                                        </template>
-                                    </Column>
                                 </DataTable>
                             </section>
                         </TabPanel>
