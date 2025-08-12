@@ -30,33 +30,6 @@ const loading = ref(false);
 const year = ref();
 const month = ref();
 
-interface CombinedDataItem {
-    no: number;
-    item_code: any;
-    standard_cost: {
-        total_raw_material: any;
-        total_process: any;
-        total: any;
-        month: any;
-        year: any;
-    };
-    actual_cost: {
-        total_raw_material: any;
-        total_process: any;
-        total: any;
-        month: any;
-        year: any;
-    };
-    difference_cost: {
-        total_raw_material: any;
-        total_process: any;
-        total: any;
-    };
-}
-
-// Beri tahu TypeScript bahwa `tableData` akan menyimpan array dari objek-objek ini.
-const tableData = ref<CombinedDataItem[]>([]);
-
 const sc = computed(() =>
     (page.props.sc as any[]).map((sc, index) => {
         const typeChar: string = sc.item_code?.charAt(3) ?? '';
@@ -75,7 +48,6 @@ const sc = computed(() =>
         };
     }),
 );
-const standardCostRaw = ref(page.props.sc);
 
 const ac = computed(() =>
     (page.props.ac as any[]).map((ac, index) => {
@@ -95,201 +67,161 @@ const ac = computed(() =>
         };
     }),
 );
-const actualCostRaw = ref(page.props.ac);
 
-const selectedStandardYear = ref<Date | null>(new Date());
-const selectedStandardMonth = ref<Date | null>(new Date());
-selectedStandardYear.value = new Date(2025, 0, 1); // 0 adalah Januari
-selectedStandardMonth.value = new Date(2025, 0, 1); // 0 adalah Januari
-
-const selectedActualYear = ref<Date | null>(new Date());
-const selectedActualMonth = ref<Date | null>(new Date());
-selectedActualYear.value = new Date(2025, 0, 1); // 0 adalah Januari
-selectedActualMonth.value = new Date(2025, 0, 1); // 0 adalah Januari
-
-watch(selectedActualYear, (newValue) => {
-    if (newValue) {
-        console.log('Actual Cost Year berubah:', newValue.getFullYear());
-    } else {
-        console.log('Actual Cost Year disetel ke null.');
-    }
-    console.log('Nilai combinedData setelah perubahan Actual Year:', combinedData.value);
-});
-
-watch(selectedActualMonth, (newValue) => {
-    if (newValue) {
-        // Nilai bulan (0-11) + 1 untuk mendapatkan bulan (1-12)
-        console.log('Actual Cost Month berubah:', newValue.getMonth() + 1);
-    } else {
-        console.log('Actual Cost Month disetel ke null.');
-    }
-    console.log('Nilai combinedData setelah perubahan Actual Month:', combinedData.value);
-});
-
-const tableKey = ref(0);
-
-watch(
-    [selectedStandardYear, selectedStandardMonth, selectedActualYear, selectedActualMonth],
-    () => {
-        // Pastikan semua tanggal telah dipilih
-        if (!selectedStandardYear.value || !selectedStandardMonth.value || !selectedActualYear.value || !selectedActualMonth.value) {
-            tableData.value = [];
-            return;
-        }
-
-        const standardYear = selectedStandardYear.value.getFullYear();
-        const standardMonth = selectedStandardMonth.value.getMonth() + 1;
-        const actualYear = selectedActualYear.value.getFullYear();
-        const actualMonth = selectedActualMonth.value.getMonth() + 1;
-
-        console.log(`Menganalisis data: Standard ${standardYear}-${standardMonth}, Actual ${actualYear}-${actualMonth}`);
-
-        const filteredStandard = (page.props.sc as any[]).filter((item) => {
-            return item.report_year === standardYear && item.report_month === standardMonth;
-        });
-
-        const filteredActual = (page.props.ac as any[]).filter((item) => {
-            return item.report_year === actualYear && item.report_month === actualMonth;
-        });
-
-        console.log('Jumlah data Standard Cost yang terfilter:', filteredStandard.length);
-        console.log('Jumlah data Actual Cost yang terfilter:', filteredActual.length);
-
-        if (filteredActual.length === 0) {
-            console.warn('Filtered Actual Cost data is empty. Cek ketersediaan data untuk periode yang dipilih.');
-        }
-
-        const standardCostMap = new Map(filteredStandard.map((item) => [item.item_code, item]));
-
-        console.log('Ukuran Standard Cost Map:', standardCostMap.size);
-
-        const mappedData = filteredActual.map((ac_item, index) => {
-            const sc_item = standardCostMap.get(ac_item.item_code);
-
-            if (!sc_item) {
-                console.log(`Item code ${ac_item.item_code} dari Actual Cost tidak ditemukan di Standard Cost Map.`);
-            }
-
-            const standard_cost = sc_item
-                ? {
-                      total_raw_material: sc_item.total_raw_material,
-                      total_process: sc_item.total_process,
-                      total: sc_item.total,
-                      month: sc_item.report_month,
-                      year: sc_item.report_year,
-                  }
-                : {
-                      total_raw_material: 0,
-                      total_process: 0,
-                      total: 0,
-                      month: null,
-                      year: null,
-                  };
-
-            const actual_cost = {
-                total_raw_material: ac_item.total_raw_material,
-                total_process: ac_item.total_process,
-                total: ac_item.total,
-                month: ac_item.report_month,
-                year: ac_item.report_year,
-            };
-
-            const difference_cost = {
-                total_raw_material: standard_cost.total_raw_material - actual_cost.total_raw_material,
-                total_process: standard_cost.total_process - actual_cost.total_process,
-                total: standard_cost.total - actual_cost.total,
-            };
-
-            return {
-                no: index + 1,
-                item_code: ac_item.item_code,
-                standard_cost,
-                actual_cost,
-                difference_cost,
-            };
-        });
-
-        // PENTING: tetapkan nilai `tableData` di sini
-        tableData.value = mappedData;
-        console.log('Data yang dimasukkan ke DataTable:', tableData.value);
-    },
-    { immediate: true },
+const dc = computed(() =>
+    (page.props.dc as any[]).map((dc, index) => ({
+        ...dc,
+    })),
 );
 
 const combinedData = computed(() => {
-    if (!selectedStandardYear.value || !selectedStandardMonth.value || !selectedActualYear.value || !selectedActualMonth.value) {
+    const sc = (page.props.sc || []) as any[];
+    const ac = (page.props.ac || []) as any[];
+    const dc = (page.props.dc || []) as any[];
+
+    if (!Array.isArray(sc) || !Array.isArray(ac) || !Array.isArray(dc)) {
         return [];
     }
 
-    const standardYear = selectedStandardYear.value.getFullYear();
-    const standardMonth = selectedStandardMonth.value.getMonth() + 1;
-    const actualYear = selectedActualYear.value.getFullYear();
-    const actualMonth = selectedActualMonth.value.getMonth() + 1; // Filter data Standard Cost
-
-    console.log(`Menganalisis data: Standard ${standardYear}-${standardMonth}, Actual ${actualYear}-${actualMonth}`);
-
-    const filteredStandard = (page.props.sc as any[]).filter((item) => {
-        return item.report_year === standardYear && item.report_month === standardMonth;
-    }); // Filter data Actual Cost
-
-    const filteredActual = (page.props.ac as any[]).filter((item) => {
-        return item.report_year === actualYear && item.report_month === actualMonth;
+    const standardCostMap = new Map();
+    sc.forEach((item) => {
+        // Gabungkan report_year dan report_month sebagai kunci
+        const key = `${item.report_year}-${item.report_month}-${item.item_code}`;
+        standardCostMap.set(key, item);
     });
 
-    if (filteredActual.length === 0) {
-        console.warn('Filtered Actual Cost data is empty. Cek ketersediaan data untuk periode yang dipilih.');
-    } // Buat map dari filteredStandard untuk pencarian cepat
+    const actualCostMap = new Map();
+    ac.forEach((item) => {
+        // Gabungkan report_year dan report_month sebagai kunci
+        const key = `${item.report_year}-${item.report_month}-${item.item_code}`;
+        actualCostMap.set(key, item);
+    });
 
-    console.log('Jumlah data Standard Cost yang terfilter:', filteredStandard.length);
-    console.log('Jumlah data Actual Cost yang terfilter:', filteredActual.length);
-
-    const standardCostMap = new Map(filteredStandard.map((item) => [item.item_code, item])); // Gabungkan data dan hitung selisih
-
-    console.log('Ukuran Standard Cost Map:', standardCostMap.size);
-
-    return filteredActual.map((ac_item, index) => {
-        const sc_item = standardCostMap.get(ac_item.item_code);
-
-        if (!sc_item) {
-            console.log(`Item code ${ac_item.item_code} dari Actual Cost tidak ditemukan di Standard Cost Map.`);
-        }
-
-        const standard_cost = sc_item
-            ? {
-                  total_raw_material: sc_item.total_raw_material,
-                  total_process: sc_item.total_process,
-                  total: sc_item.total,
-                  month: sc_item.report_month,
-                  year: sc_item.report_year,
-              }
-            : {
-                  total_raw_material: 0,
-                  total_process: 0,
-                  total: 0,
-                  month: null,
-                  year: null,
-              };
-
-        const actual_cost = {
-            total_raw_material: ac_item.total_raw_material,
-            total_process: ac_item.total_process,
-            total: ac_item.total,
-            month: ac_item.report_month,
-            year: ac_item.report_year,
-        };
-
-        const difference_cost = {
-            total_raw_material: standard_cost.total_raw_material - actual_cost.total_raw_material,
-            total_process: standard_cost.total_process - actual_cost.total_process,
-            total: standard_cost.total - actual_cost.total,
-        };
+    const combined = dc.map((dcItem) => {
+        // Buat kunci yang sama untuk pencarian
+        const standardKey = `${dcItem.standard_year}-${dcItem.standard_month}-${dcItem.item_code}`;
+        const actualKey = `${dcItem.actual_year}-${dcItem.actual_month}-${dcItem.item_code}`;
 
         return {
-            no: index + 1,
-            item_code: ac_item.item_code,
-            standard_cost,
-            actual_cost,
-            difference_cost,
+            item_code: dcItem.item_code,
+            standard_cost: standardCostMap.get(standardKey) || { total_raw_material: 0, total_process: 0, total: 0 },
+            actual_cost: actualCostMap.get(actualKey) || { total_raw_material: 0, total_process: 0, total: 0 },
+            difference_cost: dcItem,
+        };
+    });
+
+    return combined.sort((a, b) => a.item_code.localeCompare(b.item_code));
+});
+
+const selectedStandardYear = ref<Date | null>(null);
+const selectedStandardMonth = ref<Date | null>(null);
+const selectedActualYear = ref<Date | null>(null);
+const selectedActualMonth = ref<Date | null>(null);
+
+interface StandardPeriod {
+    name: string;
+    code: string;
+}
+
+interface ActualPeriod {
+    name: string;
+    code: string;
+}
+
+const selectStandardPeriod = ref<StandardPeriod | null>(null); // Inisialisasi dengan tipe data yang benar
+const selectActualPeriod = ref<ActualPeriod | null>(null); // Inisialisasi dengan tipe data yang benar
+
+// Watcher untuk menghubungkan Select ke filters
+watch(selectStandardPeriod, (newValue) => {
+    if (newValue) {
+        // Pisahkan string 'code' menjadi tahun dan bulan
+        const [year, month] = newValue.code.split('-').map(Number);
+
+        // Perbarui filters
+        filters.value.report_year.value = year;
+        filters.value.report_month.value = month;
+    } else {
+        // Reset filter jika Select dikosongkan
+        filters.value.report_year.value = null;
+        filters.value.report_month.value = null;
+    }
+});
+
+watch(selectActualPeriod, (newValue) => {
+    if (newValue) {
+        // Pisahkan string 'code' menjadi tahun dan bulan
+        const [year, month] = newValue.code.split('-').map(Number);
+
+        // Perbarui filters
+        filters.value.report_year.value = year;
+        filters.value.report_month.value = month;
+    } else {
+        // Reset filter jika Select dikosongkan
+        filters.value.report_year.value = null;
+        filters.value.report_month.value = null;
+    }
+});
+
+const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const listStandardPeriod = computed(() => {
+    // 1. Ambil semua kombinasi tahun dan bulan yang tersedia
+    const periods = (page.props.sc as any[]).map((item) => ({
+        year: item.report_year,
+        month: item.report_month,
+    }));
+
+    const uniquePeriodsMap = new Map<string, { year: number; month: number }>();
+    periods.forEach((p) => {
+        const key = `${p.year}-${p.month}`;
+        uniquePeriodsMap.set(key, p);
+    });
+
+    const uniquePeriods = Array.from(uniquePeriodsMap.values()).sort((a, b) => {
+        if (a.year !== b.year) {
+            return a.year - b.year;
+        }
+        return a.month - b.month;
+    });
+
+    return uniquePeriods.map((p) => {
+        const formattedYear = String(p.year).slice(2);
+        const formattedMonth = monthNames[p.month - 1];
+
+        return {
+            name: `${formattedMonth}-${formattedYear}`,
+            code: `${p.year}-${p.month}`, // Code yang unik untuk identifikasi
+        };
+    });
+});
+
+const listActualPeriod = computed(() => {
+    // 1. Ambil semua kombinasi tahun dan bulan yang tersedia
+    const periods = (page.props.ac as any[]).map((item) => ({
+        year: item.report_year,
+        month: item.report_month,
+    }));
+
+    const uniquePeriodsMap = new Map<string, { year: number; month: number }>();
+    periods.forEach((p) => {
+        const key = `${p.year}-${p.month}`;
+        uniquePeriodsMap.set(key, p);
+    });
+
+    const uniquePeriods = Array.from(uniquePeriodsMap.values()).sort((a, b) => {
+        if (a.year !== b.year) {
+            return a.year - b.year;
+        }
+        return a.month - b.month;
+    });
+
+    return uniquePeriods.map((p) => {
+        const formattedYear = String(p.year).slice(2);
+        const formattedMonth = monthNames[p.month - 1];
+
+        return {
+            name: `${formattedMonth}-${formattedYear}`,
+            code: `${p.year}-${p.month}`, // Code yang unik untuk identifikasi
         };
     });
 });
@@ -364,8 +296,6 @@ function tbStyle(section: 'main' | 'rm' | 'pr' | 'wip' | 'fg') {
     };
 }
 
-// const bom = ref<any[]>([]);
-
 const type = ['All', 'Disc', 'Sidering', 'Wheel'];
 
 function getTypeClass(priority: string): string | undefined {
@@ -421,7 +351,7 @@ const updateConstDialog = ref(false);
 type UpdateStatus = 'idle' | 'updating' | 'done';
 const updateStatus = ref<UpdateStatus>('idle');
 const userName = computed(() => page.props.auth?.user?.name ?? '');
-const updateType = ref<'standardCost' | 'actualCost' | 'opgin' | null>(null);
+const updateType = ref<'standardCost' | 'actualCost' | 'diffCost' | 'opgin' | null>(null);
 
 const saveOpexProgin = () => {
     if (tempOpex.value !== null && tempProgin.value !== null) {
@@ -435,7 +365,7 @@ const cancelOpexProgin = () => {
     updateConstDialog.value = false; // Tutup dialog
 };
 
-function showUpdateDialog(type: 'standardCost' | 'actualCost' | 'opgin') {
+function showUpdateDialog(type: 'standardCost' | 'actualCost' | 'opgin' | 'diffCost') {
     updateType.value = type;
     updateStatus.value = 'idle';
 
@@ -454,17 +384,48 @@ function showUpdateDialog(type: 'standardCost' | 'actualCost' | 'opgin') {
 
 function confirmUpdate() {
     if (!updateType.value) return;
-    if (!updateType.value) return;
 
-    if (!year.value || !month.value) {
-        toast.add({
-            severity: 'warn',
-            summary: 'Peringatan',
-            group: 'br',
-            detail: 'Silakan pilih tahun dan bulan terlebih dahulu',
-            life: 3000,
-        });
-        return;
+    let payload = {}; // Inisialisasi payload di awal
+
+    if (updateType.value !== 'diffCost') {
+        if (!year.value || !month.value) {
+            toast.add({
+                severity: 'warn',
+                summary: 'Peringatan',
+                group: 'br',
+                detail: 'Silakan pilih tahun dan bulan terlebih dahulu',
+                life: 3000,
+            });
+            return;
+        }
+
+        // Isi payload untuk tipe selain 'diffCost'
+        payload = {
+            year: year.value.getFullYear(),
+            month: month.value.getMonth() + 1,
+        };
+    } else if (updateType.value === 'diffCost') {
+        // Logika validasi dan payload untuk 'diffCost'
+        if (!selectStandardPeriod.value || !selectActualPeriod.value) {
+            toast.add({
+                severity: 'warn',
+                summary: 'Peringatan',
+                group: 'br',
+                detail: 'Silakan pilih periode standard dan actual terlebih dahulu',
+                life: 3000,
+            });
+            return;
+        }
+
+        const [standardYear, standardMonth] = selectStandardPeriod.value.code.split('-');
+        const [actualYear, actualMonth] = selectActualPeriod.value.code.split('-');
+
+        payload = {
+            standard_year: standardYear,
+            standard_month: standardMonth,
+            actual_year: actualYear,
+            actual_month: actualMonth,
+        };
     }
 
     updateStatus.value = 'updating';
@@ -473,27 +434,20 @@ function confirmUpdate() {
     const routes = {
         standardCost: 'bom.updateSC',
         actualCost: 'bom.updateAC',
+        diffCost: 'bom.updateDC',
         opgin: 'bom.updateOpGin',
     };
 
     const messages = {
         standardCost: 'Standard Cost',
         actualCost: 'Actual Cost',
+        diffCost: 'Difference Cost',
         opgin: 'OPEX / Profit Margin',
-    };
-
-    const payload = {
-        // Karena DatePicker dengan view="year" dan dateFormat="yy"
-        // akan mengembalikan objek Date, kita ambil tahunnya
-        year: year.value.getFullYear(),
-        // Begitu juga dengan bulan. getMonth() mengembalikan 0-11,
-        // jadi kita tambahkan 1 agar sesuai dengan format 1-12
-        month: month.value.getMonth() + 1,
     };
 
     router.post(
         route(routes[type]),
-        payload, // Menggunakan payload baru yang berisi tahun dan bulan
+        payload, // payload kini selalu terdefinisi
         {
             preserveScroll: true,
             preserveState: true,
@@ -574,8 +528,14 @@ const tempProgin = ref<number | null>(null);
                 </div>
             </div>
 
-            <Dialog v-model:visible="updateReportDialog" header="Update Confirmation" modal class="w-[30rem]" :closable="false" @hide="closeDialog">
-                <!-- Idle state -->
+            <Dialog
+                v-model:visible="updateReportDialog"
+                header="Update Confirmation"
+                modal
+                class="w-11/12 md:w-1/2 lg:w-1/3"
+                :closable="false"
+                @hide="closeDialog"
+            >
                 <template v-if="updateStatus === 'idle'">
                     <div class="space-y-4">
                         <p>
@@ -583,9 +543,8 @@ const tempProgin = ref<number | null>(null);
                             >,
                         </p>
                         <p>Are you sure you want to update the report?</p>
-                        <!-- Menambahkan dropdown untuk memilih tahun dan bulan -->
-                        <div class="mt-6 mb-2 font-semibold">Select Period:</div>
-                        <div class="flex space-x-4">
+                        <div v-if="updateType !== 'diffCost'" class="mt-6 mb-2 font-semibold">Select Period:</div>
+                        <div v-if="updateType !== 'diffCost'" class="flex space-x-4">
                             <div class="flex-1">
                                 <label for="report-month" class="block text-sm font-medium text-gray-400">Month</label>
                                 <DatePicker v-model="month" view="month" dateFormat="mm" />
@@ -595,8 +554,33 @@ const tempProgin = ref<number | null>(null);
                                 <DatePicker v-model="year" view="year" dateFormat="yy" />
                             </div>
                         </div>
-                        <p class="mt-6 mb-2 font-semibold">Make sure this data is up to date:</p>
-                        <div class="overflow-x-auto">
+
+                        <div v-if="updateType === 'diffCost'" class="mt-6 mb-2 font-semibold">Select Report Period:</div>
+                        <div v-if="updateType === 'diffCost'" class="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4">
+                            <div class="flex-1">
+                                <label for="standard-month" class="block text-sm font-medium text-gray-400">Standard Period</label>
+                                <Select
+                                    v-model="selectStandardPeriod"
+                                    :options="listStandardPeriod"
+                                    optionLabel="name"
+                                    placeholder="Select a period"
+                                    class="w-64"
+                                />
+                            </div>
+                            <div class="flex-1">
+                                <label for="standard-month" class="block text-sm font-medium text-gray-400">Actual Period</label>
+                                <Select
+                                    v-model="selectActualPeriod"
+                                    :options="listActualPeriod"
+                                    optionLabel="name"
+                                    placeholder="Select a period"
+                                    class="w-64"
+                                />
+                            </div>
+                        </div>
+
+                        <p v-if="updateType !== 'diffCost'" class="mt-6 mb-2 font-semibold">Make sure this data is up to date:</p>
+                        <div v-if="updateType !== 'diffCost'" class="overflow-x-auto">
                             <table v-if="updateType === 'standardCost' || 'actualCost'" class="w-full border-collapse text-left">
                                 <thead>
                                     <tr>
@@ -746,12 +730,12 @@ const tempProgin = ref<number | null>(null);
 
                                         <!-- OPEX and Profit Margin Section -->
                                         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-                                            <div class="flex items-center gap-2">
-                                                <label for="opex" class="text-sm font-medium whitespace-nowrap">OPEX :</label>
+                                            <div class="flex flex-col gap-2">
+                                                <label for="opex" class="block text-sm font-medium text-gray-400">OPEX :</label>
                                                 <InputNumber v-model="opexDef" inputId="percent" suffix="%" fluid disabled class="w-20" />
                                             </div>
-                                            <div class="flex items-center gap-2">
-                                                <label for="progin" class="text-sm font-medium whitespace-nowrap">Profit Margin :</label>
+                                            <div class="flex flex-col gap-2">
+                                                <label for="progin" class="block text-sm font-medium text-gray-400">Profit Margin :</label>
                                                 <InputNumber v-model="proginDef" inputId="percent" suffix="%" fluid disabled class="w-20" />
                                             </div>
                                             <Button
@@ -763,17 +747,19 @@ const tempProgin = ref<number | null>(null);
                                             />
                                         </div>
 
-                                        <!-- Date Pickers -->
+                                        <!-- Select -->
                                         <div class="flex gap-2">
                                             <div class="flex-1">
-                                                <label for="report-month" class="block text-sm font-medium text-gray-400">Month Filter</label>
-                                                <DatePicker v-model="selectedStandardMonth" view="month" dateFormat="mm" class="w-full" />
-                                            </div>
-                                            <div class="flex-1">
-                                                <div class="flex-1">
-                                                    <label for="report-year" class="block text-sm font-medium text-gray-400">Year Filter</label>
-                                                    <DatePicker v-model="selectedStandardYear" view="year" dateFormat="yy" class="w-full" />
-                                                </div>
+                                                <label for="report-period" class="block py-2 text-sm font-medium text-gray-400"
+                                                    >Select Period :</label
+                                                >
+                                                <Select
+                                                    v-model="selectStandardPeriod"
+                                                    :options="listStandardPeriod"
+                                                    optionLabel="name"
+                                                    placeholder="Select a period"
+                                                    class="w-64"
+                                                />
                                             </div>
                                         </div>
                                     </div>
@@ -1207,12 +1193,12 @@ const tempProgin = ref<number | null>(null);
 
                                         <!-- OPEX and Profit Margin Section -->
                                         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-                                            <div class="flex items-center gap-2">
-                                                <label for="opex" class="text-sm font-medium whitespace-nowrap">OPEX :</label>
+                                            <div class="flex flex-col gap-2">
+                                                <label for="opex" class="block text-sm font-medium text-gray-400">OPEX :</label>
                                                 <InputNumber v-model="opexDef" inputId="percent" suffix="%" fluid disabled class="w-20" />
                                             </div>
-                                            <div class="flex items-center gap-2">
-                                                <label for="progin" class="text-sm font-medium whitespace-nowrap">Profit Margin :</label>
+                                            <div class="flex flex-col gap-2">
+                                                <label for="progin" class="block text-sm font-medium text-gray-400">Profit Margin :</label>
                                                 <InputNumber v-model="proginDef" inputId="percent" suffix="%" fluid disabled class="w-20" />
                                             </div>
                                             <Button
@@ -1227,14 +1213,16 @@ const tempProgin = ref<number | null>(null);
                                         <!-- Date Pickers -->
                                         <div class="flex gap-2">
                                             <div class="flex-1">
-                                                <label for="report-month" class="block text-sm font-medium text-gray-400">Month Filter</label>
-                                                <DatePicker v-model="selectedActualMonth" view="month" dateFormat="mm" class="w-full" />
-                                            </div>
-                                            <div class="flex-1">
-                                                <div class="flex-1">
-                                                    <label for="report-year" class="block text-sm font-medium text-gray-400">Year Filter</label>
-                                                    <DatePicker v-model="selectedActualYear" view="year" dateFormat="yy" class="w-full" />
-                                                </div>
+                                                <label for="report-period" class="block py-2 text-sm font-medium text-gray-400"
+                                                    >Select Period :</label
+                                                >
+                                                <Select
+                                                    v-model="selectActualPeriod"
+                                                    :options="listActualPeriod"
+                                                    optionLabel="name"
+                                                    placeholder="Select a period"
+                                                    class="w-64"
+                                                />
                                             </div>
                                         </div>
                                     </div>
@@ -1626,33 +1614,46 @@ const tempProgin = ref<number | null>(null);
                             <section class="p-2">
                                 <div class="mb-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                                     <!-- Title -->
-                                    <h2 class="text-3xl font-semibold text-gray-900 hover:text-indigo-500 dark:text-white">Difference Cost</h2>
+                                    <h2 class="text-3xl font-semibold text-gray-900 hover:text-indigo-500 dark:text-white">Difference</h2>
 
                                     <!-- Main Controls Container -->
                                     <div class="flex flex-col gap-4 lg:flex-row lg:items-center">
-                                        <div class="flex gap-2">
-                                            <div class="flex-1">
-                                                <label class="block text-sm font-medium text-gray-400">Standard Cost Year</label>
-                                                <DatePicker v-model="selectedStandardYear" view="year" dateFormat="yy" class="w-full" />
-                                            </div>
-                                            <div class="flex-1">
+                                        <!-- Export and Update Report Buttons -->
+                                        <div class="flex flex-col gap-2 sm:flex-row sm:gap-4">
+                                            <Button
+                                                icon="pi pi-sync"
+                                                label=" Calcuate Difference?"
+                                                unstyled
+                                                class="w-full cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-cyan-700 sm:w-auto"
+                                                @click="showUpdateDialog('diffCost')"
+                                            />
+                                        </div>
+
+                                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                                            <div class="flex flex-col gap-1">
                                                 <label class="block text-sm font-medium text-gray-400">Standard Cost Month</label>
                                                 <DatePicker v-model="selectedStandardMonth" view="month" dateFormat="mm" class="w-full" />
                                             </div>
-                                            <div class="flex-1">
-                                                <label class="block text-sm font-medium text-gray-400">Actual Cost Year</label>
-                                                <DatePicker v-model="selectedActualYear" view="year" dateFormat="yy" class="w-full" />
+
+                                            <div class="flex flex-col gap-1">
+                                                <label class="block text-sm font-medium text-gray-400">Standard Cost Year</label>
+                                                <DatePicker v-model="selectedStandardYear" view="year" dateFormat="yy" class="w-full" />
                                             </div>
-                                            <div class="flex-1">
+
+                                            <div class="flex flex-col gap-1">
                                                 <label class="block text-sm font-medium text-gray-400">Actual Cost Month</label>
                                                 <DatePicker v-model="selectedActualMonth" view="month" dateFormat="mm" class="w-full" />
+                                            </div>
+
+                                            <div class="flex flex-col gap-1">
+                                                <label class="block text-sm font-medium text-gray-400">Actual Cost Year</label>
+                                                <DatePicker v-model="selectedActualYear" view="year" dateFormat="yy" class="w-full" />
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 <DataTable
-                                    :key="tableKey"
                                     :value="combinedData"
                                     tableStyle="min-width: 50rem"
                                     paginator
@@ -1726,7 +1727,7 @@ const tempProgin = ref<number | null>(null);
                                             />
                                         </template>
                                     </Column>
-                                    <Column field="standard_cost.total_raw_material" sortable v-bind="tbStyle('rm')">
+                                    <Column field="standard_costtotal_raw_material" sortable v-bind="tbStyle('rm')">
                                         <template #body="{ data }">
                                             {{ Number(data.standard_cost.total_raw_material).toLocaleString('id-ID') }}
                                         </template>

@@ -364,14 +364,14 @@ function closeDialog(type: 'pc' | null) {
                         </div>
                         <div class="flex justify-end gap-3 pt-4">
                             <Button
-                                label="Cancel"
+                                label=" Cancel"
                                 icon="pi pi-times"
                                 @click="closeDialog(null)"
                                 unstyled
                                 class="w-48 cursor-pointer rounded-xl bg-red-500 px-4 py-2 text-center font-bold text-slate-900 hover:bg-red-700"
                             />
                             <Button
-                                label="Yes, Update"
+                                label=" Yes, Update"
                                 icon="pi pi-check"
                                 :loading="isUpdating"
                                 @click="confirmUpdate"

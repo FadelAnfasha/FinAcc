@@ -180,9 +180,9 @@ class DatabaseSeeder extends Seeder
                 'priority' => 'high',
                 'created_at' => '2025-07-29',
                 'description' => 'Modify dialog after updating master data.',
-                'status' => 'in_progress',
+                'status' => 'finish',
                 'attachment' => null,
-                'updated_at' => '2025-07-29',
+                'updated_at' => '2025-08-05',
             ],
             [
                 'name' => 'Tuti',
@@ -190,10 +190,33 @@ class DatabaseSeeder extends Seeder
                 'priority' => 'high',
                 'created_at' => '2025-07-29',
                 'description' => 'Creating new input for OPEX dan Profit Margin in Standart Cost.',
+                'status' => 'finish',
+                'attachment' => null,
+                'updated_at' => '2025-08-07',
+            ],
+
+            [
+                'name' => 'Tuti',
+                'npk' => '140025',
+                'priority' => 'high',
+                'created_at' => '2025-08-06',
+                'description' => 'Creating new menu for Actual Cost.',
+                'status' => 'Finish',
+                'attachment' => null,
+                'updated_at' => '2025-08-07',
+            ],
+
+            [
+                'name' => 'Tuti',
+                'npk' => '140025',
+                'priority' => 'high',
+                'created_at' => '2025-08-07',
+                'description' => 'Create new menu for Calculating Difference between Standard vs Actual Cost.',
                 'status' => 'in_progress',
                 'attachment' => null,
-                'updated_at' => '2025-07-29',
+                'updated_at' => '2025-08-07',
             ],
+
         ];
 
 

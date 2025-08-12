@@ -86,6 +86,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('actual_costs');
+        Schema::dropIfExists('actual_cost');
     }
 };

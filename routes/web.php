@@ -80,7 +80,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('/bom/update/SC', [BOMController::class, 'updateStandardCost'])->name('bom.updateSC');
     Route::post('/bom/update/AC', [BOMController::class, 'updateActualCost'])->name('bom.updateAC');
-
+    Route::post('/bom/update/DC', [BOMController::class, 'updateDifferenceCost'])->name('bom.updateDC');
 
     Route::get('/bom/previewSC/{item_code}', action: [BOMController::class, 'previewSC'])->name('preview.sc');
     Route::get('/bom/previewAC/{item_code}', action: [BOMController::class, 'previewAC'])->name('preview.ac');

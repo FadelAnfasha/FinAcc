@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ActualCost;
 use App\Models\BillOfMaterial;
+use App\Models\DifferenceCost;
 use App\Models\ProcessCost;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -67,6 +68,7 @@ class BOMController extends Controller
         // $sc = StandardCost::take('10')->get();
         $sc = StandardCost::with('bom')->get();
         $ac = ActualCost::with('bom')->get();
+        $dc = DifferenceCost::all();
 
         $lastUpdate = [];
 
@@ -107,7 +109,8 @@ class BOMController extends Controller
         return Inertia::render("bom/report", [
             'sc' => $sc,
             'ac' => $ac,
-            'lastMaster' => $lastUpdate
+            'dc' => $dc,
+            'lastMaster' => $lastUpdate,
         ]);
     }
 
@@ -814,6 +817,48 @@ class BOMController extends Controller
             );
         }
         return redirect()->route('bom.report');
+    }
+
+    public function updateDifferenceCost(Request $request)
+    {
+        // dd($request->all());
+        $validatedData = $request->validate([
+            'standard_year' => 'required',
+            'standard_month' => 'required|min:1|max:12',
+            'actual_year' => 'required',
+            'actual_month' => 'required|min:1|max:12',
+        ]);
+        // Ambil data Standard Cost berdasarkan tahun dan bulan
+        $standardCost = StandardCost::where('report_year', $validatedData['standard_year'])
+            ->where('report_month', $validatedData['standard_month'])
+            ->get();
+
+        $actualCost = ActualCost::where('report_year', $validatedData['actual_year'])
+            ->where('report_month', $validatedData['actual_month'])
+            ->get();
+
+        $differenceCosts = [];
+        foreach ($standardCost as $sc) {
+            $ac = $actualCost->firstWhere('item_code', $sc->item_code);
+
+            if ($ac) {
+                $differenceCosts[] = [
+                    'item_code' => $sc->item_code,
+                    'standard_year' => $validatedData['standard_year'],
+                    'standard_month' => $validatedData['standard_month'],
+                    'actual_year' => $validatedData['actual_year'],
+                    'actual_month' => $validatedData['actual_month'],
+                    'total_raw_material' => $sc->total_raw_material - $ac->total_raw_material,
+                    'total_process' => $sc->total_process - $ac->total_process,
+                    'total' => $sc->total - $ac->total,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+        }
+
+        // Simpan ke database menggunakan upsert
+        DifferenceCost::upsert($differenceCosts, ['item_code', 'standard_year', 'standard_month', 'actual_year', 'actual_month'], ['total_raw_material', 'total_process', 'total']);
     }
 
     public function previewSC(Request $request, string $item_code)
