@@ -201,7 +201,7 @@ class DatabaseSeeder extends Seeder
                 'priority' => 'high',
                 'created_at' => '2025-08-06',
                 'description' => 'Creating new menu for Actual Cost.',
-                'status' => 'Finish',
+                'status' => 'finish',
                 'attachment' => null,
                 'updated_at' => '2025-08-07',
             ],
@@ -212,9 +212,9 @@ class DatabaseSeeder extends Seeder
                 'priority' => 'high',
                 'created_at' => '2025-08-07',
                 'description' => 'Create new menu for Calculating Difference between Standard vs Actual Cost.',
-                'status' => 'in_progress',
+                'status' => 'finish',
                 'attachment' => null,
-                'updated_at' => '2025-08-07',
+                'updated_at' => '2025-08-13',
             ],
 
         ];

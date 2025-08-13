@@ -25,7 +25,7 @@ const toast = useToast();
 const page = usePage();
 const dtSC = ref();
 const dtAC = ref();
-const dtDIFF = ref(null);
+const dtDIFF = ref();
 const loading = ref(false);
 const year = ref();
 const month = ref();
@@ -74,6 +74,18 @@ const dc = computed(() =>
     })),
 );
 
+const makePeriod = (year: number, month: number) => {
+    // Buat objek Date untuk mendapatkan nama bulan singkat
+    const date = new Date(year, month - 1);
+    const monthName = date.toLocaleString('en-US', { month: 'short' });
+
+    // Ambil dua digit terakhir dari tahun
+    const yearDigits = String(year).slice(-2);
+
+    // Gabungkan dengan tanda hubung secara manual
+    return `${monthName}-${yearDigits}`;
+};
+
 const combinedData = computed(() => {
     const sc = (page.props.sc || []) as any[];
     const ac = (page.props.ac || []) as any[];
@@ -83,40 +95,40 @@ const combinedData = computed(() => {
         return [];
     }
 
+    // Fungsi untuk buat period dari tahun & bulan
+
     const standardCostMap = new Map();
     sc.forEach((item) => {
-        // Gabungkan report_year dan report_month sebagai kunci
         const key = `${item.report_year}-${item.report_month}-${item.item_code}`;
         standardCostMap.set(key, item);
     });
 
     const actualCostMap = new Map();
     ac.forEach((item) => {
-        // Gabungkan report_year dan report_month sebagai kunci
         const key = `${item.report_year}-${item.report_month}-${item.item_code}`;
         actualCostMap.set(key, item);
     });
 
     const combined = dc.map((dcItem) => {
-        // Buat kunci yang sama untuk pencarian
         const standardKey = `${dcItem.standard_year}-${dcItem.standard_month}-${dcItem.item_code}`;
         const actualKey = `${dcItem.actual_year}-${dcItem.actual_month}-${dcItem.item_code}`;
 
         return {
             item_code: dcItem.item_code,
+
+            // Cost data
             standard_cost: standardCostMap.get(standardKey) || { total_raw_material: 0, total_process: 0, total: 0 },
             actual_cost: actualCostMap.get(actualKey) || { total_raw_material: 0, total_process: 0, total: 0 },
             difference_cost: dcItem,
+
+            // Period string
+            standardPeriod: makePeriod(dcItem.standard_year, dcItem.standard_month),
+            actualPeriod: makePeriod(dcItem.actual_year, dcItem.actual_month),
         };
     });
 
     return combined.sort((a, b) => a.item_code.localeCompare(b.item_code));
 });
-
-const selectedStandardYear = ref<Date | null>(null);
-const selectedStandardMonth = ref<Date | null>(null);
-const selectedActualYear = ref<Date | null>(null);
-const selectedActualMonth = ref<Date | null>(null);
 
 interface StandardPeriod {
     name: string;
@@ -138,12 +150,14 @@ watch(selectStandardPeriod, (newValue) => {
         const [year, month] = newValue.code.split('-').map(Number);
 
         // Perbarui filters
-        filters.value.report_year.value = year;
-        filters.value.report_month.value = month;
+        filtersStandard.value.report_year.value = year;
+        filtersStandard.value.report_month.value = month;
+        filtersDifference.value.standardPeriod.value = makePeriod(year, month);
     } else {
         // Reset filter jika Select dikosongkan
-        filters.value.report_year.value = null;
-        filters.value.report_month.value = null;
+        filtersStandard.value.report_year.value = null;
+        filtersStandard.value.report_month.value = null;
+        filtersDifference.value.standardPeriod.value = null;
     }
 });
 
@@ -153,12 +167,14 @@ watch(selectActualPeriod, (newValue) => {
         const [year, month] = newValue.code.split('-').map(Number);
 
         // Perbarui filters
-        filters.value.report_year.value = year;
-        filters.value.report_month.value = month;
+        filtersActual.value.report_year.value = year;
+        filtersActual.value.report_month.value = month;
+        filtersDifference.value.actualPeriod.value = makePeriod(year, month);
     } else {
         // Reset filter jika Select dikosongkan
-        filters.value.report_year.value = null;
-        filters.value.report_month.value = null;
+        filtersActual.value.report_year.value = null;
+        filtersActual.value.report_month.value = null;
+        filtersDifference.value.actualPeriod.value = null;
     }
 });
 
@@ -226,12 +242,33 @@ const listActualPeriod = computed(() => {
     });
 });
 
-const filters = ref({
+const filtersStandard = ref({
     item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
     type_name: { value: null, matchMode: FilterMatchMode.EQUALS },
     'bom.description': { value: null, matchMode: FilterMatchMode.CONTAINS },
     report_year: { value: null as number | null, matchMode: FilterMatchMode.EQUALS },
     report_month: { value: null as number | null, matchMode: FilterMatchMode.EQUALS },
+});
+
+const filtersActual = ref({
+    item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    type_name: { value: null, matchMode: FilterMatchMode.EQUALS },
+    'bom.description': { value: null, matchMode: FilterMatchMode.CONTAINS },
+    report_year: { value: null as number | null, matchMode: FilterMatchMode.EQUALS },
+    report_month: { value: null as number | null, matchMode: FilterMatchMode.EQUALS },
+});
+
+const filtersDifference = ref({
+    item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    type_name: { value: null, matchMode: FilterMatchMode.EQUALS },
+    'bom.description': { value: null, matchMode: FilterMatchMode.CONTAINS },
+    standardPeriod: { value: null as string | null, matchMode: FilterMatchMode.EQUALS },
+    actualPeriod: { value: null as string | null, matchMode: FilterMatchMode.EQUALS },
+
+    standard_year: { value: null as number | null, matchMode: FilterMatchMode.EQUALS },
+    standard_month: { value: null as number | null, matchMode: FilterMatchMode.EQUALS },
+    actual_year: { value: null as number | null, matchMode: FilterMatchMode.EQUALS },
+    actual_month: { value: null as number | null, matchMode: FilterMatchMode.EQUALS },
 });
 
 const getMonthName = (monthNumber: number): string => {
@@ -243,43 +280,48 @@ const getMonthName = (monthNumber: number): string => {
     return monthNames[monthNumber - 1];
 };
 
-watch(selectedStandardYear, (newValue: Date | null) => {
-    if (newValue instanceof Date) {
-        // This check is now valid because newValue can be a Date
-        filters.value.report_year.value = newValue.getFullYear();
-    } else {
-        filters.value.report_year.value = null;
-    }
-});
+// const selectedStandardYear = ref<Date | null>(null);
+// const selectedStandardMonth = ref<Date | null>(null);
+// const selectedActualYear = ref<Date | null>(null);
+// const selectedActualMonth = ref<Date | null>(null);
 
-watch(selectedStandardMonth, (newValue: Date | null) => {
-    if (newValue instanceof Date) {
-        // .getMonth() mengembalikan nilai 0-11.
-        // Jika data Anda 1-12, tambahkan +1.
-        filters.value.report_month.value = newValue.getMonth() + 1;
-    } else {
-        filters.value.report_month.value = null;
-    }
-});
+// watch(selectedStandardYear, (newValue: Date | null) => {
+//     if (newValue instanceof Date) {
+//         // This check is now valid because newValue can be a Date
+//         filters.value.report_year.value = newValue.getFullYear();
+//     } else {
+//         filters.value.report_year.value = null;
+//     }
+// });
 
-watch(selectedActualYear, (newValue: Date | null) => {
-    if (newValue instanceof Date) {
-        // This check is now valid because newValue can be a Date
-        filters.value.report_year.value = newValue.getFullYear();
-    } else {
-        filters.value.report_year.value = null;
-    }
-});
+// watch(selectedStandardMonth, (newValue: Date | null) => {
+//     if (newValue instanceof Date) {
+//         // .getMonth() mengembalikan nilai 0-11.
+//         // Jika data Anda 1-12, tambahkan +1.
+//         filters.value.report_month.value = newValue.getMonth() + 1;
+//     } else {
+//         filters.value.report_month.value = null;
+//     }
+// });
 
-watch(selectedActualMonth, (newValue: Date | null) => {
-    if (newValue instanceof Date) {
-        // .getMonth() mengembalikan nilai 0-11.
-        // Jika data Anda 1-12, tambahkan +1.
-        filters.value.report_month.value = newValue.getMonth() + 1;
-    } else {
-        filters.value.report_month.value = null;
-    }
-});
+// watch(selectedActualYear, (newValue: Date | null) => {
+//     if (newValue instanceof Date) {
+//         // This check is now valid because newValue can be a Date
+//         filters.value.report_year.value = newValue.getFullYear();
+//     } else {
+//         filters.value.report_year.value = null;
+//     }
+// });
+
+// watch(selectedActualMonth, (newValue: Date | null) => {
+//     if (newValue instanceof Date) {
+//         // .getMonth() mengembalikan nilai 0-11.
+//         // Jika data Anda 1-12, tambahkan +1.
+//         filters.value.report_month.value = newValue.getMonth() + 1;
+//     } else {
+//         filters.value.report_month.value = null;
+//     }
+// });
 
 function tbStyle(section: 'main' | 'rm' | 'pr' | 'wip' | 'fg') {
     const styles = {
@@ -317,7 +359,7 @@ function capitalize(text: string): string {
     return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-function exportCSV(type: 'standardCost' | 'actualCost') {
+function exportCSV(type: 'standardCost' | 'actualCost' | 'diffCost') {
     // Periksa apakah tipenya 'standardCost' DAN ref dtSC sudah ada
     if (type === 'standardCost' && dtSC.value) {
         const exportFilename = `Bill-of-Material-StandardCost-${new Date().toISOString().slice(0, 10)}.csv`;
@@ -327,6 +369,9 @@ function exportCSV(type: 'standardCost' | 'actualCost') {
     else if (type === 'actualCost' && dtAC.value) {
         const exportFilename = `Bill-of-Material-ActualCost-${new Date().toISOString().slice(0, 10)}.csv`;
         dtAC.value.exportCSV({ selectionOnly: false, filename: exportFilename });
+    } else if (type === 'diffCost' && dtAC.value) {
+        const exportFilename = `Bill-of-Material-DiffCost-${new Date().toISOString().slice(0, 10)}.csv`;
+        dtDIFF.value.exportCSV({ selectionOnly: false, filename: exportFilename });
     }
 }
 
@@ -696,7 +741,7 @@ const tempProgin = ref<number | null>(null);
             <div class="mx-26 mb-26">
                 <Tabs value="0">
                     <TabList>
-                        <Tab value="0">Standard Cost 2025</Tab>
+                        <Tab value="0">Standard Cost</Tab>
                         <Tab value="1">Actual Cost</Tab>
                         <Tab value="2">Difference</Tab>
                     </TabList>
@@ -783,7 +828,7 @@ const tempProgin = ref<number | null>(null);
                                     columnResizeMode="expand"
                                     showGridlines
                                     removableSort
-                                    v-model:filters="filters"
+                                    v-model:filters="filtersStandard"
                                     filterDisplay="row"
                                     :loading="loading"
                                     :globalFilterFields="['item_code', 'type_name', 'description', 'report_year', 'report_month']"
@@ -1169,7 +1214,7 @@ const tempProgin = ref<number | null>(null);
                             <section class="p-2">
                                 <div class="mb-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                                     <!-- Title -->
-                                    <h2 class="text-3xl font-semibold text-gray-900 hover:text-indigo-500 dark:text-white">Standard Cost</h2>
+                                    <h2 class="text-3xl font-semibold text-gray-900 hover:text-indigo-500 dark:text-white">Actual Cost</h2>
 
                                     <!-- Main Controls Container -->
                                     <div class="flex flex-col gap-4 lg:flex-row lg:items-center">
@@ -1246,7 +1291,7 @@ const tempProgin = ref<number | null>(null);
                                     columnResizeMode="expand"
                                     showGridlines
                                     removableSort
-                                    v-model:filters="filters"
+                                    v-model:filters="filtersActual"
                                     filterDisplay="row"
                                     :loading="loading"
                                     :globalFilterFields="['item_code', 'type_name', 'description', 'report_year', 'report_month']"
@@ -1621,6 +1666,13 @@ const tempProgin = ref<number | null>(null);
                                         <!-- Export and Update Report Buttons -->
                                         <div class="flex flex-col gap-2 sm:flex-row sm:gap-4">
                                             <Button
+                                                icon="pi pi-download"
+                                                label=" Export Report"
+                                                unstyled
+                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-orange-700 sm:w-auto"
+                                                @click="exportCSV('diffCost')"
+                                            />
+                                            <Button
                                                 icon="pi pi-sync"
                                                 label=" Calcuate Difference?"
                                                 unstyled
@@ -1630,24 +1682,36 @@ const tempProgin = ref<number | null>(null);
                                         </div>
 
                                         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-                                            <div class="flex flex-col gap-1">
-                                                <label class="block text-sm font-medium text-gray-400">Standard Cost Month</label>
-                                                <DatePicker v-model="selectedStandardMonth" view="month" dateFormat="mm" class="w-full" />
+                                            <!-- Date Pickers -->
+                                            <div class="flex gap-2">
+                                                <div class="flex-1">
+                                                    <label for="report-period" class="block py-2 text-sm font-medium text-gray-400"
+                                                        >Standard Period :</label
+                                                    >
+                                                    <Select
+                                                        v-model="selectStandardPeriod"
+                                                        :options="listStandardPeriod"
+                                                        optionLabel="name"
+                                                        placeholder="Select a period"
+                                                        class="w-64"
+                                                    />
+                                                </div>
                                             </div>
 
-                                            <div class="flex flex-col gap-1">
-                                                <label class="block text-sm font-medium text-gray-400">Standard Cost Year</label>
-                                                <DatePicker v-model="selectedStandardYear" view="year" dateFormat="yy" class="w-full" />
-                                            </div>
-
-                                            <div class="flex flex-col gap-1">
-                                                <label class="block text-sm font-medium text-gray-400">Actual Cost Month</label>
-                                                <DatePicker v-model="selectedActualMonth" view="month" dateFormat="mm" class="w-full" />
-                                            </div>
-
-                                            <div class="flex flex-col gap-1">
-                                                <label class="block text-sm font-medium text-gray-400">Actual Cost Year</label>
-                                                <DatePicker v-model="selectedActualYear" view="year" dateFormat="yy" class="w-full" />
+                                            <!-- Date Pickers -->
+                                            <div class="flex gap-2">
+                                                <div class="flex-1">
+                                                    <label for="report-period" class="block py-2 text-sm font-medium text-gray-400"
+                                                        >Actual Period :</label
+                                                    >
+                                                    <Select
+                                                        v-model="selectActualPeriod"
+                                                        :options="listActualPeriod"
+                                                        optionLabel="name"
+                                                        placeholder="Select a period"
+                                                        class="w-64"
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -1663,7 +1727,7 @@ const tempProgin = ref<number | null>(null);
                                     columnResizeMode="expand"
                                     showGridlines
                                     removableSort
-                                    v-model:filters="filters"
+                                    v-model:filters="filtersDifference"
                                     filterDisplay="row"
                                     :loading="loading"
                                     :globalFilterFields="['item_code']"
@@ -1674,6 +1738,21 @@ const tempProgin = ref<number | null>(null);
                                         <Row>
                                             <Column field="no" header="#" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
                                             <Column field="item_code" header="Item Code" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
+                                            <Column
+                                                field="standardPeriod"
+                                                header="Standard Period"
+                                                :rowspan="2"
+                                                sortable
+                                                v-bind="tbStyle('main')"
+                                            ></Column>
+                                            <Column
+                                                field="actualPeriod"
+                                                header="Actual Period"
+                                                :rowspan="2"
+                                                sortable
+                                                v-bind="tbStyle('main')"
+                                            ></Column>
+
                                             <Column header="Standard Cost" :colspan="3" v-bind="tbStyle('rm')"></Column>
                                             <Column header="Actual Cost" :colspan="3" v-bind="tbStyle('pr')"></Column>
                                             <Column header="Difference Cost" :colspan="3" v-bind="tbStyle('fg')"></Column>
@@ -1727,6 +1806,9 @@ const tempProgin = ref<number | null>(null);
                                             />
                                         </template>
                                     </Column>
+                                    <Column field="standardPeriod" v-bind="tbStyle('main')" />
+                                    <Column field="actualPeriod" v-bind="tbStyle('main')" />
+
                                     <Column field="standard_costtotal_raw_material" sortable v-bind="tbStyle('rm')">
                                         <template #body="{ data }">
                                             {{ Number(data.standard_cost.total_raw_material).toLocaleString('id-ID') }}
