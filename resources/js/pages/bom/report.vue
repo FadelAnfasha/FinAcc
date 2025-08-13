@@ -553,6 +553,8 @@ let opexDef = ref(6);
 let proginDef = ref(5);
 const tempOpex = ref<number | null>(null);
 const tempProgin = ref<number | null>(null);
+
+const maxDate = ref(new Date());
 </script>
 
 <template>
@@ -592,11 +594,11 @@ const tempProgin = ref<number | null>(null);
                         <div v-if="updateType !== 'diffCost'" class="flex space-x-4">
                             <div class="flex-1">
                                 <label for="report-month" class="block text-sm font-medium text-gray-400">Month</label>
-                                <DatePicker v-model="month" view="month" dateFormat="mm" />
+                                <DatePicker v-model="month" view="month" dateFormat="mm" :maxDate="maxDate" />
                             </div>
                             <div class="flex-1">
                                 <label for="report-year" class="block text-sm font-medium text-gray-400">Year</label>
-                                <DatePicker v-model="year" view="year" dateFormat="yy" />
+                                <DatePicker v-model="year" view="year" dateFormat="yy" :maxDate="maxDate" />
                             </div>
                         </div>
 
