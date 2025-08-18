@@ -8,7 +8,8 @@ use App\Models\DifferenceCost;
 use App\Models\ProcessCost;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use App\Models\Material;
+use App\Models\StandardMaterial;
+use App\Models\ActualMaterial;
 use App\Models\Process;
 use App\Models\Packing;
 use App\Models\Valve;
@@ -22,7 +23,8 @@ class BOMController extends Controller
 {
     public function master(Request $request)
     {
-        $materials = Material::with('bom')->get();
+        $standardMaterial = StandardMaterial::with('bom')->get();
+        $actualdMaterial = ActualMaterial::with('bom')->get();
         $bom = BillOfMaterial::where('depth', 1)->get();
         $packings = Packing::all();
         $valve = Valve::all();
@@ -49,7 +51,8 @@ class BOMController extends Controller
         $invalidItems = Session::get('invalidItems', []);
 
         return Inertia::render("bom/master", [
-            'materials' => $materials,
+            'standardMaterial' => $standardMaterial,
+            'actualMaterial' => $actualdMaterial,
             'packings' => $packings,
             'valve' => $valve,
             'billOfMaterials' => $bom,
@@ -73,7 +76,10 @@ class BOMController extends Controller
         $lastUpdate = [];
 
         // Ambil data Material dengan updated_at paling terbaru
-        $latestMaterial = Material::latest('updated_at')->first();
+        $latestStandardMat = StandardMaterial::latest('updated_at')->first();
+
+        $latestActualMat = ActualMaterial::latest('updated_at')->first();
+
 
         // Ambil data Valve dengan updated_at paling terbaru
         $latestValve = Valve::latest('updated_at')->first();
@@ -81,8 +87,14 @@ class BOMController extends Controller
         $latestBOM = BillOfMaterial::latest('updated_at')->first();
 
         // Tambahkan created_at dari Material ke array $lastUpdate jika ada
-        if ($latestMaterial) {
-            $lastUpdate[] = $latestMaterial->created_at;
+        if ($latestStandardMat) {
+            $lastUpdate[] = $latestStandardMat->created_at;
+        } else {
+            $lastUpdate[] = null; // Atau nilai default lain jika tidak ada data
+        }
+
+        if ($latestActualMat) {
+            $lastUpdate[] = $latestStandardMat->created_at;
         } else {
             $lastUpdate[] = null; // Atau nilai default lain jika tidak ada data
         }
@@ -272,15 +284,15 @@ class BOMController extends Controller
 
         foreach ($groups as $group) {
             $main = $group->first(); // FG
-            $main->load(['processCost', 'materialInfo']);
+            $main->load(['processCost', 'standardMaterial']);
 
             // $disc_price = ceil((($group->disc->materialInfo->standardPrice ?? 0) * $group->disc?->quantity ?? 0) * 100) / 100;
             // $rim_price = ceil((($group->rim->materialInfo->standardPrice ?? 0) * $group->rim?->quantity ?? 0) * 100) / 100;
             // $sidering_price = ceil((($group->sidering->materialInfo->standardPrice ?? 0) * $group->sidering?->quantity ?? 0) * 100) / 100;
 
-            $disc_price = $group->disc->materialInfo->standardPrice ?? 0;
-            $rim_price = $group->rim->materialInfo->standardPrice ?? 0;
-            $sidering_price = $group->sidering->materialInfo->standardPrice ?? 0;
+            $disc_price = $group->disc->standardMaterial->price ?? 0;
+            $rim_price = $group->rim->standardMaterial->price ?? 0;
+            $sidering_price = $group->sidering->standardMaterial->price ?? 0;
 
             // Perbaikan untuk pr_cedW_price
             $pr_cedW_price = 0;
@@ -623,11 +635,11 @@ class BOMController extends Controller
 
         foreach ($groups as $group) {
             $main = $group->first(); // FG
-            $main->load(['processCost', 'materialInfo']);
+            $main->load(['processCost', 'actualMaterial']);
 
-            $disc_price = ceil((($group->disc->materialInfo->actualPrice ?? 0) * $group->disc?->quantity ?? 0) * 100) / 100;
-            $rim_price = ceil((($group->rim->materialInfo->actualPrice ?? 0) * $group->rim?->quantity ?? 0) * 100) / 100;
-            $sidering_price = ceil((($group->sidering->materialInfo->actualPrice ?? 0) * $group->sidering?->quantity ?? 0) * 100) / 100;
+            $disc_price = ceil((($group->disc->actualMaterial->price ?? 0) * $group->disc?->quantity ?? 0) * 100) / 100;
+            $rim_price = ceil((($group->rim->actualMaterial->price ?? 0) * $group->rim?->quantity ?? 0) * 100) / 100;
+            $sidering_price = ceil((($group->sidering->actualMaterial->price ?? 0) * $group->sidering?->quantity ?? 0) * 100) / 100;
 
             // $disc_price = $group->disc->materialInfo->standardPrice ?? 0;
             // $rim_price = $group->rim->materialInfo->standardPrice ?? 0;

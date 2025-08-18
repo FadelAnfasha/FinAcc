@@ -542,10 +542,10 @@ function startPollingProgress(type: 'bp' | 'ct' | 'sq' | 'wd') {
     uploadProgress.value = 0;
 
     const endpointMap = {
-        bp: '/bp/import-progress',
-        ct: '/ct/import-progress',
-        sq: '/sq/import-progress',
-        wd: '/wd/import-progress',
+        bp: '/finacc/bp/import-progress',
+        ct: '/finacc/ct/import-progress',
+        sq: '/finacc/sq/import-progress',
+        wd: '/finacc/wd/import-progress',
     };
 
     const interval = setInterval(async () => {

@@ -6,6 +6,7 @@ use App\Http\Controllers\BOMController;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use PhpParser\PrettyPrinter\Standard;
 
 class BillOfMaterial extends Model
 {
@@ -25,9 +26,14 @@ class BillOfMaterial extends Model
         'updated_at',
     ];
 
-    public function materialInfo()
+    public function standardMaterial()
     {
-        return $this->hasOne(Material::class, 'item_code', 'item_code');
+        return $this->hasOne(StandardMaterial::class, 'item_code', 'item_code');
+    }
+
+    public function actualMaterial()
+    {
+        return $this->hasOne(actualMaterial::class, 'item_code', 'item_code');
     }
 
     public function processInfo()

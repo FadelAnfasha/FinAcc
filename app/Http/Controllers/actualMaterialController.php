@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Material;
 use Illuminate\Http\Request;
+use App\Models\ActualMaterial;
 use Illuminate\Support\Facades\Cache;
 
-class MaterialController extends Controller
+class actualMaterialController extends Controller
 {
     public function import(Request $request)
     {
@@ -33,7 +33,7 @@ class MaterialController extends Controller
 
             while (($row = fgetcsv($handle, 1000, $delimiter)) !== FALSE) {
                 // Asumsi file CSV memiliki 2 kolom data: 'item_code' dan 'description'
-                if (count($row) >= 20) {
+                if (count($row) >= 3) {
                     $csvData[] = $row;
                 } else {
                     $invalidItems[] = implode(';', $row) . ' (Invalid row format)';
@@ -51,7 +51,7 @@ class MaterialController extends Controller
         }
 
         // --- Langkah 5: Mengosongkan tabel Material sebelum impor ---
-        Material::truncate();
+        actualMaterial::truncate();
 
         // --- Langkah 6: Validasi duplikasi dalam file ---
         foreach ($csvData as $row) {
@@ -64,7 +64,7 @@ class MaterialController extends Controller
         // --- Langkah 7: Proses Impor dan Validasi Item Code ---
         foreach ($csvData as $index => $row) {
             $itemCode = trim($row[1]);
-            $description = trim($row[2]);
+            $price = trim($row[2]);
 
             // Regex untuk validasi format item_code
             // Kriteria:
@@ -76,7 +76,7 @@ class MaterialController extends Controller
             if (!preg_match('/^RF[DRS]\d{3}$/', $itemCode)) {
                 $invalidItems[] = [
                     'item_code' => $itemCode,
-                    'description' => $description,
+                    'price' => $price,
                     'reason' => 'Invalid item code format.'
                 ];
                 continue;
@@ -86,7 +86,7 @@ class MaterialController extends Controller
             if (($codeCounts[$itemCode] ?? 0) > 1) {
                 $invalidItems[] = [
                     'item_code' => $itemCode,
-                    'description' => $description,
+                    'price' => $price,
                     'reason' => 'Duplicate in file.'
                 ];
                 // Lanjutkan ke baris berikutnya, jangan simpan duplikat
@@ -94,23 +94,19 @@ class MaterialController extends Controller
             }
 
             // --- Langkah 8: Menyimpan data yang valid ke database ---
-            Material::create([
+            actualMaterial::create([
                 'item_code' => $itemCode,
-                'description' => $description,
-                'in_stock' => $row[3],
-                'item_group' => $row[4],
-                'actualPrice' => $row[5],
-                'standardPrice' => $row[6]
+                'price' => $price,
             ]);
             $addedItems[] = $itemCode;
 
             // --- Langkah 9: Memperbarui progres impor ---
             $progress = intval(($index + 1) / $total * 100);
-            Cache::put('import-progress-mat', $progress, now()->addMinutes(5));
+            Cache::put('import-progress-acmat', $progress, now()->addMinutes(5));
         }
 
         // Setelah loop selesai, set progres ke 100%.
-        Cache::put('import-progress-mat', 100, now()->addMinutes(5));
+        Cache::put('import-progress-acmat', 100, now()->addMinutes(5));
 
         // --- Langkah 10: Mengalihkan (Redirect) dengan hasil impor ---
         return redirect()->route('bom.master')->with([
@@ -134,7 +130,7 @@ class MaterialController extends Controller
         $price = $request->input('price');
 
         // Temukan material berdasarkan item_code dan perbarui
-        $material = Material::findOrFail($item_code);
+        $material = actualMaterial::findOrFail($item_code);
 
         $material->update([
             // 'item_desc' => $request->input('item_desc'),
@@ -148,7 +144,7 @@ class MaterialController extends Controller
 
     public function destroy($item_code)
     {
-        $material = Material::findOrFail($item_code);
+        $material = actualMaterial::findOrFail($item_code);
         $material->delete();
 
         redirect()->route(route: 'pc.master');
@@ -168,7 +164,7 @@ class MaterialController extends Controller
         // Generate item_code
         $type = $request->input('type');
         $prefix = 'RF' . strtoupper(substr($type, 0, 1));
-        $materials = Material::where('item_code', 'like', $prefix . '%')->orderBy('item_code', 'asc')->get();
+        $materials = actualMaterial::where('item_code', 'like', $prefix . '%')->orderBy('item_code', 'asc')->get();
 
         $existingNumbers = $materials->map(function ($material) use ($prefix) {
             return intval(substr($material->item_code, strlen($prefix)));
@@ -189,7 +185,7 @@ class MaterialController extends Controller
 
         // dd($item_code, $in_stock, $price);
         // Create new material
-        Material::create([
+        actualMaterial::create([
             'item_code' => $item_code,
             // 'item_desc' => $request->input('item_desc'),
             'in_stock' => $in_stock,

@@ -6,11 +6,11 @@ use Faker\Provider\Biased;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class Material extends Model
+class StandardMaterial extends Model
 {
     use HasFactory;
 
-    protected $table = 'materials'; // pastikan nama tabel sesuai dengan yang ada di database
+    protected $table = 'standard_materials'; // pastikan nama tabel sesuai dengan yang ada di database
     protected $primaryKey = 'item_code';
     public $incrementing = false; // jika item_no bukan auto-increment
     protected $keyType = 'string'; // jika item_no bukan integer
@@ -18,8 +18,7 @@ class Material extends Model
         'item_code',
         'in_stock',
         'item_group',
-        'actualPrice',
-        'standardPrice',
+        'price',
         'manufacturer',
     ];
 

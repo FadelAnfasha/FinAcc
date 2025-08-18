@@ -22,7 +22,8 @@ import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
 import { computed, nextTick, ref, Ref, watch } from 'vue';
 
-const dtMAT = ref();
+const dtSTAMAT = ref();
+const dtACMAT = ref();
 const dtBOM = ref();
 const dtPACK = ref();
 const dtPROC = ref();
@@ -35,12 +36,21 @@ const filters = ref({
 });
 const loading = ref(false);
 
-const materials = computed(() =>
-    (page.props.materials as any[]).map((mat, index) => ({
-        ...mat,
+const standardMaterial = computed(() =>
+    (page.props.standardMaterial as any[]).map((standardmat, index) => ({
+        ...standardmat,
         no: index + 1,
-        created_at_formatted: formatDate(mat.created_at),
-        updated_at_formatted: formatDate(mat.updated_at),
+        created_at_formatted: formatDate(standardmat.created_at),
+        updated_at_formatted: formatDate(standardmat.updated_at),
+    })),
+);
+
+const actualMaterial = computed(() =>
+    (page.props.actualMaterial as any[]).map((actualmat, index) => ({
+        ...actualmat,
+        no: index + 1,
+        created_at_formatted: formatDate(actualmat.created_at),
+        updated_at_formatted: formatDate(actualmat.updated_at),
     })),
 );
 
@@ -50,24 +60,6 @@ const billOfMaterials = computed(() =>
         no: index + 1,
         created_at_formatted: formatDate(bom.created_at),
         updated_at_formatted: formatDate(bom.updated_at),
-    })),
-);
-
-const packings = computed(() =>
-    (page.props.packings as any[]).map((pack, index) => ({
-        ...pack,
-        no: index + 1,
-        created_at_formatted: formatDate(pack.created_at),
-        updated_at_formatted: formatDate(pack.updated_at),
-    })),
-);
-
-const processes = computed(() =>
-    (page.props.processes as any[]).map((proc, index) => ({
-        ...proc,
-        no: index + 1,
-        created_at_formatted: formatDate(proc.created_at),
-        updated_at_formatted: formatDate(proc.updated_at),
     })),
 );
 
@@ -89,14 +81,11 @@ interface ComponentItem {
 }
 
 const lastUpdate = computed(() => {
-    const mat_update = ((page.props.materials as any[]) ?? []).map((mat) => new Date(mat.updated_at));
-    const Max_matUpdate = mat_update.length ? new Date(Math.max(...mat_update.map((d) => d.getTime()))) : null;
+    const stamat_update = ((page.props.standardMaterial as any[]) ?? []).map((stamat) => new Date(stamat.updated_at));
+    const Max_stamatUpdate = stamat_update.length ? new Date(Math.max(...stamat_update.map((d) => d.getTime()))) : null;
 
-    const pack_update = ((page.props.packings as any[]) ?? []).map((pack) => new Date(pack.updated_at));
-    const Max_packUpdate = pack_update.length ? new Date(Math.max(...pack_update.map((d) => d.getTime()))) : null;
-
-    const proc_update = ((page.props.processes as any[]) ?? []).map((proc) => new Date(proc.updated_at));
-    const Max_procUpdate = proc_update.length ? new Date(Math.max(...proc_update.map((d) => d.getTime()))) : null;
+    const acmat_update = ((page.props.standardMaterial as any[]) ?? []).map((acmat) => new Date(acmat.updated_at));
+    const Max_acmatUpdate = acmat_update.length ? new Date(Math.max(...acmat_update.map((d) => d.getTime()))) : null;
 
     const valve_update = ((page.props.valve as any[]) ?? []).map((valve) => new Date(valve.updated_at));
     const Max_valveUpdate = valve_update.length ? new Date(Math.max(...valve_update.map((d) => d.getTime()))) : null;
@@ -104,14 +93,13 @@ const lastUpdate = computed(() => {
     const bom_update = ((page.props.billOfMaterials as any[]) ?? []).map((bom) => new Date(bom.updated_at));
     const Max_bomUpdate = bom_update.length ? new Date(Math.max(...bom_update.map((d) => d.getTime()))) : null;
 
-    return [Max_matUpdate, Max_valveUpdate, Max_bomUpdate];
+    return [Max_stamatUpdate, Max_acmatUpdate, Max_valveUpdate, Max_bomUpdate];
 });
 
 const dataSource = [
-    'Share Others/Finacc/Bill of Material/Material Price (MP)/mat_master.csv',
-    // 'Share Others/Finacc/Bill of Material/Packing Price (PP)/pack_master.csv',
+    'Share Others/Finacc/Bill of Material/Standard Material Price/standardMat_master.csv',
+    'Share Others/Finacc/Bill of Material/Actual Material Price/actualMat_master.csv',
     'Share Others/Finacc/Bill of Material/Valve Price (VP)/vp_master.csv',
-    // 'Share Others/Finacc/Bill of Material/Process Price (MP)/proc_master.csv',
     'Share Others/Finacc/Bill of Material/Bill of Material (BOM)/bom_master.csv',
 ];
 
@@ -126,6 +114,7 @@ interface FinishGood {
     item_code?: string;
     [key: string]: any;
 }
+
 const finishGood = ref<FinishGood>(page.props.finish_good ?? {});
 
 watch(
@@ -150,15 +139,17 @@ const bodyStyle = { backgroundColor: '#c8cccc', color: 'black' };
 
 const showDialog = ref(false);
 const dialogWidth = ref('40rem');
-const editType = ref<'mat' | 'pack' | 'proc' | 'valve' | null>(null);
-const destroyType = ref<'mat' | 'pack' | 'proc' | 'bom' | 'valve' | null>(null);
+const editType = ref<'stamat' | 'acmat' | 'pack' | 'proc' | 'valve' | null>(null);
+const destroyType = ref<'stamat' | 'acmat' | 'pack' | 'proc' | 'bom' | 'valve' | null>(null);
 const headerType = ref<any>({});
 const editedData = ref<any>({});
 const destroyedData = ref<any>({});
+
 const groups = ref([
     { name: 'Raw Material', code: 'RAW MATERIAL' },
     { name: 'Sparepart & Tools', code: 'SPAREPARTS AND TOOLS' },
 ]);
+
 const manufacturer = ref([
     { name: 'M TL', code: 'M TL' },
     { name: 'M Single', code: 'M Single' },
@@ -170,9 +161,10 @@ const manufacturer = ref([
 const showImportDialog: Ref<boolean> = ref(false);
 const importName = ref<any>({});
 const selectedFile = ref<File | null>(null);
-const importType = ref<'mat' | 'pack' | 'proc' | 'valve' | 'bom' | null>(null);
+const importType = ref<'stamat' | 'acmat' | 'pack' | 'proc' | 'valve' | 'bom' | null>(null);
 const notImported = ref(true);
-const fileUploaderMAT = ref<any>(null);
+const fileUploaderSTAMAT = ref<any>(null);
+const fileUploaderACMAT = ref<any>(null);
 const fileUploaderPACK = ref<any>(null);
 const fileUploaderVALVE = ref<any>(null);
 const fileUploaderPROC = ref<any>(null);
@@ -180,7 +172,7 @@ const fileUploaderBOM = ref<any>(null);
 const uploadProgress = ref(0);
 const isUploading = ref(false);
 
-function handleCSVImport(event: FileUploadUploaderEvent, type: 'mat' | 'pack' | 'proc' | 'valve' | 'bom') {
+function handleCSVImport(event: FileUploadUploaderEvent, type: 'stamat' | 'acmat' | 'pack' | 'proc' | 'valve' | 'bom') {
     let file: File | undefined;
 
     if (Array.isArray(event.files)) {
@@ -192,7 +184,8 @@ function handleCSVImport(event: FileUploadUploaderEvent, type: 'mat' | 'pack' | 
     if (!file) return;
 
     const expectedNames = {
-        mat: 'mat_master.csv',
+        stamat: 'standardMat_master.csv',
+        acmat: 'actualMat_master.csv',
         pack: 'pack_master.csv',
         proc: 'proc_master.csv',
         valve: 'valve_master.csv',
@@ -212,13 +205,13 @@ function handleCSVImport(event: FileUploadUploaderEvent, type: 'mat' | 'pack' | 
         selectedFile.value = null;
 
         nextTick(() => {
-            if (type === 'mat') fileUploaderMAT.value?.clear();
+            if (type === 'stamat') fileUploaderSTAMAT.value?.clear();
+            if (type === 'acmat') fileUploaderACMAT.value?.clear();
             if (type === 'pack') fileUploaderPACK.value?.clear();
             if (type === 'valve') fileUploaderVALVE.value?.clear();
             if (type === 'proc') fileUploaderPROC.value?.clear();
             if (type === 'bom') fileUploaderBOM.value?.clear();
         });
-
         return;
     }
 
@@ -231,12 +224,13 @@ function handleCSVImport(event: FileUploadUploaderEvent, type: 'mat' | 'pack' | 
     });
 }
 
-function cancelCSVimport(type: 'mat' | 'pack' | 'proc' | 'valve' | 'bom') {
+function cancelCSVimport(type: 'stamat' | 'acmat' | 'pack' | 'proc' | 'valve' | 'bom') {
     showImportDialog.value = false;
     selectedFile.value = null;
 
     nextTick(() => {
-        if (type === 'mat') fileUploaderMAT.value?.clear();
+        if (type === 'stamat') fileUploaderSTAMAT.value?.clear();
+        if (type === 'acmat') fileUploaderACMAT.value?.clear();
         if (type === 'pack') fileUploaderPACK.value?.clear();
         if (type === 'valve') fileUploaderVALVE.value?.clear();
         if (type === 'proc') fileUploaderPROC.value?.clear();
@@ -244,14 +238,15 @@ function cancelCSVimport(type: 'mat' | 'pack' | 'proc' | 'valve' | 'bom') {
     });
 }
 
-function confirmUpload(type: 'mat' | 'pack' | 'proc' | 'valve' | 'bom') {
+function confirmUpload(type: 'stamat' | 'acmat' | 'pack' | 'proc' | 'valve' | 'bom') {
     if (!selectedFile.value || !importType.value) return;
 
     const formData = new FormData();
     formData.append('file', selectedFile.value);
 
     const routes = {
-        mat: 'mat.import',
+        stamat: 'stamat.import',
+        acmat: 'acmat.import',
         pack: 'pack.import',
         proc: 'proc.import',
         valve: 'valve.import',
@@ -268,7 +263,6 @@ function confirmUpload(type: 'mat' | 'pack' | 'proc' | 'valve' | 'bom') {
 
         onSuccess: () => {
             isUploading.value = false;
-
             toast.add({
                 severity: 'success',
                 summary: 'Import Success',
@@ -276,11 +270,11 @@ function confirmUpload(type: 'mat' | 'pack' | 'proc' | 'valve' | 'bom') {
                 life: 3000,
                 group: 'br',
             });
-
             selectedFile.value = null;
 
             nextTick(() => {
-                if (type === 'mat') fileUploaderMAT.value?.clear();
+                if (type === 'stamat') fileUploaderSTAMAT.value?.clear();
+                if (type === 'acmat') fileUploaderACMAT.value?.clear();
                 if (type === 'pack') fileUploaderPACK.value?.clear();
                 if (type === 'valve') fileUploaderVALVE.value?.clear();
                 if (type === 'proc') fileUploaderPROC.value?.clear();
@@ -301,9 +295,9 @@ function confirmUpload(type: 'mat' | 'pack' | 'proc' | 'valve' | 'bom') {
             });
 
             selectedFile.value = null;
-
             nextTick(() => {
-                if (type === 'mat') fileUploaderMAT.value?.clear();
+                if (type === 'stamat') fileUploaderSTAMAT.value?.clear();
+                if (type === 'acmat') fileUploaderACMAT.value?.clear();
                 if (type === 'pack') fileUploaderPACK.value?.clear();
                 if (type === 'valve') fileUploaderVALVE.value?.clear();
                 if (type === 'proc') fileUploaderPROC.value?.clear();
@@ -319,16 +313,16 @@ function resetImportState() {
     notImported.value = true;
 }
 
-function startPollingProgress(type: 'mat' | 'pack' | 'proc' | 'valve' | 'bom') {
+function startPollingProgress(type: 'stamat' | 'acmat' | 'pack' | 'proc' | 'valve' | 'bom') {
     uploadProgress.value = 0;
 
     const endpointMap = {
-        mat: '/mat/import-progress',
-        pack: '/pack/import-progress',
-        proc: '/proc/import-progress',
-        valve: '/valve/import-progress',
-
-        bom: '/bom/import-progress',
+        stamat: '/finacc/standardMat/import-progress',
+        acmat: '/finacc/actualMat/import-progress',
+        pack: '/finacc/pack/import-progress',
+        proc: '/finacc/proc/import-progress',
+        valve: '/finacc/valve/import-progress',
+        bom: '/finacc/bom/import-progress',
     };
 
     const interval = setInterval(async () => {
@@ -347,12 +341,15 @@ function startPollingProgress(type: 'mat' | 'pack' | 'proc' | 'valve' | 'bom') {
     }, 1000);
 }
 
-function exportCSV(type: 'mat' | 'bom' | 'pack' | 'proc' | 'valve') {
+function exportCSV(type: 'stamat' | 'acmat' | 'bom' | 'pack' | 'proc' | 'valve') {
     let $type = null;
     let $filename = null;
-    if (type === 'mat') {
-        $type = dtMAT.value;
-        $filename = 'bom';
+    if (type === 'stamat') {
+        $type = dtSTAMAT.value;
+        $filename = 'standard-mat';
+    } else if (type === 'acmat') {
+        $type = dtACMAT.value;
+        $filename = 'actual-mat';
     } else if (type === 'pack') {
         $type = dtPACK.value;
         $filename = 'pack';
@@ -382,12 +379,14 @@ function formatDate(dateStr: string): string {
     return `${yy}-${mm}-${dd}`;
 }
 
-function editData(data: any, type: 'mat' | 'pack' | 'proc' | 'valve') {
+function editData(data: any, type: 'stamat' | 'acmat' | 'pack' | 'proc' | 'valve') {
     editedData.value = { ...data };
     editType.value = type;
     headerType.value = 'Edit data';
     // Atur lebar berdasarkan type
-    if (type === 'mat') {
+    if (type === 'stamat') {
+        dialogWidth.value = '40rem';
+    } else if (type === 'acmat') {
         dialogWidth.value = '40rem';
     } else if (type === 'pack') {
         dialogWidth.value = '40rem';
@@ -400,11 +399,38 @@ function editData(data: any, type: 'mat' | 'pack' | 'proc' | 'valve') {
 }
 
 function handleSave() {
-    if (editType.value === 'mat') {
+    if (editType.value === 'stamat') {
         const item_code = editedData.value.item_code;
         if (!item_code) return;
 
-        router.put(route('mat.update', item_code), editedData.value, {
+        router.put(route('stamat.update', item_code), editedData.value, {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                toast.add({
+                    severity: 'success',
+                    summary: 'Success',
+                    group: 'br',
+                    detail: `Data ${editedData.value.item_code} updated successfully`,
+                    life: 3000,
+                });
+                showDialog.value = false;
+            },
+            onError: () => {
+                toast.add({
+                    severity: 'warn',
+                    summary: 'Error',
+                    group: 'br',
+                    detail: `Failed to delete data with ${editedData.value.bp_code}`,
+                    life: 3000,
+                });
+            },
+        });
+    } else if (editType.value === 'acmat') {
+        const item_code = editedData.value.item_code;
+        if (!item_code) return;
+
+        router.put(route('acmat.update', item_code), editedData.value, {
             preserveScroll: true,
             preserveState: true,
             onSuccess: () => {
@@ -511,11 +537,13 @@ function handleSave() {
     }
 }
 
-function destroyData(data: any, type: 'mat' | 'pack' | 'proc' | 'bom' | 'valve') {
+function destroyData(data: any, type: 'stamat' | 'acmat' | 'pack' | 'proc' | 'bom' | 'valve') {
     destroyedData.value = { ...data };
     destroyType.value = type;
     headerType.value = 'Delete data';
-    if (type === 'mat') {
+    if (type === 'stamat') {
+        dialogWidth.value = '40rem';
+    } else if (type === 'acmat') {
         dialogWidth.value = '40rem';
     } else if (type === 'pack') {
         dialogWidth.value = '40rem';
@@ -528,11 +556,40 @@ function destroyData(data: any, type: 'mat' | 'pack' | 'proc' | 'bom' | 'valve')
 }
 
 function handleDestroy() {
-    if (destroyType.value === 'mat') {
+    if (destroyType.value === 'stamat') {
         const item_code = destroyedData.value.item_code;
         if (!item_code) return;
 
-        router.delete(route('mat.destroy', item_code), {
+        router.delete(route('stamat.destroy', item_code), {
+            data: destroyedData.value,
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                toast.add({
+                    severity: 'error',
+                    summary: 'Success',
+                    detail: `Data ${destroyedData.value.item_code} deleted successfully`,
+                    group: 'br',
+                    life: 3000,
+                });
+                showDialog.value = false;
+            },
+            onError: () => {
+                toast.add({
+                    severity: 'warn',
+                    summary: 'Error',
+                    group: 'br',
+                    detail: `Failed to delete this  ${destroyedData.value.item_code} data`,
+                    life: 3000,
+                });
+            },
+        });
+    }
+    if (destroyType.value === 'acmat') {
+        const item_code = destroyedData.value.item_code;
+        if (!item_code) return;
+
+        router.delete(route('acmat.destroy', item_code), {
             data: destroyedData.value,
             preserveScroll: true,
             preserveState: true,
@@ -825,12 +882,12 @@ const importResult = computed(() => {
                                 <thead>
                                     <tr>
                                         <th
-                                            v-if="importType === 'mat' || importType === 'valve'"
+                                            v-if="importType === 'stamat' || importType === 'valve'"
                                             class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400"
                                         >
                                             Item Code
                                         </th>
-                                        <th v-if="importType === 'mat'" class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">
+                                        <th v-if="importType === 'stamat'" class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">
                                             Description
                                         </th>
                                         <th v-if="importType === 'valve'" class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">
@@ -844,10 +901,13 @@ const importResult = computed(() => {
                                     <!-- Menggunakan template v-if dan v-for -->
                                     <template v-if="importResult.invalidItems.length > 0">
                                         <tr v-for="item in importResult.invalidItems" :key="item.no">
-                                            <td v-if="importType === 'mat' || importType === 'valve'" class="border-b border-gray-800 px-4 py-2">
+                                            <td
+                                                v-if="importType === 'stamat' || 'acmat' || importType === 'valve'"
+                                                class="border-b border-gray-800 px-4 py-2"
+                                            >
                                                 {{ item.item_code }}
                                             </td>
-                                            <td v-if="importType === 'mat'" class="border-b border-gray-800 px-4 py-2">
+                                            <td v-if="importType === 'stamat' || 'acmat'" class="border-b border-gray-800 px-4 py-2">
                                                 {{ item.description }}
                                             </td>
                                             <td v-if="importType === 'valve'" class="border-b border-gray-800 px-4 py-2">
@@ -905,7 +965,7 @@ const importResult = computed(() => {
                 </Dialog>
 
                 <Dialog v-model:visible="showDialog" :header="headerType" modal :style="{ width: dialogWidth }" :closable="false">
-                    <div v-if="editType === 'mat'" class="space-y-6">
+                    <div v-if="editType === 'stamat' || editType === 'acmat'" class="space-y-6">
                         <div class="mb-4 flex items-center gap-4">
                             <label for="item_code" class="w-24 font-semibold">Material Code</label>
                             <InputText id="item_code" class="flex-auto" v-model="editedData.item_code" autocomplete="off" :disabled="true" />
@@ -1093,7 +1153,7 @@ const importResult = computed(() => {
                         </div>
                     </div>
 
-                    <div v-if="destroyType === 'mat'" class="space-y-6">
+                    <div v-if="destroyType === 'stamat' || destroyType === 'acmat'" class="space-y-6">
                         <span>
                             Are you sure want to delete Material data with item code
                             <span class="font-semibold text-red-600">{{ destroyedData.item_code }} </span> and description
@@ -1190,11 +1250,13 @@ const importResult = computed(() => {
             <div class="mx-26 mb-26">
                 <Tabs value="0">
                     <TabList>
-                        <Tab value="0">Material</Tab>
+                        <Tab value="0">Standard Material Price</Tab>
                         <!-- <Tab value="1">Packing</Tab> -->
-                        <Tab value="1">Valve</Tab>
+                        <Tab value="1">Actual Material Price</Tab>
+
+                        <Tab value="2">Valve</Tab>
                         <!-- <Tab value="3">Process</Tab> -->
-                        <Tab value="2">Bill of Material</Tab>
+                        <Tab value="3">Bill of Material</Tab>
                     </TabList>
 
                     <!-- Process Items Grid -->
@@ -1203,7 +1265,7 @@ const importResult = computed(() => {
                             <section ref="matSection" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
                                     <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
-                                        Material Price
+                                        Standard Material Price
                                     </h2>
 
                                     <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
@@ -1215,7 +1277,7 @@ const importResult = computed(() => {
                                             accept=".csv"
                                             chooseLabel="Import CSV"
                                             chooseIcon="pi pi-upload"
-                                            @select="(event) => handleCSVImport(event, 'mat')"
+                                            @select="(event) => handleCSVImport(event, 'stamat')"
                                             class="w-full sm:w-auto"
                                         />
 
@@ -1225,7 +1287,7 @@ const importResult = computed(() => {
                                                 label=" Export"
                                                 unstyled
                                                 class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 sm:w-28"
-                                                @click="exportCSV('mat')"
+                                                @click="exportCSV('stamat')"
                                             />
                                         </div>
                                     </div>
@@ -1243,7 +1305,7 @@ const importResult = computed(() => {
                                 </div>
 
                                 <DataTable
-                                    :value="materials"
+                                    :value="standardMaterial"
                                     tableStyle="min-width: 50rem"
                                     paginator
                                     :rows="10"
@@ -1284,14 +1346,9 @@ const importResult = computed(() => {
                                     <Column field="in_stock" sortable header="In Stock" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
                                     <Column field="item_group" sortable header="Group" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
 
-                                    <Column field="actualPrice" header="Actual Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="price" header="Standard Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
-                                            {{ formatCurrency(data.actualPrice) }}
-                                        </template>
-                                    </Column>
-                                    <Column field="standardPrice" header="Standard Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
-                                        <template #body="{ data }">
-                                            {{ formatCurrency(data.standardPrice) }}
+                                            {{ formatCurrency(data.price) }}
                                         </template>
                                     </Column>
 
@@ -1321,14 +1378,14 @@ const importResult = computed(() => {
                                                     severity="warning"
                                                     rounded
                                                     text
-                                                    @click="editData(slotProps.data, 'mat')"
+                                                    @click="editData(slotProps.data, 'stamat')"
                                                 />
                                                 <Button
                                                     icon="pi pi-trash"
                                                     severity="danger"
                                                     rounded
                                                     text
-                                                    @click="destroyData(slotProps.data, 'mat')"
+                                                    @click="destroyData(slotProps.data, 'stamat')"
                                                 />
                                             </div> </template
                                     ></Column>
@@ -1336,49 +1393,55 @@ const importResult = computed(() => {
                             </section>
                         </TabPanel>
 
-                        <!-- <TabPanel value="1">
-                            <section ref="packSection" class="p-2">
-                                <div class="mb-4 flex items-center justify-between">
-                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Packing Price</h2>
-                                    <div class="flex gap-4">
-                                        <div>
-                                            <div>
-                                                Last Update :
-                                                <span class="text-red-300">{{ lastUpdate[1] ? formatlastUpdate(lastUpdate[1]) : '-' }}</span>
-                                            </div>
-                                            <div>
-                                                Data source From : <span class="text-cyan-400">{{ dataSource[1] }}</span>
-                                            </div>
-                                        </div>
-                                        <div class="flex flex-col items-center gap-3">
-                                            <FileUpload
-                                                ref="fileUploaderPACK"
-                                                mode="basic"
-                                                name="file"
-                                                :customUpload="true"
-                                                accept=".csv"
-                                                chooseLabel="Import CSV"
-                                                chooseIcon="pi pi-upload"
-                                                @select="(event) => handleCSVImport(event, 'pack')"
-                                            />
-                                        </div>
-                                        <div class="flex flex-col items-center gap-3">
+                        <TabPanel value="1">
+                            <section ref="matSection" class="p-2">
+                                <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
+                                        Actual Material Price
+                                    </h2>
+
+                                    <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
+                                        <FileUpload
+                                            ref="fileUploaderBP"
+                                            mode="basic"
+                                            name="file"
+                                            :customUpload="true"
+                                            accept=".csv"
+                                            chooseLabel="Import CSV"
+                                            chooseIcon="pi pi-upload"
+                                            @select="(event) => handleCSVImport(event, 'acmat')"
+                                            class="w-full sm:w-auto"
+                                        />
+
+                                        <div class="flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row">
                                             <Button
                                                 icon="pi pi-download"
                                                 label=" Export"
                                                 unstyled
-                                                class="w-28 cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900"
-                                                @click="exportCSV('pack')"
+                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 sm:w-28"
+                                                @click="exportCSV('acmat')"
                                             />
+                                        </div>
+                                    </div>
+
+                                    <div class="text-right text-gray-700 dark:text-gray-300">
+                                        <div>
+                                            Last Update :
+                                            <span class="text-red-300">{{ lastUpdate[1] ? formatlastUpdate(lastUpdate[1]) : '-' }}</span>
+                                        </div>
+                                        <div>
+                                            Data source From :
+                                            <span class="text-cyan-400">{{ dataSource[1] }}</span>
                                         </div>
                                     </div>
                                 </div>
 
                                 <DataTable
-                                    :value="packings"
+                                    :value="actualMaterial"
                                     tableStyle="min-width: 50rem"
                                     paginator
                                     :rows="10"
+                                    :rowsPerPageOptions="[10, 20, 50, 100]"
                                     resizableColumns
                                     columnResizeMode="expand"
                                     showGridlines
@@ -1388,11 +1451,11 @@ const importResult = computed(() => {
                                     :loading="loading"
                                     :globalFilterFields="['item_code']"
                                     class="text-md"
-                                    ref="dtPACK"
+                                    ref="dtMAT"
                                 >
                                     <Column
                                         field="item_code"
-                                        header="Item Code"
+                                        header="Material Code"
                                         :showFilterMenu="false"
                                         sortable
                                         :headerStyle="headerStyle"
@@ -1405,11 +1468,18 @@ const importResult = computed(() => {
                                                 class="w-full"
                                             /> </template
                                     ></Column>
-                                    <Column field="price" header="Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="description" sortable header="Description" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ data?.bom?.description ?? '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="price" header="Standard Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ formatCurrency(data.price) }}
                                         </template>
                                     </Column>
+
                                     <Column field="created_at_formatted" sortable header="Added at" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="slotProps">
                                             {{ formatDate(slotProps.data.created_at) }}
@@ -1428,7 +1498,7 @@ const importResult = computed(() => {
                                         </template>
                                     </Column>
 
-                                    <Column field="action" header="Action" :exportable="false" :headerStyle="headerStyle" :bodyStyle="bodyStyle"
+                                    <!-- <Column field="action" header="Action" :exportable="false" :headerStyle="headerStyle" :bodyStyle="bodyStyle"
                                         ><template #body="slotProps">
                                             <div class="flex gap-2">
                                                 <Button
@@ -1436,22 +1506,22 @@ const importResult = computed(() => {
                                                     severity="warning"
                                                     rounded
                                                     text
-                                                    @click="editData(slotProps.data, 'pack')"
+                                                    @click="editData(slotProps.data, 'acmat')"
                                                 />
                                                 <Button
                                                     icon="pi pi-trash"
                                                     severity="danger"
                                                     rounded
                                                     text
-                                                    @click="destroyData(slotProps.data, 'pack')"
+                                                    @click="destroyData(slotProps.data, 'acmat')"
                                                 />
                                             </div> </template
-                                    ></Column>
+                                    ></Column> -->
                                 </DataTable>
                             </section>
-                        </TabPanel> -->
+                        </TabPanel>
 
-                        <TabPanel value="1">
+                        <TabPanel value="2">
                             <section ref="packSection" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
                                     <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
@@ -1485,11 +1555,11 @@ const importResult = computed(() => {
                                     <div class="text-right text-gray-700 dark:text-gray-300">
                                         <div>
                                             Last Update :
-                                            <span class="text-red-300">{{ lastUpdate[1] ? formatlastUpdate(lastUpdate[1]) : '-' }}</span>
+                                            <span class="text-red-300">{{ lastUpdate[2] ? formatlastUpdate(lastUpdate[2]) : '-' }}</span>
                                         </div>
                                         <div>
                                             Data source From :
-                                            <span class="text-cyan-400">{{ dataSource[1] }}</span>
+                                            <span class="text-cyan-400">{{ dataSource[2] }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1573,139 +1643,7 @@ const importResult = computed(() => {
                             </section>
                         </TabPanel>
 
-                        <!-- <TabPanel value="3">
-                            <section ref="procSection" class="p-2">
-                                <div class="mb-4 flex items-center justify-between">
-                                    <h2 class="text-3xl font-semibold hover:text-indigo-500">Process Price</h2>
-                                    <div class="flex gap-4">
-                                        <div>
-                                            <div>
-                                                Last Update :
-                                                <span class="text-red-300">{{ lastUpdate[3] ? formatlastUpdate(lastUpdate[3]) : '-' }}</span>
-                                            </div>
-                                            <div>
-                                                Data source From : <span class="text-cyan-400">{{ dataSource[3] }}</span>
-                                            </div>
-                                        </div>
-                                        <div class="flex flex-col items-center gap-3">
-                                            <FileUpload
-                                                ref="fileUploaderPROC"
-                                                mode="basic"
-                                                name="file"
-                                                :customUpload="true"
-                                                accept=".csv"
-                                                chooseLabel="Import CSV"
-                                                chooseIcon="pi pi-upload"
-                                                @select="(event) => handleCSVImport(event, 'proc')"
-                                            />
-                                        </div>
-                                        <div class="flex flex-col items-center gap-3">
-                                            <Button
-                                                icon="pi pi-download"
-                                                label=" Export"
-                                                unstyled
-                                                class="w-28 cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900"
-                                                @click="exportCSV('proc')"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <DataTable
-                                    :value="processes"
-                                    tableStyle="min-width: 50rem"
-                                    paginator
-                                    :rows="10"
-                                    resizableColumns
-                                    columnResizeMode="expand"
-                                    showGridlines
-                                    removableSort
-                                    v-model:filters="filters"
-                                    filterDisplay="row"
-                                    :loading="loading"
-                                    :globalFilterFields="['item_code']"
-                                    class="text-md"
-                                    ref="dtPROC"
-                                >
-                                    <Column
-                                        field="item_code"
-                                        header="Item Code"
-                                        :showFilterMenu="false"
-                                        sortable
-                                        :headerStyle="headerStyle"
-                                        :bodyStyle="bodyStyle"
-                                        ><template #filter="{ filterModel, filterCallback }">
-                                            <InputText
-                                                v-model="filterModel.value"
-                                                @input="filterCallback()"
-                                                placeholder="Search item code"
-                                                class="w-full"
-                                            /> </template
-                                    ></Column>
-                                    <Column
-                                        field="description"
-                                        sortable
-                                        header="Description"
-                                        :headerStyle="headerStyle"
-                                        :bodyStyle="bodyStyle"
-                                    ></Column>
-
-                                    <Column field="price" header="Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
-                                        <template #body="{ data }">
-                                            {{ formatCurrency(data.price) }}
-                                        </template>
-                                    </Column>
-
-                                    <Column
-                                        field="manufacturer"
-                                        sortable
-                                        header="Manufacturer"
-                                        :headerStyle="headerStyle"
-                                        :bodyStyle="bodyStyle"
-                                    ></Column>
-
-                                    <Column field="created_at_formatted" sortable header="Added at" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
-                                        <template #body="slotProps">
-                                            {{ formatDate(slotProps.data.created_at) }}
-                                        </template>
-                                    </Column>
-
-                                    <Column
-                                        field="updated_at_formatted"
-                                        sortable
-                                        header="Updated at"
-                                        :headerStyle="headerStyle"
-                                        :bodyStyle="bodyStyle"
-                                    >
-                                        <template #body="slotProps">
-                                            {{ formatDate(slotProps.data.updated_at) }}
-                                        </template>
-                                    </Column>
-
-                                    <Column field="action" header="Action" :exportable="false" :headerStyle="headerStyle" :bodyStyle="bodyStyle"
-                                        ><template #body="slotProps">
-                                            <div class="flex gap-2">
-                                                <Button
-                                                    icon="pi pi-pencil"
-                                                    severity="warning"
-                                                    rounded
-                                                    text
-                                                    @click="editData(slotProps.data, 'proc')"
-                                                />
-                                                <Button
-                                                    icon="pi pi-trash"
-                                                    severity="danger"
-                                                    rounded
-                                                    text
-                                                    @click="destroyData(slotProps.data, 'proc')"
-                                                />
-                                            </div> </template
-                                    ></Column>
-                                </DataTable>
-                            </section>
-                        </TabPanel> -->
-
-                        <TabPanel value="2">
+                        <TabPanel value="3">
                             <section ref="bomSection" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
                                     <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
@@ -1729,11 +1667,11 @@ const importResult = computed(() => {
                                     <div class="text-right text-gray-700 dark:text-gray-300">
                                         <div>
                                             Last Update :
-                                            <span class="text-red-300">{{ lastUpdate[2] ? formatlastUpdate(lastUpdate[2]) : '-' }}</span>
+                                            <span class="text-red-300">{{ lastUpdate[3] ? formatlastUpdate(lastUpdate[3]) : '-' }}</span>
                                         </div>
                                         <div>
                                             Data source From :
-                                            <span class="text-cyan-400">{{ dataSource[2] }}</span>
+                                            <span class="text-cyan-400">{{ dataSource[3] }}</span>
                                         </div>
                                     </div>
                                 </div>

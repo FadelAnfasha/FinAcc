@@ -217,6 +217,27 @@ class DatabaseSeeder extends Seeder
                 'updated_at' => '2025-08-13',
             ],
 
+            [
+                'name' => 'Setyaningsih',
+                'npk' => '140023',
+                'priority' => 'low',
+                'created_at' => '2025-08-14',
+                'description' => 'Create a cash in/out system in Excel (Please also make a sheet with history report to reconcile the ending balance with SAP balance)',
+                'status' => 'finish',
+                'attachment' => null,
+                'updated_at' => '2025-08-14',
+            ],
+            [
+                'name' => 'Ayu',
+                'npk' => '190349',
+                'priority' => 'medium',
+                'created_at' => '2025-08-14',
+                'description' => 'Create digitialization of Entertainment Form in Personal site.',
+                'status' => 'wait_for_review',
+                'attachment' => 'attachment/zmmJtfG3mzE1JqBKvpoSMkdmvk8QxYoGzYWqXjWm.xlsx',
+                'updated_at' => '2025-08-14',
+            ],
+
         ];
 
 

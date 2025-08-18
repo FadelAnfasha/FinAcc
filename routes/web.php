@@ -1,6 +1,7 @@
 <?php
 
-use App\Http\Controllers\MaterialController;
+use App\Http\Controllers\standardMaterialController;
+use App\Http\Controllers\actualMaterialController;
 use App\Http\Controllers\SalesQuantityController;
 use App\Http\Controllers\ValveController;
 use Illuminate\Http\Request;
@@ -93,12 +94,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
 #=============================
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::post('/mat/import', [MaterialController::class, 'import'])->name('mat.import');
-    Route::put('/mat/update/{id}', [MaterialController::class, 'update'])->name('mat.update');
-    Route::delete('/mat/destroy/{id}', [MaterialController::class, 'destroy'])->name('mat.destroy');
-    Route::get('/mat/import-progress', function () {
+    Route::post('/standardMat/import', [standardMaterialController::class, 'import'])->name('stamat.import');
+    Route::put('/standardMat/update/{id}', [standardMaterialController::class, 'update'])->name('stamat.update');
+    Route::delete('/standardMat/destroy/{id}', [standardMaterialController::class, 'destroy'])->name('stamat.destroy');
+    Route::get('/standardMat/import-progress', function () {
         return response()->json([
-            'progress' => Cache::get('import-progress-mat', 0),
+            'progress' => Cache::get('import-progress-standardMat', 0),
+        ]);
+    });
+
+    Route::post('/actualMat/import', [actualMaterialController::class, 'import'])->name('acmat.import');
+    Route::put('/actualMat/update/{id}', [actualMaterialController::class, 'update'])->name('acmat.update');
+    Route::delete('/actualMat/destroy/{id}', [actualMaterialController::class, 'destroy'])->name('acmat.destroy');
+    Route::get('/actualMat/import-progress', function () {
+        return response()->json([
+            'progress' => Cache::get('import-progress-actualMat', 0),
         ]);
     });
 });
