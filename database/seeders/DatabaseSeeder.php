@@ -85,8 +85,8 @@ class DatabaseSeeder extends Seeder
 
             ],
             [
-                'name' => 'Rudi',
-                'npk' => '140023',
+                'name' => 'Ayu',
+                'npk' => '190349',
                 'priority' => 'medium',
                 'created_at' => '2024-12-3',
                 'description' => 'Macro to input tax data into E-Faktur.',
@@ -239,7 +239,6 @@ class DatabaseSeeder extends Seeder
             ],
 
         ];
-
 
         for ($i = 0; $i < count($request); $i++) {
             $u = RequestForService::create([
