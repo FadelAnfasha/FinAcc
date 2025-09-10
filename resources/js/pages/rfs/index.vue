@@ -8,7 +8,7 @@ import DatePicker from 'primevue/datepicker';
 import InputText from 'primevue/inputtext';
 import Select from 'primevue/select';
 import { useToast } from 'primevue/usetoast';
-import { computed, ref, watchEffect } from 'vue';
+import { computed, ref, Ref, watchEffect } from 'vue';
 
 const page = usePage();
 const toast = useToast();
@@ -28,13 +28,23 @@ watchEffect(() => {
 });
 
 // Define proper types
+interface Priority {
+    id: number;
+    priority: string;
+}
+
+interface Status {
+    id: number;
+    status: string;
+}
+
 interface RequestItem {
     id: number;
     name: string;
-    priority: string;
+    priority: Priority;
     created_at: string;
     description: string;
-    status: string;
+    status: Status;
     attachment: File;
     updated_at: string;
 }
@@ -51,6 +61,10 @@ const executeRequest = (id: number) => {
     router.post(`/rfs/${id}/execute`);
 };
 
+const user_acceptance = (id: number) => {
+    router.post(`/rfs/${id}/uat`);
+};
+
 const finishRequest = (id: number) => {
     router.post(`/rfs/${id}/finish`);
 };
@@ -62,10 +76,10 @@ const props = defineProps({
 
 const filters = ref({
     name: { value: null, matchMode: 'contains' },
-    priority: { value: null, matchMode: 'equals' },
+    'priority.priority': { value: null, matchMode: 'equals' },
     created_at: { value: null, matchMode: 'contains' },
     description: { value: null, matchMode: 'contains' },
-    status: { value: null, matchMode: 'equals' },
+    'status.status': { value: null, matchMode: 'equals' },
     updated_at: { value: null, matchMode: 'contains' },
 });
 
@@ -74,46 +88,45 @@ const items = computed(() => page.props.services as RequestItem[]);
 const priorities = ['All', 'low', 'medium', 'high', 'urgent'];
 const statuses = ['All', 'wait_for_review', 'accepted', 'in_progress', 'finish', 'rejected'];
 
-function getPriorityClass(priority: string): string | undefined {
+const getPriorityClass = (priority: string) => {
     switch (priority) {
-        case 'All':
-            return 'secondary';
         case 'low':
-            return 'bg-purple-400 text-purple-800';
+            return 'bg-green-200 text-green-700';
         case 'medium':
-            return 'bg-blue-300 text-blue-800';
+            return 'bg-blue-200 text-blue-700';
         case 'high':
-            return 'bg-orange-400 text-orange-800';
+            return 'bg-orange-200 text-orange-700';
         case 'urgent':
-            return 'bg-red-400 text-red-800';
-        case 'All':
-            return 'bg-gray-200 text-red-800';
+            return 'bg-red-200 text-red-700';
         default:
-            return undefined;
+            return 'bg-gray-300 text-gray-800';
     }
-}
+};
 
-function getStatusClass(status: string): string {
+const getStatusClass = (status: string): string => {
     switch (status) {
         case 'wait_for_review':
-            return 'bg-yellow-300 text-yellow-800';
+            return 'bg-yellow-400 text-yellow-900';
         case 'accepted':
-            return 'bg-blue-400 text-blue-800';
+            return 'bg-sky-400 text-sky-900';
         case 'in_progress':
-            return 'bg-purple-300 text-purple-800';
+            return 'bg-indigo-400 text-indigo-900';
+        case 'user_acceptance':
+            return 'bg-amber-400 text-amber-900';
         case 'finish':
-            return 'bg-green-300 text-green-800';
+            return 'bg-green-500 text-green-900';
         case 'rejected':
-            return 'bg-red-400 text-red-800';
+            return 'bg-rose-500 text-rose-900';
         default:
-            return 'bg-gray-100 text-gray-800';
+            return 'bg-gray-300 text-gray-800';
     }
-}
+};
 
 function statusLabel(status: string): string {
     const map: Record<string, string> = {
         wait_for_review: 'Wait for Review',
         accepted: 'Accepted',
+        user_acceptance: 'User Acceptance',
         in_progress: 'In Progress',
         finish: 'Finish',
         rejected: 'Rejected',
@@ -136,10 +149,10 @@ interface UserWithNPK {
 const form = useForm({
     name: (page.props.auth.user as UserWithNPK)?.name || '',
     npk: (page.props.auth.user as UserWithNPK)?.npk || '',
-    priority: 'medium',
+    priority: '2',
     created_at: new Date().toISOString().split('T')[0],
     description: '',
-    status: 'wait_for_review',
+    status: '1',
     attachment: null as File | null,
     updated_at: new Date().toISOString().split('T')[0],
 });
@@ -209,11 +222,25 @@ const resetForm = () => {
         fileInput.value.value = '';
     }
 };
+
+const showImportDialog: Ref<boolean> = ref(false);
 </script>
 
 <template>
     <Head title="RFS" />
     <AppLayout>
+        <div class="mt-4 mb-8">
+            <Dialog
+                v-model:visible="showImportDialog"
+                header="Import Confirmation"
+                modal
+                class="w-[30rem]"
+                :closable="false"
+                @hide="resetImportState"
+            >
+            </Dialog>
+        </div>
+
         <!-- Data Table Section -->
         <section ref="dataSection" class="mb-4 scroll-mt-8 p-6">
             <div class="mb-4 flex items-center justify-between">
@@ -248,20 +275,69 @@ const resetForm = () => {
                 sortField="created_at"
                 :sortOrder="-1"
             >
+                <Column field="created_at" header="Request Date" :showFilterMenu="false" sortable style="width: 20%">
+                    <template #filter="{ filterModel, filterCallback }">
+                        <DatePicker
+                            :modelValue="filterModel.value ? new Date(filterModel.value + 'T00:00:00') : null"
+                            @update:modelValue="
+                                // PERUBAHAN KRITIS: Perluas tipe 'val' untuk mencakup semua kemungkinan yang disebutkan error
+                                (val: Date | Date[] | (Date | null)[] | null | undefined) => {
+                                    let selectedDate: Date | null = null;
+
+                                    if (val instanceof Date) {
+                                        selectedDate = val;
+                                    } else if (Array.isArray(val) && val.length > 0) {
+                                        // Jika val adalah array, ambil elemen pertama jika itu Date
+                                        // Ini mengasumsikan Anda hanya tertarik pada tanggal pertama untuk filter tunggal
+                                        if (val[0] instanceof Date) {
+                                            selectedDate = val[0];
+                                        }
+                                    }
+
+                                    if (selectedDate instanceof Date) {
+                                        const formatted =
+                                            selectedDate.getFullYear() +
+                                            '-' +
+                                            String(selectedDate.getMonth() + 1).padStart(2, '0') +
+                                            '-' +
+                                            String(selectedDate.getDate()).padStart(2, '0');
+                                        filterModel.value = formatted;
+                                    } else {
+                                        filterModel.value = null;
+                                    }
+                                    filterCallback();
+                                }
+                            "
+                            dateFormat="yy-mm-dd"
+                            placeholder="yy-mm-dd"
+                            :maxDate="new Date()"
+                            showIcon
+                            selectionMode="single"
+                        />
+                    </template>
+                </Column>
+
                 <Column field="name" header="Name" :showFilterMenu="false" sortable style="width: 20%">
                     <template #filter="{ filterModel, filterCallback }">
                         <InputText v-model="filterModel.value" @input="filterCallback()" placeholder="Search name" />
                     </template>
                 </Column>
 
-                <Column field="priority" header="Priority" :sortable="true" :showFilterMenu="false" style="width: 20%" class="justify-items-center">
+                <Column
+                    field="priority.priority"
+                    header="Priority"
+                    :sortable="true"
+                    :showFilterMenu="false"
+                    style="width: 20%"
+                    class="justify-items-center"
+                >
                     <!-- Body Badge -->
                     <template #body="{ data }">
                         <span
-                            :class="getPriorityClass(data.priority)"
+                            :class="getPriorityClass(data.priority.priority)"
                             class="inline-block w-full rounded-full px-2 py-1 text-center text-xs font-semibold"
                         >
-                            {{ capitalize(data.priority) }}
+                            {{ capitalize(data.priority.priority) }}
                         </span>
                     </template>
 
@@ -315,48 +391,6 @@ const resetForm = () => {
                     </template>
                 </Column>
 
-                <Column field="created_at" header="Request Date" :showFilterMenu="false" sortable style="width: 20%">
-                    <template #filter="{ filterModel, filterCallback }">
-                        <DatePicker
-                            :modelValue="filterModel.value ? new Date(filterModel.value + 'T00:00:00') : null"
-                            @update:modelValue="
-                                // PERUBAHAN KRITIS: Perluas tipe 'val' untuk mencakup semua kemungkinan yang disebutkan error
-                                (val: Date | Date[] | (Date | null)[] | null | undefined) => {
-                                    let selectedDate: Date | null = null;
-
-                                    if (val instanceof Date) {
-                                        selectedDate = val;
-                                    } else if (Array.isArray(val) && val.length > 0) {
-                                        // Jika val adalah array, ambil elemen pertama jika itu Date
-                                        // Ini mengasumsikan Anda hanya tertarik pada tanggal pertama untuk filter tunggal
-                                        if (val[0] instanceof Date) {
-                                            selectedDate = val[0];
-                                        }
-                                    }
-
-                                    if (selectedDate instanceof Date) {
-                                        const formatted =
-                                            selectedDate.getFullYear() +
-                                            '-' +
-                                            String(selectedDate.getMonth() + 1).padStart(2, '0') +
-                                            '-' +
-                                            String(selectedDate.getDate()).padStart(2, '0');
-                                        filterModel.value = formatted;
-                                    } else {
-                                        filterModel.value = null;
-                                    }
-                                    filterCallback();
-                                }
-                            "
-                            dateFormat="yy-mm-dd"
-                            placeholder="yy-mm-dd"
-                            :maxDate="new Date()"
-                            showIcon
-                            selectionMode="single"
-                        />
-                    </template>
-                </Column>
-
                 <Column field="description" header="Req. Description" :showFilterMenu="false" sortable style="width: 20%">
                     <template #body="{ data }">
                         <div class="max-w-[200px] truncate" :title="data.description" v-tooltip.top="data.description">
@@ -368,61 +402,71 @@ const resetForm = () => {
                     </template>
                 </Column>
 
-                <!-- Status Column -->
-                <Column field="status" header="Status" :showFilterMenu="false" sortable style="width: 20%">
+                <Column
+                    field="status.status"
+                    header="Status"
+                    :sortable="true"
+                    :showFilterMenu="false"
+                    style="width: 20%"
+                    class="justify-items-center"
+                >
+                    <!-- Body Badge -->
                     <template #body="{ data }">
                         <span
-                            :class="getStatusClass(data.status)"
+                            :class="getStatusClass(data.status.status)"
                             class="inline-block w-full rounded-full px-2 py-1 text-center text-xs font-semibold"
                         >
-                            {{ statusLabel(data.status) }}
+                            {{ capitalize(data.status.status) }}
                         </span>
                     </template>
 
+                    <!-- Filter -->
                     <template #filter="{ filterModel, filterCallback }">
-                        <Select
-                            v-model="filterModel.value"
-                            :options="statuses"
-                            placeholder="Select status"
-                            class="w-40"
-                            @change="
-                                () => {
-                                    if (filterModel.value === 'All') {
-                                        filterModel.value = null;
+                        <div class="flex justify-center">
+                            <Select
+                                v-model="filterModel.value"
+                                :options="statuses"
+                                placeholder="Select status"
+                                class="w-40"
+                                @change="
+                                    () => {
+                                        if (filterModel.value === 'All') {
+                                            filterModel.value = null;
+                                        }
+                                        filterCallback();
                                     }
-                                    filterCallback();
-                                }
-                            "
-                        >
-                            <!-- Tampilan nilai yang dipilih -->
-                            <template #value="{ value }">
-                                <span v-if="!value || value === 'All'" class="w-full text-center text-gray-500"> Select status </span>
-                                <span
-                                    v-else
-                                    :class="getStatusClass(value)"
-                                    class="inline-block w-full rounded-full px-2 py-1 text-center text-xs font-semibold"
-                                >
-                                    {{ statusLabel(value) }}
-                                </span>
-                            </template>
+                                "
+                            >
+                                <!-- Selected value -->
+                                <template #value="{ value }">
+                                    <span v-if="!value || value === 'All'" class="w-full text-center text-gray-500"> Select status </span>
+                                    <span
+                                        v-else
+                                        :class="getStatusClass(value)"
+                                        class="inline-block w-full rounded-full px-2 py-1 text-center text-xs font-semibold"
+                                    >
+                                        {{ capitalize(value) }}
+                                    </span>
+                                </template>
 
-                            <!-- Tampilan opsi dropdown -->
-                            <template #option="{ option }">
-                                <span
-                                    v-if="option === 'All'"
-                                    class="inline-block w-full rounded-full bg-gray-100 px-2 py-1 text-center text-xs font-semibold text-gray-800"
-                                >
-                                    All
-                                </span>
-                                <span
-                                    v-else
-                                    :class="getStatusClass(option)"
-                                    class="inline-block w-full rounded-full px-2 py-1 text-center text-xs font-semibold"
-                                >
-                                    {{ statusLabel(option) }}
-                                </span>
-                            </template>
-                        </Select>
+                                <!-- Dropdown options -->
+                                <template #option="{ option }">
+                                    <span
+                                        v-if="option === 'All'"
+                                        class="inline-block w-full rounded-full bg-gray-100 px-2 py-1 text-center text-xs font-semibold text-gray-800"
+                                    >
+                                        All
+                                    </span>
+                                    <span
+                                        v-else
+                                        :class="getStatusClass(option)"
+                                        class="inline-block w-full rounded-full px-2 py-1 text-center text-xs font-semibold"
+                                    >
+                                        {{ capitalize(option) }}
+                                    </span>
+                                </template>
+                            </Select>
+                        </div>
                     </template>
                 </Column>
 
@@ -490,9 +534,10 @@ const resetForm = () => {
                 >
                     <template #body="{ data }">
                         <div class="flex gap-4">
+                            <!-- Approve Reject by Dept Head / Div Head-->
                             <template v-if="auth?.user?.permissions?.includes('Approve') || auth?.user?.permissions?.includes('Reject')">
                                 <button
-                                    v-if="data.status === 'wait_for_review'"
+                                    v-if="data.status?.status === 'wait_for_review'"
                                     class="inline-flex cursor-pointer items-center gap-1 rounded bg-green-400 px-3 py-1 text-xs font-semibold text-black hover:bg-green-600 hover:text-white"
                                     @click="acceptRequest(data.id)"
                                 >
@@ -500,16 +545,18 @@ const resetForm = () => {
                                 </button>
 
                                 <button
-                                    v-if="data.status === 'wait_for_review'"
+                                    v-if="data.status?.status === 'wait_for_review'"
                                     class="inline-flex cursor-pointer items-center gap-1 rounded bg-red-400 px-3 py-1 text-xs font-semibold text-black hover:bg-red-600 hover:text-white"
                                     @click="rejectRequest(data.id)"
                                 >
                                     <i class="pi pi-times" /> Reject
                                 </button>
                             </template>
+
+                            <!-- Execute by Admin and User Acceptance -->
                             <template v-if="auth?.user?.roles.includes('Admin')">
                                 <button
-                                    v-if="data.status === 'accepted'"
+                                    v-if="data.status?.status === 'accepted'"
                                     class="inline-flex cursor-pointer items-center gap-1 rounded bg-orange-400 px-3 py-1 text-xs font-semibold text-black hover:bg-orange-600 hover:text-white"
                                     @click="executeRequest(data.id)"
                                 >
@@ -517,23 +564,35 @@ const resetForm = () => {
                                 </button>
 
                                 <button
-                                    v-if="data.status === 'in_progress' && auth?.user?.roles?.includes('Admin')"
+                                    v-if="data.status?.status === 'in_progress' && auth?.user?.roles?.includes('Admin')"
                                     class="inline-flex cursor-pointer items-center gap-1 rounded bg-orange-400 px-3 py-1 text-xs font-semibold text-black hover:bg-orange-600 hover:text-white"
-                                    @click="finishRequest(data.id)"
+                                    @click="user_acceptance(data.id)"
                                 >
-                                    <i class="pi pi-check-square" /> Finish
+                                    <i class="pi pi-check-circle" /> User Review
                                 </button>
                             </template>
+
+                            <!-- User Review and determined Finish or not yet -->
+                            <template v-if="auth?.user.npk === data.npk">
+                                <button
+                                    v-if="data.status?.status === 'user_acceptance'"
+                                    class="inline-flex cursor-pointer items-center gap-1 rounded bg-orange-400 px-3 py-1 text-xs font-semibold text-black hover:bg-orange-600 hover:text-white"
+                                    @click="user_acceptance(data.id)"
+                                >
+                                    <i class="pi pi-cog pi-spin" /> Finish
+                                </button>
+                            </template>
+
                             <div class="flex h-6 w-6 items-center justify-center">
                                 <i
                                     class="pi pi-spin pi-eye"
                                     style="color: yellow"
-                                    v-if="data.status === 'wait_for_review' && !auth?.user?.permissions?.includes('Approve')"
+                                    v-if="data.status?.status === 'wait_for_review' && !auth?.user?.permissions?.includes('Approve')"
                                 ></i>
                                 <i
                                     class="pi pi-spin pi-spinner"
                                     style="color: cyan"
-                                    v-if="data.status === 'in_progress' && !auth?.user?.permissions?.includes('Execute')"
+                                    v-if="data.status?.status === 'in_progress' && !auth?.user?.permissions?.includes('Execute')"
                                 ></i>
                                 <i class="pi pi-spin pi-hourglass" style="color: cyan" v-if="data.status === 'accepted'"></i>
                                 <i class="pi pi-check-circle" style="color: green" v-if="data.status === 'finish'"></i>
@@ -603,10 +662,10 @@ const resetForm = () => {
                                     class="w-full rounded-md border border-border bg-background px-3 py-2 text-card-foreground focus:ring-2 focus:ring-ring focus:outline-none"
                                     :class="{ 'border-red-500': form.errors.priority }"
                                 >
-                                    <option value="low">Low</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="high">High</option>
-                                    <option value="urgent">Urgent</option>
+                                    <option value="1">Low</option>
+                                    <option value="2">Medium</option>
+                                    <option value="3">High</option>
+                                    <option value="4">Urgent</option>
                                 </select>
                                 <div v-if="form.errors.priority" class="text-sm text-red-500">{{ form.errors.priority }}</div>
                             </div>

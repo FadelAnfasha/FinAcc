@@ -13,14 +13,24 @@ class RequestForService extends Model
     protected $fillable = [
         'name',
         'npk',
-        'priority',
+        'priority_id',
         'input_date',
         'description',
-        'status',
+        'status_id',
         'attachment',
     ];
     protected $casts = [
         'created_at' => 'date:Y-m-d',
         'updated_at' => 'date:Y-m-d',
     ];
+
+    public function priority()
+    {
+        return $this->belongsTo(Priority::class, 'priority_id', 'id');
+    }
+
+    public function status()
+    {
+        return $this->belongsTo(Status::class, 'status_id', 'id');
+    }
 }
