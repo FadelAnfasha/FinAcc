@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use App\Models\Status;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
+use Spatie\Permission\Traits\HasRoles;
 
 class RequestForServiceController extends Controller
 {
@@ -74,30 +75,30 @@ class RequestForServiceController extends Controller
 
     public function accept($id)
     {
-        $rfs = RequestForService::findOrFail($id);
-        $rfs->status_id = '3';
-        $rfs->save();
+        // $rfs = RequestForService::findOrFail($id);
+        // $rfs->status_id = '3';
+        // $rfs->save();
 
-        HistoryRFS::create([
-            'rfs_id' => RequestForService::latest()->first()->id,
-            'updated_by' => auth()->user()->name,
-        ]);
+        // HistoryRFS::create([
+        //     'rfs_id' => RequestForService::latest()->first()->id,
+        //     'updated_by' => auth()->user()->name,
+        // ]);
 
         return redirect()->back()->with('success', 'Request accepted.');
     }
 
     public function reject($id)
     {
-        $rfs = RequestForService::findOrFail($id);
-        $rfs->status_id = '6';
-        $rfs->save();
+        // $rfs = RequestForService::findOrFail($id);
+        // $rfs->status_id = '6';
+        // $rfs->save();
 
-        HistoryRFS::create([
-            'rfs_id' => RequestForService::latest()->first()->id,
-            'updated_by' => auth()->user()->name,
-        ]);
+        // HistoryRFS::create([
+        //     'rfs_id' => RequestForService::latest()->first()->id,
+        //     'updated_by' => auth()->user()->name,
+        // ]);
 
-        return redirect()->back()->with('danger', 'Request rejected.');
+        return redirect()->back()->with('error', 'Request rejected.');
     }
 
     public function execute($id)

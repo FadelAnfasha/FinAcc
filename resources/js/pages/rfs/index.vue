@@ -5,23 +5,32 @@ import Button from 'primevue/button';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
 import DatePicker from 'primevue/datepicker';
+import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import Select from 'primevue/select';
+import Textarea from 'primevue/textarea';
 import { useToast } from 'primevue/usetoast';
 import { computed, ref, Ref, watchEffect } from 'vue';
 
 const page = usePage();
 const toast = useToast();
-const flash = page.props.flash as { success?: string };
 
 watchEffect(() => {
-    const flash = page.props.flash as { success?: string } | undefined;
-
-    if (flash?.success) {
+    const currentFlash = page.props.flash as { success?: string; error?: string } | undefined;
+    if (currentFlash?.success) {
         toast.add({
             severity: 'success',
             summary: 'Success',
-            detail: flash.success,
+            detail: currentFlash.success,
+            life: 3000,
+        });
+    }
+
+    if (currentFlash?.error) {
+        toast.add({
+            severity: 'error', // Ganti dengan 'error' jika library toast Anda menggunakan ini untuk pesan kesalahan/danger
+            summary: 'Rejected',
+            detail: currentFlash.error,
             life: 3000,
         });
     }
@@ -50,19 +59,53 @@ interface RequestItem {
 }
 
 const acceptRequest = (id: number) => {
-    router.post(`/rfs/${id}/accept`);
+    router.post(`rfs/${id}/accept`);
 };
 
 const rejectRequest = (id: number) => {
-    router.post(`/rfs/${id}/reject`);
+    router.post(`rfs/${id}/reject`);
 };
 
 const executeRequest = (id: number) => {
     router.post(`/rfs/${id}/execute`);
 };
 
+const showDialog: Ref<boolean> = ref(false);
+const userName = computed(() => page.props.auth?.user?.name ?? '');
+const impactValue = ref<string>('');
+const selectedId = ref<number | null>(null);
+
 const user_acceptance = (id: number) => {
-    router.post(`/rfs/${id}/uat`);
+    selectedId.value = id;
+    showDialog.value = true;
+};
+
+const submitAcceptance = () => {
+    if (selectedId.value !== null) {
+        // Objek form untuk dikirimkan
+        const form = {
+            impact: impactValue.value,
+        };
+
+        // Mengirim permintaan POST dengan data form
+        router.post(`/rfs/${selectedId.value}/uat`, form, {
+            onSuccess: () => {
+                // Berhasil: tutup dialog dan reset nilai
+                showDialog.value = false;
+                impactValue.value = '';
+                selectedId.value = null;
+            },
+            onError: (errors) => {
+                // Gagal: tampilkan pesan error
+                console.error('Terjadi kesalahan:', errors);
+            },
+        });
+    }
+};
+
+const closeDialog = () => {
+    showDialog.value = false;
+    impactValue.value = '';
 };
 
 const finishRequest = (id: number) => {
@@ -196,7 +239,7 @@ const handleFileSelect = (event: Event) => {
 
 // Submit form
 const submitForm = () => {
-    form.post('/rfs', {
+    form.post('rfs', {
         forceFormData: true, // WAJIB untuk upload file
         onStart: () => {
             form.clearErrors();
@@ -222,22 +265,40 @@ const resetForm = () => {
         fileInput.value.value = '';
     }
 };
-
-const showImportDialog: Ref<boolean> = ref(false);
 </script>
 
 <template>
     <Head title="RFS" />
     <AppLayout>
         <div class="mt-4 mb-8">
-            <Dialog
-                v-model:visible="showImportDialog"
-                header="Import Confirmation"
-                modal
-                class="w-[30rem]"
-                :closable="false"
-                @hide="resetImportState"
-            >
+            <Dialog v-model:visible="showDialog" header="Review Confirmation" modal class="w-[30rem]" :closable="false">
+                <div class="space-y-4">
+                    <p>
+                        Hi <span class="text-red-400">{{ userName }}</span
+                        >,
+                    </p>
+                    <p>
+                        Please describe the impact of
+                        <strong class="text-green-500">Imrpovement/Request</strong>?
+                    </p>
+                    <Textarea v-model="impactValue" autoResize rows="3" cols="55" class="mb-4" placeholder="Impact" required />
+                </div>
+                <div class="mt-6 flex justify-end gap-2">
+                    <Button
+                        type="button"
+                        label="Cancel"
+                        unstyled
+                        class="w-28 cursor-pointer rounded-xl bg-red-500 px-4 py-2 text-center font-bold text-slate-900 hover:bg-red-700"
+                        @click="closeDialog"
+                    />
+                    <Button
+                        type="button"
+                        label="Submit"
+                        unstyled
+                        class="w-28 cursor-pointer rounded-xl bg-green-500 px-4 py-2 text-center font-bold text-slate-900 hover:bg-green-700"
+                        @click="submitAcceptance"
+                    />
+                </div>
             </Dialog>
         </div>
 
