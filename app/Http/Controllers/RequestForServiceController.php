@@ -75,28 +75,28 @@ class RequestForServiceController extends Controller
 
     public function accept($id)
     {
-        // $rfs = RequestForService::findOrFail($id);
-        // $rfs->status_id = '3';
-        // $rfs->save();
+        $rfs = RequestForService::findOrFail($id);
+        $rfs->status_id = '2';
+        $rfs->save();
 
-        // HistoryRFS::create([
-        //     'rfs_id' => RequestForService::latest()->first()->id,
-        //     'updated_by' => auth()->user()->name,
-        // ]);
+        HistoryRFS::create([
+            'rfs_id' => RequestForService::latest()->first()->id,
+            'updated_by' => auth()->user()->name,
+        ]);
 
         return redirect()->back()->with('success', 'Request accepted.');
     }
 
     public function reject($id)
     {
-        // $rfs = RequestForService::findOrFail($id);
-        // $rfs->status_id = '6';
-        // $rfs->save();
+        $rfs = RequestForService::findOrFail($id);
+        $rfs->status_id = '3';
+        $rfs->save();
 
-        // HistoryRFS::create([
-        //     'rfs_id' => RequestForService::latest()->first()->id,
-        //     'updated_by' => auth()->user()->name,
-        // ]);
+        HistoryRFS::create([
+            'rfs_id' => RequestForService::latest()->first()->id,
+            'updated_by' => auth()->user()->name,
+        ]);
 
         return redirect()->back()->with('error', 'Request rejected.');
     }
@@ -104,7 +104,7 @@ class RequestForServiceController extends Controller
     public function execute($id)
     {
         $rfs = RequestForService::findOrFail($id);
-        $rfs->status_id = '2';
+        $rfs->status_id = '4';
         $rfs->save();
 
         HistoryRFS::create([
@@ -118,7 +118,7 @@ class RequestForServiceController extends Controller
     public function user_accept($id)
     {
         $rfs = RequestForService::findOrFail($id);
-        $rfs->status_id = '4';
+        $rfs->status_id = '5';
         $rfs->save();
 
         HistoryRFS::create([
@@ -129,10 +129,11 @@ class RequestForServiceController extends Controller
         return redirect()->back()->with('success', 'Request waiting for acceptance.');
     }
 
-    public function finish($id)
+    public function finish($id, Request $request)
     {
         $rfs = RequestForService::findOrFail($id);
-        $rfs->status_id = '5';
+        $rfs->status_id = '7';
+        $rfs->impact = $request->impact;
         $rfs->save();
 
         HistoryRFS::create([

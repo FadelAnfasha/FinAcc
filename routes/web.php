@@ -22,6 +22,9 @@ use App\Http\Controllers\ProcessController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\WagesDistributionController;
 use App\Models\SalesQuantity;
+use App\Http\Controllers\Settings\PasswordController;
+use App\Http\Controllers\Settings\ProfileController;
+
 
 #===========================
 #======  Main Route  =======
@@ -294,6 +297,7 @@ Route::middleware(['auth', 'verified', 'role:Superior|Admin'])->group(function (
         Route::post('register', [RegisteredUserController::class, 'store'])->name('register');
     });
 });
+
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';

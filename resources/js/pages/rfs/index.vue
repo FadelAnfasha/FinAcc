@@ -67,7 +67,11 @@ const rejectRequest = (id: number) => {
 };
 
 const executeRequest = (id: number) => {
-    router.post(`/rfs/${id}/execute`);
+    router.post(`rfs/${id}/execute`);
+};
+
+const userReview = (id: number) => {
+    router.post(`rfs/${id}/uat`);
 };
 
 const showDialog: Ref<boolean> = ref(false);
@@ -88,7 +92,7 @@ const submitAcceptance = () => {
         };
 
         // Mengirim permintaan POST dengan data form
-        router.post(`/rfs/${selectedId.value}/uat`, form, {
+        router.post(`rfs/${selectedId.value}/finish`, form, {
             onSuccess: () => {
                 // Berhasil: tutup dialog dan reset nilai
                 showDialog.value = false;
@@ -122,6 +126,7 @@ const filters = ref({
     'priority.priority': { value: null, matchMode: 'equals' },
     created_at: { value: null, matchMode: 'contains' },
     description: { value: null, matchMode: 'contains' },
+    impact: { value: null, matchMode: 'contains' },
     'status.status': { value: null, matchMode: 'equals' },
     updated_at: { value: null, matchMode: 'contains' },
 });
@@ -270,42 +275,42 @@ const resetForm = () => {
 <template>
     <Head title="RFS" />
     <AppLayout>
-        <div class="mt-4 mb-8">
-            <Dialog v-model:visible="showDialog" header="Review Confirmation" modal class="w-[30rem]" :closable="false">
-                <div class="space-y-4">
-                    <p>
-                        Hi <span class="text-red-400">{{ userName }}</span
-                        >,
-                    </p>
-                    <p>
-                        Please describe the impact of
-                        <strong class="text-green-500">Imrpovement/Request</strong>?
-                    </p>
-                    <Textarea v-model="impactValue" autoResize rows="3" cols="55" class="mb-4" placeholder="Impact" required />
-                </div>
-                <div class="mt-6 flex justify-end gap-2">
-                    <Button
-                        type="button"
-                        label="Cancel"
-                        unstyled
-                        class="w-28 cursor-pointer rounded-xl bg-red-500 px-4 py-2 text-center font-bold text-slate-900 hover:bg-red-700"
-                        @click="closeDialog"
-                    />
-                    <Button
-                        type="button"
-                        label="Submit"
-                        unstyled
-                        class="w-28 cursor-pointer rounded-xl bg-green-500 px-4 py-2 text-center font-bold text-slate-900 hover:bg-green-700"
-                        @click="submitAcceptance"
-                    />
-                </div>
-            </Dialog>
-        </div>
+        <!-- <div class="mt-4 mb-8"> -->
+        <Dialog v-model:visible="showDialog" header="Review Confirmation" modal class="w-[30rem]" :closable="false">
+            <div class="space-y-4">
+                <p>
+                    Hi <span class="text-red-400">{{ userName }}</span
+                    >,
+                </p>
+                <p>
+                    Please describe the impact of
+                    <strong class="text-green-500">Improvement/Request</strong>?
+                </p>
+                <Textarea v-model="impactValue" autoResize rows="3" cols="55" class="mb-4" placeholder="Impact" required />
+            </div>
+            <div class="mt-6 flex justify-end gap-2">
+                <Button
+                    type="button"
+                    label="Cancel"
+                    unstyled
+                    class="w-28 cursor-pointer rounded-xl bg-red-500 px-4 py-2 text-center font-bold text-slate-900 hover:bg-red-700"
+                    @click="closeDialog"
+                />
+                <Button
+                    type="button"
+                    label="Submit"
+                    unstyled
+                    class="w-28 cursor-pointer rounded-xl bg-green-500 px-4 py-2 text-center font-bold text-slate-900 hover:bg-green-700"
+                    @click="submitAcceptance"
+                />
+            </div>
+        </Dialog>
+        <!-- </div> -->
 
         <!-- Data Table Section -->
-        <section ref="dataSection" class="mb-4 scroll-mt-8 p-6">
-            <div class="mb-4 flex items-center justify-between">
-                <div class="flex flex-col">
+        <section ref="dataSection" class="m-6 scroll-mt-8">
+            <div class="flex items-center justify-between">
+                <div class="flex flex-col gap-1">
                     <h2 class="text-start text-3xl font-bold text-gray-900 dark:text-white">Request Data</h2>
                     <p class="text-start text-gray-600 dark:text-gray-400">Display all request, create request, and approving request.</p>
                 </div>
@@ -320,6 +325,15 @@ const resetForm = () => {
                 />
             </div>
 
+            <div class="mt-4 mb-8">
+                <div class="relative mb-6 text-center">
+                    <h1 class="relative z-10 inline-block bg-white px-4 text-2xl font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                        List of Request
+                    </h1>
+                    <hr class="absolute top-1/2 left-0 z-0 w-full -translate-y-1/2 border-gray-300 dark:border-gray-600" />
+                </div>
+            </div>
+
             <DataTable
                 v-model:filters="filters"
                 :value="items"
@@ -330,13 +344,13 @@ const resetForm = () => {
                 dataKey="id"
                 filterDisplay="row"
                 :loading="loading"
-                :globalFilterFields="['name', 'priority', 'created_at', 'description', 'status', 'updated_at']"
+                :globalFilterFields="['name', 'priority', 'created_at', 'description', 'impact', 'status', 'updated_at']"
                 tableStyle="min-width: 50rem"
                 class="text-sm"
                 sortField="created_at"
                 :sortOrder="-1"
             >
-                <Column field="created_at" header="Request Date" :showFilterMenu="false" sortable style="width: 20%">
+                <Column field="created_at" header="Request Date" :showFilterMenu="false" sortable style="width: 10%">
                     <template #filter="{ filterModel, filterCallback }">
                         <DatePicker
                             :modelValue="filterModel.value ? new Date(filterModel.value + 'T00:00:00') : null"
@@ -378,7 +392,7 @@ const resetForm = () => {
                     </template>
                 </Column>
 
-                <Column field="name" header="Name" :showFilterMenu="false" sortable style="width: 20%">
+                <Column field="name" header="Name" :showFilterMenu="false" sortable style="width: 10%">
                     <template #filter="{ filterModel, filterCallback }">
                         <InputText v-model="filterModel.value" @input="filterCallback()" placeholder="Search name" />
                     </template>
@@ -389,7 +403,7 @@ const resetForm = () => {
                     header="Priority"
                     :sortable="true"
                     :showFilterMenu="false"
-                    style="width: 20%"
+                    style="width: 5%"
                     class="justify-items-center"
                 >
                     <!-- Body Badge -->
@@ -463,14 +477,18 @@ const resetForm = () => {
                     </template>
                 </Column>
 
-                <Column
-                    field="status.status"
-                    header="Status"
-                    :sortable="true"
-                    :showFilterMenu="false"
-                    style="width: 20%"
-                    class="justify-items-center"
-                >
+                <Column field="impact" header="Impact" :showFilterMenu="false" sortable style="width: 20%">
+                    <template #body="{ data }">
+                        <div class="max-w-[200px] truncate" :title="data.impact" v-tooltip.top="data.impact">
+                            {{ data.impact ?? 'Not finish yet' }}
+                        </div>
+                    </template>
+                    <template #filter="{ filterModel, filterCallback }">
+                        <InputText v-model="filterModel.value" @input="filterCallback()" placeholder="Search Impact" />
+                    </template>
+                </Column>
+
+                <Column field="status.status" header="Status" :sortable="true" :showFilterMenu="false" style="width: 5%" class="justify-items-center">
                     <!-- Body Badge -->
                     <template #body="{ data }">
                         <span
@@ -531,7 +549,7 @@ const resetForm = () => {
                     </template>
                 </Column>
 
-                <Column field="attachment" header="Attachment" :showFilterMenu="false" style="width: 20%">
+                <Column field="attachment" header="Attachment" :showFilterMenu="false" style="width: 5%">
                     <template #body="{ data }">
                         <a
                             v-if="data.attachment"
@@ -546,7 +564,7 @@ const resetForm = () => {
                     </template>
                 </Column>
 
-                <Column field="updated_at" header="Updated at" :showFilterMenu="false" sortable style="width: 20%">
+                <Column field="updated_at" header="Updated at" :showFilterMenu="false" sortable style="width: 10%">
                     <template #filter="{ filterModel, filterCallback }">
                         <DatePicker
                             :modelValue="filterModel.value ? new Date(filterModel.value + 'T00:00:00') : null"
@@ -588,11 +606,14 @@ const resetForm = () => {
                     </template>
                 </Column>
 
-                <Column
+                <!-- <Column
                     header="Action"
-                    style="width: 20%"
+                    style="width: 15%"
+                    class="justify-items-center"
                     v-if="!auth?.user?.role?.includes('Director') || !auth?.user?.role?.includes('Deputy Division')"
-                >
+                > -->
+
+                <Column header="Action" style="width: 15%" class="justify-items-center">
                     <template #body="{ data }">
                         <div class="flex gap-4">
                             <!-- Approve Reject by Dept Head / Div Head-->
@@ -627,9 +648,9 @@ const resetForm = () => {
                                 <button
                                     v-if="data.status?.status === 'in_progress' && auth?.user?.roles?.includes('Admin')"
                                     class="inline-flex cursor-pointer items-center gap-1 rounded bg-orange-400 px-3 py-1 text-xs font-semibold text-black hover:bg-orange-600 hover:text-white"
-                                    @click="user_acceptance(data.id)"
+                                    @click="userReview(data.id)"
                                 >
-                                    <i class="pi pi-check-circle" /> User Review
+                                    <i class="pi pi-check-circle" /> Review
                                 </button>
                             </template>
 
@@ -666,9 +687,12 @@ const resetForm = () => {
         </section>
 
         <!-- Create Form Section -->
-        <section ref="createFormSection" v-if="auth?.user?.role !== 'Admin'" class="mx-24 my-8 scroll-mt-8">
-            <div class="mb-8 flex items-center justify-between">
-                <h2 class="text-3xl font-semibold">Create Form</h2>
+        <section ref="createFormSection" v-if="auth?.user?.role !== 'Admin'" class="m-6 scroll-mt-8">
+            <div class="flex items-center justify-between">
+                <div class="flex flex-col gap-1">
+                    <h2 class="text-3xl font-semibold">Create Request</h2>
+                    <p class="text-start text-gray-600 dark:text-gray-400">Fill the form below to request a service.</p>
+                </div>
                 <Button
                     label=" See Data"
                     severity="warn"
@@ -678,6 +702,15 @@ const resetForm = () => {
                     @click="scrollTodataSection"
                     class="rounded-xl border border-amber-500 bg-white px-3 py-1 text-amber-500 hover:border-white hover:bg-amber-500 hover:text-white"
                 />
+            </div>
+
+            <div class="mt-4 mb-8">
+                <div class="relative mb-6 text-center">
+                    <h1 class="relative z-10 inline-block bg-white px-4 text-2xl font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                        Form Request for Service
+                    </h1>
+                    <hr class="absolute top-1/2 left-0 z-0 w-full -translate-y-1/2 border-gray-300 dark:border-gray-600" />
+                </div>
             </div>
 
             <div class="p-6">
