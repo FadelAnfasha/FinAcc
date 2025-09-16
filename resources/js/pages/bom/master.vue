@@ -1474,7 +1474,7 @@ const importResult = computed(() => {
                                         </template>
                                     </Column>
 
-                                    <Column field="price" header="Standard Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="price" header="Actual Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ formatCurrency(data.price) }}
                                         </template>

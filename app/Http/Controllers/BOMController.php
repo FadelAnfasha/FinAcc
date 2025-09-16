@@ -94,7 +94,7 @@ class BOMController extends Controller
         }
 
         if ($latestActualMat) {
-            $lastUpdate[] = $latestStandardMat->created_at;
+            $lastUpdate[] = $latestActualMat->created_at;
         } else {
             $lastUpdate[] = null; // Atau nilai default lain jika tidak ada data
         }
