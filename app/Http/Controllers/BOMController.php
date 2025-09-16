@@ -80,7 +80,6 @@ class BOMController extends Controller
 
         $latestActualMat = ActualMaterial::latest('updated_at')->first();
 
-
         // Ambil data Valve dengan updated_at paling terbaru
         $latestValve = Valve::latest('updated_at')->first();
         $latestProcessCost = ProcessCost::latest('updated_at')->first();
@@ -94,7 +93,7 @@ class BOMController extends Controller
         }
 
         if ($latestActualMat) {
-            $lastUpdate[] = $latestStandardMat->created_at;
+            $lastUpdate[] = $latestActualMat->created_at;
         } else {
             $lastUpdate[] = null; // Atau nilai default lain jika tidak ada data
         }

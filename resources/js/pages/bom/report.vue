@@ -1811,7 +1811,7 @@ const maxDate = ref(new Date());
                                     <Column field="standardPeriod" v-bind="tbStyle('main')" />
                                     <Column field="actualPeriod" v-bind="tbStyle('main')" />
 
-                                    <Column field="standard_costtotal_raw_material" sortable v-bind="tbStyle('rm')">
+                                    <Column field="standard_cost.total_raw_material" sortable v-bind="tbStyle('rm')">
                                         <template #body="{ data }">
                                             {{ Number(data.standard_cost.total_raw_material).toLocaleString('id-ID') }}
                                         </template>
