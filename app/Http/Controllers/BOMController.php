@@ -24,7 +24,7 @@ class BOMController extends Controller
     public function master(Request $request)
     {
         $standardMaterial = StandardMaterial::with('bom')->get();
-        $actualdMaterial = ActualMaterial::with('bom')->get();
+        $actualMaterial = ActualMaterial::with('bom')->get();
         $bom = BillOfMaterial::where('depth', 1)->get();
         $packings = Packing::all();
         $valve = Valve::all();
@@ -52,7 +52,7 @@ class BOMController extends Controller
 
         return Inertia::render("bom/master", [
             'standardMaterial' => $standardMaterial,
-            'actualMaterial' => $actualdMaterial,
+            'actualMaterial' => $actualMaterial,
             'packings' => $packings,
             'valve' => $valve,
             'billOfMaterials' => $bom,

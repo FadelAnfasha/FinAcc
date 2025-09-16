@@ -84,7 +84,7 @@ const lastUpdate = computed(() => {
     const stamat_update = ((page.props.standardMaterial as any[]) ?? []).map((stamat) => new Date(stamat.updated_at));
     const Max_stamatUpdate = stamat_update.length ? new Date(Math.max(...stamat_update.map((d) => d.getTime()))) : null;
 
-    const acmat_update = ((page.props.standardMaterial as any[]) ?? []).map((acmat) => new Date(acmat.updated_at));
+    const acmat_update = ((page.props.actualMaterial as any[]) ?? []).map((acmat) => new Date(acmat.updated_at));
     const Max_acmatUpdate = acmat_update.length ? new Date(Math.max(...acmat_update.map((d) => d.getTime()))) : null;
 
     const valve_update = ((page.props.valve as any[]) ?? []).map((valve) => new Date(valve.updated_at));
