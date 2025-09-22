@@ -548,7 +548,7 @@ class DatabaseSeeder extends Seeder
             ],
             [
                 'id' => 6,
-                'status' => 'revised'
+                'status' => 'revision'
             ],
             [
                 'id' => 7,
