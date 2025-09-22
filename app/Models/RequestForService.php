@@ -17,6 +17,8 @@ class RequestForService extends Model
         'input_date',
         'description',
         'status_id',
+        'impact',
+        'revision',
         'attachment',
     ];
     protected $casts = [

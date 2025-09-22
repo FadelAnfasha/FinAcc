@@ -68,7 +68,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/rfs/{id}/uat', [RequestForServiceController::class, 'user_accept'])
         ->middleware('role:Admin');
 
+    Route::post('/rfs/{id}/revision', [RequestForServiceController::class, 'revision'])
+        ->middleware('role:Staff');
+
     Route::post('/rfs/{id}/finish', [RequestForServiceController::class, 'finish'])
+        ->middleware('role:Staff');
+
+    Route::post('/rfs/{id}/revision', [RequestForServiceController::class, 'revision'])
         ->middleware('role:Staff');
 });
 

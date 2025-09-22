@@ -129,6 +129,14 @@ class RequestForServiceController extends Controller
         return redirect()->back()->with('success', 'Request waiting for acceptance.');
     }
 
+    public function revision($id, Request $request)
+    {
+        $rfs = RequestForService::findOrFail($id);
+        $rfs->status_id = '6';
+        $rfs->revision = $request->revision;
+        $rfs->save();
+    }
+
     public function finish($id, Request $request)
     {
         $rfs = RequestForService::findOrFail($id);
