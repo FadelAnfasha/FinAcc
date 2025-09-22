@@ -753,7 +753,7 @@ const maxDate = ref(new Date());
                             <section class="p-2">
                                 <div class="mb-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                                     <!-- Title -->
-                                    <h2 class="text-3xl font-semibold text-gray-900 hover:text-indigo-500 dark:text-white">Standard Cost</h2>
+                                    <h2 class="text-3xl font-semibold text-gray-900 dark:text-white">Standard Cost</h2>
 
                                     <!-- Main Controls Container -->
                                     <div class="flex flex-col gap-4 lg:flex-row lg:items-center">
@@ -1216,7 +1216,7 @@ const maxDate = ref(new Date());
                             <section class="p-2">
                                 <div class="mb-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                                     <!-- Title -->
-                                    <h2 class="text-3xl font-semibold text-gray-900 hover:text-indigo-500 dark:text-white">Actual Cost</h2>
+                                    <h2 class="text-3xl font-semibold text-gray-900 dark:text-white">Actual Cost</h2>
 
                                     <!-- Main Controls Container -->
                                     <div class="flex flex-col gap-4 lg:flex-row lg:items-center">
@@ -1661,7 +1661,7 @@ const maxDate = ref(new Date());
                             <section class="p-2">
                                 <div class="mb-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                                     <!-- Title -->
-                                    <h2 class="text-3xl font-semibold text-gray-900 hover:text-indigo-500 dark:text-white">Difference</h2>
+                                    <h2 class="text-3xl font-semibold text-gray-900 dark:text-white">Difference</h2>
 
                                     <!-- Main Controls Container -->
                                     <div class="flex flex-col gap-4 lg:flex-row lg:items-center">

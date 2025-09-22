@@ -1264,9 +1264,7 @@ const importResult = computed(() => {
                         <TabPanel value="0">
                             <section ref="matSection" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
-                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
-                                        Standard Material Price
-                                    </h2>
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Standard Material Price</h2>
 
                                     <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
                                         <FileUpload
@@ -1396,9 +1394,7 @@ const importResult = computed(() => {
                         <TabPanel value="1">
                             <section ref="matSection" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
-                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
-                                        Actual Material Price
-                                    </h2>
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Actual Material Price</h2>
 
                                     <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
                                         <FileUpload
@@ -1524,9 +1520,7 @@ const importResult = computed(() => {
                         <TabPanel value="2">
                             <section ref="packSection" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
-                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
-                                        Valve Price
-                                    </h2>
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Valve Price</h2>
 
                                     <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
                                         <FileUpload
@@ -1646,9 +1640,7 @@ const importResult = computed(() => {
                         <TabPanel value="3">
                             <section ref="bomSection" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
-                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
-                                        Bill of Material
-                                    </h2>
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Bill of Material</h2>
 
                                     <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
                                         <FileUpload

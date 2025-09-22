@@ -414,8 +414,8 @@ const resetForm = () => {
                 <div v-if="selectedRequest" class="space-y-2">
                     <div class="grid grid-cols-4 gap-6">
                         <div class="col-span-4 w-full rounded-xl bg-slate-200 px-2 py-1 dark:bg-slate-200">
-                            <p class="font-semibold text-gray-700 dark:text-gray-100">Request Description :</p>
-                            <p class="text-md text-gray-700 dark:text-gray-100">{{ selectedRequest.description }}</p>
+                            <p class="font-semibold text-gray-700 dark:text-gray-700">Request Description :</p>
+                            <p class="text-md text-gray-700 dark:text-gray-700">{{ selectedRequest.description }}</p>
                         </div>
                         <div class="col-span-2">
                             <p class="text-sm font-semibold text-gray-700 dark:text-gray-100">Status :</p>
@@ -455,16 +455,16 @@ const resetForm = () => {
                             <p class="text-md text-gray-700 dark:text-gray-100">{{ selectedRequest.updated_at }}</p>
                         </div>
 
-                        <div class="col-span-2 w-full rounded-xl bg-slate-200 px-2 py-1 dark:bg-slate-200">
-                            <p class="font-semibold text-gray-700 dark:text-gray-100">Impact :</p>
-                            <p class="text-md text-gray-700 dark:text-gray-100">{{ selectedRequest.impact ?? 'Not finish yet.' }}</p>
+                        <div class="col-span-2 w-full rounded-xl bg-slate-200 px-2 py-1 dark:bg-gray-200">
+                            <p class="font-semibold text-gray-700 dark:text-gray-700">Impact :</p>
+                            <p class="text-md text-gray-700 dark:text-gray-700">{{ selectedRequest.impact ?? 'Not finish yet.' }}</p>
                         </div>
                         <div class="col-span-2 w-full rounded-xl bg-slate-200 px-2 py-1 dark:bg-slate-200">
-                            <p class="font-semibold text-gray-700 dark:text-gray-100">Revision :</p>
-                            <p class="text-md text-gray-700 dark:text-gray-100">{{ selectedRequest.revision ?? '-' }}</p>
+                            <p class="font-semibold text-gray-700 dark:text-gray-700">Revision :</p>
+                            <p class="text-md text-gray-700 dark:text-gray-700">{{ selectedRequest.revision ?? '-' }}</p>
                         </div>
                         <div class="col-span-2 w-full rounded-xl bg-slate-200 px-2 py-1 dark:bg-slate-200">
-                            <p class="font-semibold text-gray-700 dark:text-gray-100">Attachment :</p>
+                            <p class="font-semibold text-gray-700 dark:text-gray-700">Attachment :</p>
                             <a
                                 v-if="selectedRequest.attachment"
                                 :href="`/storage/${selectedRequest.attachment}`"
@@ -475,7 +475,7 @@ const resetForm = () => {
                                 <i class="pi pi-external-link" /> View
                             </a>
                             <div v-else>
-                                <p class="text-md text-gray-700 dark:text-gray-100">No Attachment</p>
+                                <p class="text-md text-gray-700 dark:text-gray-700">No Attachment</p>
                             </div>
                         </div>
                     </div>
@@ -543,15 +543,12 @@ const resetForm = () => {
                         <DatePicker
                             :modelValue="filterModel.value ? new Date(filterModel.value + 'T00:00:00') : null"
                             @update:modelValue="
-                                // PERUBAHAN KRITIS: Perluas tipe 'val' untuk mencakup semua kemungkinan yang disebutkan error
                                 (val: Date | Date[] | (Date | null)[] | null | undefined) => {
                                     let selectedDate: Date | null = null;
 
                                     if (val instanceof Date) {
                                         selectedDate = val;
                                     } else if (Array.isArray(val) && val.length > 0) {
-                                        // Jika val adalah array, ambil elemen pertama jika itu Date
-                                        // Ini mengasumsikan Anda hanya tertarik pada tanggal pertama untuk filter tunggal
                                         if (val[0] instanceof Date) {
                                             selectedDate = val[0];
                                         }
