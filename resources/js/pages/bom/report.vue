@@ -1881,7 +1881,6 @@ const maxDate = ref(new Date());
                             </section>
                         </TabPanel>
                     </TabPanels>
-                    <
                 </Tabs>
             </div>
         </div>

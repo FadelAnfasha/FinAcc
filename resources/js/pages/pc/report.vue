@@ -1584,7 +1584,6 @@ function closeDialog(type: 'pc' | null) {
                             </section>
                         </TabPanel>
                     </TabPanels>
-                    <
                 </Tabs>
             </div>
         </div>

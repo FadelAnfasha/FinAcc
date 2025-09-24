@@ -1678,7 +1678,6 @@ const tempProgin = ref<number | null>(null);
                             </section>
                         </TabPanel>
                     </TabPanels>
-                    <
                 </Tabs>
             </div>
         </div>
