@@ -14,7 +14,7 @@ import '@vue-flow/core/dist/style.css';
 import '@vue-flow/core/dist/theme-default.css';
 
 const page = usePage();
-const currentPath = new URL(page.props.ziggy.location).pathname;
+// const currentPath = new URL(page.props.ziggy.location).pathname;
 
 const breadcrumbs: BreadcrumbItem[] = mainNavItems
     .filter((item) => route().current(item.href))

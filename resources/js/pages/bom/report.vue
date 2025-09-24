@@ -71,6 +71,7 @@ const ac = computed(() =>
 const dc = computed(() =>
     (page.props.dc as any[]).map((dc, index) => ({
         ...dc,
+        no: index + 1,
     })),
 );
 
@@ -1720,7 +1721,7 @@ const maxDate = ref(new Date());
                                 </div>
 
                                 <DataTable
-                                    :value="combinedData"
+                                    :value="dc"
                                     tableStyle="min-width: 50rem"
                                     paginator
                                     :rows="10"

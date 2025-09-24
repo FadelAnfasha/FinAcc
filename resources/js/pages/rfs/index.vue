@@ -174,7 +174,7 @@ const closeDialog = () => {
     revisionValue.value = '';
 };
 
-const props = defineProps({
+const { services, auth } = defineProps({
     services: Array,
     auth: Object,
 });

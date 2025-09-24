@@ -6,7 +6,7 @@ import { usePage } from '@inertiajs/vue3';
 import Toast from 'primevue/toast';
 
 const page = usePage();
-const currentPath = new URL(page.props.ziggy.location).pathname;
+// const currentPath = new URL(page.props.ziggy.location).pathname;
 
 // Otomatis generate breadcrumbs
 const breadcrumbs: BreadcrumbItemType[] = [];
