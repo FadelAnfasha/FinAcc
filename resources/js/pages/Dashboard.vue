@@ -273,7 +273,7 @@ const scrollToSection = (hash: string) => {
                 <section id="orgChart">
                     <Panel
                         header="Finance & Accounting Structure"
-                        class="mx-auto my-32 max-w-full lg:max-w-7xl"
+                        class="mx-auto my-32 max-w-full text-gray-700 lg:max-w-7xl dark:text-gray-100"
                         style="background-color: rgba(0, 0, 0, 0.7)"
                     >
                         <div style="height: 800px; width: 100%">

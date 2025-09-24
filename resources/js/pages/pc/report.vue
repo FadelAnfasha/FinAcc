@@ -437,9 +437,7 @@ function closeDialog(type: 'pc' | null) {
                         <TabPanel value="0">
                             <section ref="ctXsqSection" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
-                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
-                                        Cycle Time x Sales Quantity
-                                    </h2>
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Cycle Time x Sales Quantity</h2>
 
                                     <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
                                         <div class="flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row">
@@ -775,9 +773,7 @@ function closeDialog(type: 'pc' | null) {
                         <TabPanel value="1">
                             <section ref="baseSection" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
-                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
-                                        Convertion Cost / Product
-                                    </h2>
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Convertion Cost / Product</h2>
 
                                     <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
                                         <div class="flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row">
@@ -1107,9 +1103,7 @@ function closeDialog(type: 'pc' | null) {
                         <TabPanel value="2">
                             <section ref="cppSection" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
-                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
-                                        Total Convertion Cost / Unit
-                                    </h2>
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Total Convertion Cost / Unit</h2>
 
                                     <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
                                         <div class="flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row">
@@ -1439,9 +1433,7 @@ function closeDialog(type: 'pc' | null) {
                         <TabPanel value="3">
                             <section ref="processCost" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
-                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
-                                        Process Cost / Product
-                                    </h2>
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Process Cost / Product</h2>
 
                                     <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
                                         <div class="flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row">
@@ -1592,7 +1584,6 @@ function closeDialog(type: 'pc' | null) {
                             </section>
                         </TabPanel>
                     </TabPanels>
-                    <
                 </Tabs>
             </div>
         </div>

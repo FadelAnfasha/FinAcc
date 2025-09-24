@@ -43,7 +43,7 @@ export const mainNavItems: NavItem[] = [
     },
     {
         key: 'bom',
-        title: 'Bill of Material',
+        title: 'Standard Cost',
         href: '#',
         icon: 'pi-wrench',
         children: [
@@ -53,6 +53,24 @@ export const mainNavItems: NavItem[] = [
                 icon: 'pi-database',
                 href: 'bom.master',
             },
+            // {
+            //     key: 'bomMaster',
+            //     title: 'Standard Master Data',
+            //     icon: 'pi-database',
+            //     href: 'bom.masterStandard',
+            // },
+            // {
+            //     key: 'bomMaster',
+            //     title: 'Actual Master Data',
+            //     icon: 'pi-database',
+            //     href: 'bom.masterActual',
+            // },
+            // {
+            //     key: 'bomMaster',
+            //     title: 'BOM Master Data',
+            //     icon: 'pi-database',
+            //     href: 'bom.masterStandard',
+            // },
             {
                 key: 'bomReport',
                 title: 'Report',

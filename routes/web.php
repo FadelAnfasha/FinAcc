@@ -22,6 +22,9 @@ use App\Http\Controllers\ProcessController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\WagesDistributionController;
 use App\Models\SalesQuantity;
+use App\Http\Controllers\Settings\PasswordController;
+use App\Http\Controllers\Settings\ProfileController;
+
 
 #===========================
 #======  Main Route  =======
@@ -54,16 +57,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
     Route::post('/rfs/{id}/accept', [RequestForServiceController::class, 'accept'])
-        ->middleware('role:Admin');
+        ->middleware('role:Admin||Deputy Department||Deputy Division');
 
     Route::post('/rfs/{id}/reject', [RequestForServiceController::class, 'reject'])
-        ->middleware('role:Admin');
+        ->middleware('role:Admin||Deputy Department||Deputy Division');
 
     Route::post('/rfs/{id}/execute', [RequestForServiceController::class, 'execute'])
         ->middleware('role:Admin');
 
-    Route::post('/rfs/{id}/finish', [RequestForServiceController::class, 'finish'])
+    Route::post('/rfs/{id}/uat', [RequestForServiceController::class, 'user_accept'])
         ->middleware('role:Admin');
+
+    Route::post('/rfs/{id}/revision', [RequestForServiceController::class, 'revision'])
+        ->middleware('role:Staff');
+
+    Route::post('/rfs/{id}/finish', [RequestForServiceController::class, 'finish'])
+        ->middleware('role:Staff');
+
+    Route::post('/rfs/{id}/revision', [RequestForServiceController::class, 'revision'])
+        ->middleware('role:Staff');
 });
 
 
@@ -74,6 +86,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Master Data page
     Route::get('/bom/master', [BOMController::class, 'master'])
         ->name('bom.master');
+
+    // Route::get('/bom/masterStandard', [BOMController::class, 'standardMaster'])
+    //     ->name('bom.masterStandard');
+
+    // Route::get('/bom/masterActual', [BOMController::class, 'actualMaster'])
+    //     ->name('bom.masterActual');
 
     // Report page
     Route::get('/bom/report', [BOMController::class, 'report'])
@@ -291,6 +309,7 @@ Route::middleware(['auth', 'verified', 'role:Superior|Admin'])->group(function (
         Route::post('register', [RegisteredUserController::class, 'store'])->name('register');
     });
 });
+
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';

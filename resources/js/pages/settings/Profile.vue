@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
 
 import DeleteUser from '@/components/DeleteUser.vue';
 import HeadingSmall from '@/components/HeadingSmall.vue';
 import InputError from '@/components/InputError.vue';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -33,16 +32,15 @@ const form = useForm({
     npk: user.npk,
 });
 
-const submit = () => {
-    form.patch(route('profile.update'), {
-        preserveScroll: true,
-    });
-};
+// const submit = () => {
+//     form.patch(route('profile.update'), {
+//         preserveScroll: true,
+//     });
+// };
 </script>
 
 <template>
     <AppLayout :breadcrumbs="breadcrumbs">
-
         <Head title="Profile settings" />
 
         <SettingsLayout>
@@ -51,15 +49,29 @@ const submit = () => {
 
                 <div class="grid gap-2">
                     <Label for="name">Name</Label>
-                    <Input id="name" class="mt-1 block w-full bg-white text-dark" v-model="form.name" required
-                        autocomplete="name" placeholder="Full name" disabled />
+                    <Input
+                        id="name"
+                        class="text-dark mt-1 block w-full bg-white"
+                        v-model="form.name"
+                        required
+                        autocomplete="name"
+                        placeholder="Full name"
+                        disabled
+                    />
                     <InputError class="mt-2" :message="form.errors.name" />
                 </div>
 
                 <div class="grid gap-2">
                     <Label for="npk">NPK</Label>
-                    <Input id="npk" class="mt-1 block w-full bg-white text-dark" v-model="form.npk" required
-                        autocomplete="npk" placeholder="Full npk" disabled />
+                    <Input
+                        id="npk"
+                        class="text-dark mt-1 block w-full bg-white"
+                        v-model="form.npk"
+                        required
+                        autocomplete="npk"
+                        placeholder="Full npk"
+                        disabled
+                    />
                     <InputError class="mt-2" :message="form.errors.npk" />
                 </div>
             </div>

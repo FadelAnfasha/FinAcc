@@ -14,9 +14,11 @@ return new class extends Migration {
             $table->id();
             $table->string('name');
             $table->string('npk');
-            $table->enum('priority', ['low', 'medium', 'high', 'urgent'])->default('medium');
+            $table->foreignId('priority_id')->constrained('priorities')->restrictOnDelete();
             $table->text('description');
-            $table->enum('status', ['wait_for_review', 'in_progress', 'accepted', 'finish', 'rejected'])->default('wait_for_review');
+            $table->foreignId('status_id')->constrained('statuses')->restrictOnDelete();
+            $table->text('impact')->nullable();
+            $table->text('revision')->nullable();
             $table->string('attachment')->nullable();
             $table->timestamps();
         });

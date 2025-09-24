@@ -5,118 +5,248 @@ import Button from 'primevue/button';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
 import DatePicker from 'primevue/datepicker';
+import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import Select from 'primevue/select';
+import Textarea from 'primevue/textarea';
 import { useToast } from 'primevue/usetoast';
-import { computed, ref, watchEffect } from 'vue';
+import { computed, ref, Ref, watchEffect } from 'vue';
 
 const page = usePage();
 const toast = useToast();
-const flash = page.props.flash as { success?: string };
 
 watchEffect(() => {
-    const flash = page.props.flash as { success?: string } | undefined;
-
-    if (flash?.success) {
+    const currentFlash = page.props.flash as { success?: string; error?: string } | undefined;
+    if (currentFlash?.success) {
         toast.add({
             severity: 'success',
             summary: 'Success',
-            detail: flash.success,
+            detail: currentFlash.success,
+            life: 3000,
+        });
+    }
+
+    if (currentFlash?.error) {
+        toast.add({
+            severity: 'error', // Ganti dengan 'error' jika library toast Anda menggunakan ini untuk pesan kesalahan/danger
+            summary: 'Rejected',
+            detail: currentFlash.error,
             life: 3000,
         });
     }
 });
 
 // Define proper types
+interface Priority {
+    id: number;
+    priority: string;
+}
+
+interface Status {
+    id: number;
+    status: string;
+}
+
 interface RequestItem {
     id: number;
     name: string;
-    priority: string;
+    npk: string;
+    priority: Priority;
     created_at: string;
     description: string;
-    status: string;
+    status: Status;
+    impact: string;
+    revision: string;
     attachment: File;
     updated_at: string;
 }
 
 const acceptRequest = (id: number) => {
-    router.post(`/rfs/${id}/accept`);
+    router.post(`rfs/${id}/accept`);
 };
 
 const rejectRequest = (id: number) => {
-    router.post(`/rfs/${id}/reject`);
+    router.post(`rfs/${id}/reject`);
 };
 
 const executeRequest = (id: number) => {
-    router.post(`/rfs/${id}/execute`);
+    router.post(`rfs/${id}/execute`);
 };
 
-const finishRequest = (id: number) => {
-    router.post(`/rfs/${id}/finish`);
+const userReview = (id: number) => {
+    router.post(`rfs/${id}/uat`);
 };
 
-const props = defineProps({
+const showDialog: Ref<boolean> = ref(false);
+const viewDialog: Ref<boolean> = ref(false);
+
+const userName = computed(() => page.props.auth?.user?.name ?? '');
+const impactValue = ref<string>('');
+const revisionValue = ref<string>('');
+const selectedId = ref<number | null>(null);
+const dialogType = ref<string | null>(null); // Tambahkan baris ini
+
+const viewRequest = (id: number) => {
+    selectedId.value = id;
+    viewDialog.value = true;
+};
+
+// Properti terkomputasi untuk mencari item yang sesuai dari `items`
+const selectedRequest = computed(() => {
+    return items.value.find((req) => req.id === selectedId.value);
+    console.log(selectedRequest.value);
+});
+
+const closeViewDialog = () => {
+    viewDialog.value = false;
+    selectedId.value = null; // Reset ID agar dialog bersih saat dibuka lagi
+};
+
+const user_acceptance = (id: number, type: string) => {
+    selectedId.value = id;
+    dialogType.value = type;
+    showDialog.value = true;
+};
+
+const revision = (id: number, type: string) => {
+    selectedId.value = id;
+    dialogType.value = type;
+    showDialog.value = true;
+};
+
+const isImpactValid = computed(() => {
+    return impactValue.value.trim() !== '';
+});
+
+const submitAcceptance = () => {
+    if (selectedId.value !== null) {
+        // Objek form untuk dikirimkan
+        const form = {
+            impact: impactValue.value,
+        };
+
+        // Mengirim permintaan POST dengan data form
+        router.post(`rfs/${selectedId.value}/finish`, form, {
+            onSuccess: () => {
+                // Berhasil: tutup dialog dan reset nilai
+                showDialog.value = false;
+                impactValue.value = '';
+                selectedId.value = null;
+            },
+            onError: (errors) => {
+                // Gagal: tampilkan pesan error
+                console.error('Terjadi kesalahan:', errors);
+            },
+        });
+    }
+};
+
+const isRevisionValid = computed(() => {
+    return revisionValue.value.trim() !== '';
+});
+
+const submitRevision = () => {
+    if (selectedId.value !== null) {
+        // Objek form untuk dikirimkan
+        const form = {
+            revision: revisionValue.value,
+        };
+
+        // Mengirim permintaan POST dengan data form
+        router.post(`rfs/${selectedId.value}/revision`, form, {
+            onSuccess: () => {
+                // Berhasil: tutup dialog dan reset nilai
+                showDialog.value = false;
+                revisionValue.value = '';
+                selectedId.value = null;
+            },
+            onError: (errors) => {
+                // Gagal: tampilkan pesan error
+                console.error('Terjadi kesalahan:', errors);
+            },
+        });
+    }
+};
+
+const closeDialog = () => {
+    showDialog.value = false;
+    impactValue.value = '';
+    revisionValue.value = '';
+};
+
+const { services, auth } = defineProps({
     services: Array,
     auth: Object,
 });
 
 const filters = ref({
     name: { value: null, matchMode: 'contains' },
-    priority: { value: null, matchMode: 'equals' },
+    'priority.priority': { value: null, matchMode: 'equals' },
     created_at: { value: null, matchMode: 'contains' },
     description: { value: null, matchMode: 'contains' },
-    status: { value: null, matchMode: 'equals' },
+    impact: { value: null, matchMode: 'contains' },
+    'status.status': { value: null, matchMode: 'equals' },
     updated_at: { value: null, matchMode: 'contains' },
 });
 
 // Data with proper typing and added status field
 const items = computed(() => page.props.services as RequestItem[]);
 const priorities = ['All', 'low', 'medium', 'high', 'urgent'];
-const statuses = ['All', 'wait_for_review', 'accepted', 'in_progress', 'finish', 'rejected'];
+const statuses = ['All', 'wait_for_review', 'accepted', 'rejected', 'in_progress', 'user_acceptance', 'revision', 'finish'];
 
-function getPriorityClass(priority: string): string | undefined {
+const getPriorityClass = (priority: string) => {
     switch (priority) {
-        case 'All':
-            return 'secondary';
         case 'low':
-            return 'bg-purple-400 text-purple-800';
+            return 'bg-green-200 text-green-700';
         case 'medium':
-            return 'bg-blue-300 text-blue-800';
+            return 'bg-blue-200 text-blue-700';
         case 'high':
-            return 'bg-orange-400 text-orange-800';
+            return 'bg-orange-200 text-orange-700';
         case 'urgent':
-            return 'bg-red-400 text-red-800';
-        case 'All':
-            return 'bg-gray-200 text-red-800';
+            return 'bg-red-200 text-red-700';
         default:
-            return undefined;
+            return 'bg-gray-300 text-gray-800';
     }
-}
+};
 
-function getStatusClass(status: string): string {
+const getStatusClass = (status: string): string => {
     switch (status) {
         case 'wait_for_review':
-            return 'bg-yellow-300 text-yellow-800';
+            // Warna oranye yang kuat untuk status "warning"
+            return 'bg-amber-400 text-black';
         case 'accepted':
-            return 'bg-blue-400 text-blue-800';
-        case 'in_progress':
-            return 'bg-purple-300 text-purple-800';
-        case 'finish':
-            return 'bg-green-300 text-green-800';
+            // Biru muda untuk status yang disetujui
+            return 'bg-blue-400 text-black';
         case 'rejected':
-            return 'bg-red-400 text-red-800';
+            // Merah adalah warna standar untuk "ditolak"
+            return 'bg-red-400 text-black';
+        case 'in_progress':
+            // teal yang jelas untuk status "sedang berjalan"
+            return 'bg-teal-400 text-black';
+        case 'user_acceptance':
+            // Warna ungu yang berbeda untuk "aksi yang dibutuhkan dari pengguna"
+            return 'bg-fuchsia-300 text-black';
+        case 'revision':
+            // Merah adalah warna standar untuk "ditolak"
+            return 'bg-rose-300 text-black';
+        case 'finish':
+            // Hijau adalah warna standar untuk "selesai"
+            return 'bg-green-400 text-black';
         default:
-            return 'bg-gray-100 text-gray-800';
+            // Abu-abu untuk status netral atau tidak diketahui
+            return 'bg-gray-300 text-black';
     }
-}
+};
 
 function statusLabel(status: string): string {
     const map: Record<string, string> = {
         wait_for_review: 'Wait for Review',
         accepted: 'Accepted',
-        in_progress: 'In Progress',
-        finish: 'Finish',
         rejected: 'Rejected',
+        in_progress: 'In Progress',
+        user_acceptance: 'User Acceptance',
+        revision: 'Revision',
+        finish: 'Finish',
     };
     return map[status] || status;
 }
@@ -136,10 +266,10 @@ interface UserWithNPK {
 const form = useForm({
     name: (page.props.auth.user as UserWithNPK)?.name || '',
     npk: (page.props.auth.user as UserWithNPK)?.npk || '',
-    priority: 'medium',
+    priority: '2',
     created_at: new Date().toISOString().split('T')[0],
     description: '',
-    status: 'wait_for_review',
+    status: '1',
     attachment: null as File | null,
     updated_at: new Date().toISOString().split('T')[0],
 });
@@ -183,7 +313,7 @@ const handleFileSelect = (event: Event) => {
 
 // Submit form
 const submitForm = () => {
-    form.post('/rfs', {
+    form.post('rfs', {
         forceFormData: true, // WAJIB untuk upload file
         onStart: () => {
             form.clearErrors();
@@ -214,10 +344,161 @@ const resetForm = () => {
 <template>
     <Head title="RFS" />
     <AppLayout>
+        <Dialog v-model:visible="showDialog" header="Review Confirmation" modal class="w-[30rem]" :closable="false">
+            <hr class="border-gray-200" />
+
+            <div class="space-y-4">
+                <p>
+                    Hi <span class="text-red-400">{{ userName }}</span
+                    >,
+                </p>
+                <div v-if="dialogType == 'uat'">
+                    <p>
+                        Please describe the impact of
+                        <strong class="text-green-500">Improvement/Request</strong>?
+                    </p>
+                    <Textarea v-model="impactValue" autoResize rows="3" cols="50" class="mb-4" placeholder="Impact" required />
+                    <strong class="mt-1 text-sm text-red-500" v-if="!isImpactValid">Impact cannot be empty!</strong>
+                    <div class="mt-6 flex justify-end gap-2">
+                        <Button
+                            type="button"
+                            label="Cancel"
+                            unstyled
+                            class="w-28 cursor-pointer rounded-xl bg-red-500 px-4 py-2 text-center font-bold text-slate-900 hover:bg-red-700"
+                            @click="closeDialog"
+                        />
+                        <Button
+                            type="button"
+                            label="Submit"
+                            unstyled
+                            :disabled="!isImpactValid"
+                            class="w-28 cursor-pointer rounded-xl px-4 py-2 text-center font-bold text-slate-900"
+                            :class="{ 'bg-green-500 hover:bg-green-700': isImpactValid, 'cursor-not-allowed bg-gray-400': !isImpactValid }"
+                            @click="submitAcceptance"
+                        />
+                    </div>
+                </div>
+
+                <div v-if="dialogType == 'rev'">
+                    <p>
+                        Please describe the revision from the
+                        <strong class="text-lime-300">request</strong>?
+                    </p>
+                    <Textarea v-model="revisionValue" autoResize rows="3" cols="50" class="mb-4" placeholder="Describe" required />
+                    <strong class="mt-1 text-sm text-red-500" v-if="!isRevisionValid">Description of revision cannot be empty!</strong>
+                    <div class="mt-6 flex justify-end gap-2">
+                        <Button
+                            type="button"
+                            label="Cancel"
+                            unstyled
+                            class="w-28 cursor-pointer rounded-xl bg-red-500 px-4 py-2 text-center font-bold text-slate-900 hover:bg-red-700"
+                            @click="closeDialog"
+                        />
+                        <Button
+                            type="button"
+                            label="Submit"
+                            unstyled
+                            :disabled="!isRevisionValid"
+                            class="w-28 cursor-pointer rounded-xl px-4 py-2 text-center font-bold text-slate-900"
+                            :class="{ 'bg-green-500 hover:bg-green-700': isRevisionValid, 'cursor-not-allowed bg-gray-400': !isRevisionValid }"
+                            @click="submitRevision"
+                        />
+                    </div>
+                </div>
+            </div>
+        </Dialog>
+
+        <Dialog v-model:visible="viewDialog" header="Request Detail" modal class="w-[60rem]" :closable="false">
+            <hr class="border-gray-200" />
+            <div class="space-y-4 p-4">
+                <div v-if="selectedRequest" class="space-y-2">
+                    <div class="grid grid-cols-4 gap-6">
+                        <div class="col-span-4 w-full rounded-xl bg-slate-200 px-2 py-1 dark:bg-slate-200">
+                            <p class="font-semibold text-gray-700 dark:text-gray-700">Request Description :</p>
+                            <p class="text-md text-gray-700 dark:text-gray-700">{{ selectedRequest.description }}</p>
+                        </div>
+                        <div class="col-span-2">
+                            <p class="text-sm font-semibold text-gray-700 dark:text-gray-100">Status :</p>
+                            <p
+                                class="inline-block w-full rounded-full px-4 py-1 text-center text-xs font-semibold"
+                                :class="getStatusClass(selectedRequest.status.status)"
+                            >
+                                {{ statusLabel(selectedRequest.status.status) }}
+                            </p>
+                        </div>
+                        <div class="col-span-2">
+                            <p class="text-sm font-semibold text-gray-700 dark:text-gray-100">Priority :</p>
+                            <p
+                                class="inline-block w-full rounded-full px-2 py-1 text-center text-xs font-semibold"
+                                :class="getPriorityClass(selectedRequest.priority.priority)"
+                            >
+                                {{ capitalize(selectedRequest.priority.priority) }}
+                            </p>
+                        </div>
+
+                        <div>
+                            <p class="font-semibold text-gray-700 dark:text-gray-100">Request By :</p>
+                            <p class="text-md text-gray-700 dark:text-gray-100">{{ selectedRequest.name }}</p>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-700 dark:text-gray-100">NPK :</p>
+                            <p class="text-md text-gray-700 dark:text-gray-100">{{ selectedRequest.npk }}</p>
+                        </div>
+
+                        <div>
+                            <p class="font-semibold text-gray-700 dark:text-gray-100">Requested at :</p>
+                            <p class="text-md text-gray-700 dark:text-gray-100">{{ selectedRequest.created_at }}</p>
+                        </div>
+
+                        <div>
+                            <p class="font-semibold text-gray-700 dark:text-gray-100">Updated at :</p>
+                            <p class="text-md text-gray-700 dark:text-gray-100">{{ selectedRequest.updated_at }}</p>
+                        </div>
+
+                        <div class="col-span-2 w-full rounded-xl bg-slate-200 px-2 py-1 dark:bg-gray-200">
+                            <p class="font-semibold text-gray-700 dark:text-gray-700">Impact :</p>
+                            <p class="text-md text-gray-700 dark:text-gray-700">{{ selectedRequest.impact ?? 'Not finish yet.' }}</p>
+                        </div>
+                        <div class="col-span-2 w-full rounded-xl bg-slate-200 px-2 py-1 dark:bg-slate-200">
+                            <p class="font-semibold text-gray-700 dark:text-gray-700">Revision :</p>
+                            <p class="text-md text-gray-700 dark:text-gray-700">{{ selectedRequest.revision ?? '-' }}</p>
+                        </div>
+                        <div class="col-span-2 w-full rounded-xl bg-slate-200 px-2 py-1 dark:bg-slate-200">
+                            <p class="font-semibold text-gray-700 dark:text-gray-700">Attachment :</p>
+                            <a
+                                v-if="selectedRequest.attachment"
+                                :href="`/storage/${selectedRequest.attachment}`"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="text-md inline-flex items-center gap-1 rounded bg-blue-500 px-3 py-1 text-xs font-semibold text-gray-700 text-white hover:bg-blue-600 dark:text-gray-100"
+                            >
+                                <i class="pi pi-external-link" /> View
+                            </a>
+                            <div v-else>
+                                <p class="text-md text-gray-700 dark:text-gray-700">No Attachment</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div v-else>
+                    <p class="text-center text-gray-500">Loading data...</p>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <Button
+                        type="button"
+                        label="Close"
+                        unstyled
+                        class="w-28 cursor-pointer rounded-xl bg-gray-500 px-4 py-2 text-center font-bold text-white hover:bg-gray-700"
+                        @click="closeViewDialog"
+                    />
+                </div>
+            </div>
+        </Dialog>
+
         <!-- Data Table Section -->
-        <section ref="dataSection" class="mb-4 scroll-mt-8 p-6">
-            <div class="mb-4 flex items-center justify-between">
-                <div class="flex flex-col">
+        <section ref="dataSection" class="m-6 scroll-mt-8">
+            <div class="flex items-center justify-between">
+                <div class="flex flex-col gap-1">
                     <h2 class="text-start text-3xl font-bold text-gray-900 dark:text-white">Request Data</h2>
                     <p class="text-start text-gray-600 dark:text-gray-400">Display all request, create request, and approving request.</p>
                 </div>
@@ -232,6 +513,15 @@ const resetForm = () => {
                 />
             </div>
 
+            <div class="mt-4 mb-8">
+                <div class="relative mb-6 text-center">
+                    <h1 class="relative z-10 inline-block bg-white px-4 text-2xl font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                        List of Request
+                    </h1>
+                    <hr class="absolute top-1/2 left-0 z-0 w-full -translate-y-1/2 border-gray-300 dark:border-gray-600" />
+                </div>
+            </div>
+
             <DataTable
                 v-model:filters="filters"
                 :value="items"
@@ -242,26 +532,72 @@ const resetForm = () => {
                 dataKey="id"
                 filterDisplay="row"
                 :loading="loading"
-                :globalFilterFields="['name', 'priority', 'created_at', 'description', 'status', 'updated_at']"
+                :globalFilterFields="['name', 'priority', 'created_at', 'description', 'impact', 'status', 'updated_at']"
                 tableStyle="min-width: 50rem"
                 class="text-sm"
                 sortField="created_at"
                 :sortOrder="-1"
             >
-                <Column field="name" header="Name" :showFilterMenu="false" sortable style="width: 20%">
+                <Column field="created_at" header="Request Date" :showFilterMenu="false" sortable style="width: 10%">
+                    <template #filter="{ filterModel, filterCallback }">
+                        <DatePicker
+                            :modelValue="filterModel.value ? new Date(filterModel.value + 'T00:00:00') : null"
+                            @update:modelValue="
+                                (val: Date | Date[] | (Date | null)[] | null | undefined) => {
+                                    let selectedDate: Date | null = null;
+
+                                    if (val instanceof Date) {
+                                        selectedDate = val;
+                                    } else if (Array.isArray(val) && val.length > 0) {
+                                        if (val[0] instanceof Date) {
+                                            selectedDate = val[0];
+                                        }
+                                    }
+
+                                    if (selectedDate instanceof Date) {
+                                        const formatted =
+                                            selectedDate.getFullYear() +
+                                            '-' +
+                                            String(selectedDate.getMonth() + 1).padStart(2, '0') +
+                                            '-' +
+                                            String(selectedDate.getDate()).padStart(2, '0');
+                                        filterModel.value = formatted;
+                                    } else {
+                                        filterModel.value = null;
+                                    }
+                                    filterCallback();
+                                }
+                            "
+                            dateFormat="yy-mm-dd"
+                            placeholder="yy-mm-dd"
+                            :maxDate="new Date()"
+                            showIcon
+                            selectionMode="single"
+                        />
+                    </template>
+                </Column>
+
+                <Column field="name" header="Name" :showFilterMenu="false" sortable style="width: 10%">
                     <template #filter="{ filterModel, filterCallback }">
                         <InputText v-model="filterModel.value" @input="filterCallback()" placeholder="Search name" />
                     </template>
                 </Column>
 
-                <Column field="priority" header="Priority" :sortable="true" :showFilterMenu="false" style="width: 20%" class="justify-items-center">
+                <Column
+                    field="priority.priority"
+                    header="Priority"
+                    :sortable="true"
+                    :showFilterMenu="false"
+                    style="width: 5%"
+                    class="justify-items-center"
+                >
                     <!-- Body Badge -->
                     <template #body="{ data }">
                         <span
-                            :class="getPriorityClass(data.priority)"
+                            :class="getPriorityClass(data.priority.priority)"
                             class="inline-block w-full rounded-full px-2 py-1 text-center text-xs font-semibold"
                         >
-                            {{ capitalize(data.priority) }}
+                            {{ capitalize(data.priority.priority) }}
                         </span>
                     </template>
 
@@ -315,48 +651,6 @@ const resetForm = () => {
                     </template>
                 </Column>
 
-                <Column field="created_at" header="Request Date" :showFilterMenu="false" sortable style="width: 20%">
-                    <template #filter="{ filterModel, filterCallback }">
-                        <DatePicker
-                            :modelValue="filterModel.value ? new Date(filterModel.value + 'T00:00:00') : null"
-                            @update:modelValue="
-                                // PERUBAHAN KRITIS: Perluas tipe 'val' untuk mencakup semua kemungkinan yang disebutkan error
-                                (val: Date | Date[] | (Date | null)[] | null | undefined) => {
-                                    let selectedDate: Date | null = null;
-
-                                    if (val instanceof Date) {
-                                        selectedDate = val;
-                                    } else if (Array.isArray(val) && val.length > 0) {
-                                        // Jika val adalah array, ambil elemen pertama jika itu Date
-                                        // Ini mengasumsikan Anda hanya tertarik pada tanggal pertama untuk filter tunggal
-                                        if (val[0] instanceof Date) {
-                                            selectedDate = val[0];
-                                        }
-                                    }
-
-                                    if (selectedDate instanceof Date) {
-                                        const formatted =
-                                            selectedDate.getFullYear() +
-                                            '-' +
-                                            String(selectedDate.getMonth() + 1).padStart(2, '0') +
-                                            '-' +
-                                            String(selectedDate.getDate()).padStart(2, '0');
-                                        filterModel.value = formatted;
-                                    } else {
-                                        filterModel.value = null;
-                                    }
-                                    filterCallback();
-                                }
-                            "
-                            dateFormat="yy-mm-dd"
-                            placeholder="yy-mm-dd"
-                            :maxDate="new Date()"
-                            showIcon
-                            selectionMode="single"
-                        />
-                    </template>
-                </Column>
-
                 <Column field="description" header="Req. Description" :showFilterMenu="false" sortable style="width: 20%">
                     <template #body="{ data }">
                         <div class="max-w-[200px] truncate" :title="data.description" v-tooltip.top="data.description">
@@ -368,131 +662,81 @@ const resetForm = () => {
                     </template>
                 </Column>
 
-                <!-- Status Column -->
-                <Column field="status" header="Status" :showFilterMenu="false" sortable style="width: 20%">
+                <Column field="status.status" header="Status" :sortable="true" :showFilterMenu="false" style="width: 5%" class="justify-items-center">
+                    <!-- Body Badge -->
                     <template #body="{ data }">
                         <span
-                            :class="getStatusClass(data.status)"
+                            :class="getStatusClass(data.status.status)"
                             class="inline-block w-full rounded-full px-2 py-1 text-center text-xs font-semibold"
                         >
-                            {{ statusLabel(data.status) }}
+                            {{ statusLabel(data.status.status) }}
                         </span>
                     </template>
 
+                    <!-- Filter -->
                     <template #filter="{ filterModel, filterCallback }">
-                        <Select
-                            v-model="filterModel.value"
-                            :options="statuses"
-                            placeholder="Select status"
-                            class="w-40"
-                            @change="
-                                () => {
-                                    if (filterModel.value === 'All') {
-                                        filterModel.value = null;
-                                    }
-                                    filterCallback();
-                                }
-                            "
-                        >
-                            <!-- Tampilan nilai yang dipilih -->
-                            <template #value="{ value }">
-                                <span v-if="!value || value === 'All'" class="w-full text-center text-gray-500"> Select status </span>
-                                <span
-                                    v-else
-                                    :class="getStatusClass(value)"
-                                    class="inline-block w-full rounded-full px-2 py-1 text-center text-xs font-semibold"
-                                >
-                                    {{ statusLabel(value) }}
-                                </span>
-                            </template>
-
-                            <!-- Tampilan opsi dropdown -->
-                            <template #option="{ option }">
-                                <span
-                                    v-if="option === 'All'"
-                                    class="inline-block w-full rounded-full bg-gray-100 px-2 py-1 text-center text-xs font-semibold text-gray-800"
-                                >
-                                    All
-                                </span>
-                                <span
-                                    v-else
-                                    :class="getStatusClass(option)"
-                                    class="inline-block w-full rounded-full px-2 py-1 text-center text-xs font-semibold"
-                                >
-                                    {{ statusLabel(option) }}
-                                </span>
-                            </template>
-                        </Select>
-                    </template>
-                </Column>
-
-                <Column field="attachment" header="Attachment" :showFilterMenu="false" style="width: 20%">
-                    <template #body="{ data }">
-                        <a
-                            v-if="data.attachment"
-                            :href="`/storage/${data.attachment}`"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="inline-flex items-center gap-1 rounded bg-blue-500 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-600"
-                        >
-                            <i class="pi pi-external-link" /> View
-                        </a>
-                        <span v-else class="text-xs text-gray-400">No Attachment</span>
-                    </template>
-                </Column>
-
-                <Column field="updated_at" header="Updated at" :showFilterMenu="false" sortable style="width: 20%">
-                    <template #filter="{ filterModel, filterCallback }">
-                        <DatePicker
-                            :modelValue="filterModel.value ? new Date(filterModel.value + 'T00:00:00') : null"
-                            @update:modelValue="
-                                // PERUBAHAN KRITIS: Perluas tipe 'val' untuk mencakup semua kemungkinan yang disebutkan error
-                                (val: Date | Date[] | (Date | null)[] | null | undefined) => {
-                                    let selectedDate: Date | null = null;
-
-                                    if (val instanceof Date) {
-                                        selectedDate = val;
-                                    } else if (Array.isArray(val) && val.length > 0) {
-                                        // Jika val adalah array, ambil elemen pertama jika itu Date
-                                        // Ini mengasumsikan Anda hanya tertarik pada tanggal pertama untuk filter tunggal
-                                        if (val[0] instanceof Date) {
-                                            selectedDate = val[0];
+                        <div class="flex justify-center">
+                            <Select
+                                v-model="filterModel.value"
+                                :options="statuses"
+                                placeholder="Select status"
+                                class="w-40"
+                                @change="
+                                    () => {
+                                        if (filterModel.value === 'All') {
+                                            filterModel.value = null;
                                         }
+                                        filterCallback();
                                     }
+                                "
+                            >
+                                <!-- Selected value -->
+                                <template #value="{ value }">
+                                    <span v-if="!value || value === 'All'" class="w-full text-center text-gray-500"> Select status </span>
+                                    <span
+                                        v-else
+                                        :class="getStatusClass(value)"
+                                        class="inline-block w-full rounded-full px-2 py-1 text-center text-xs font-semibold"
+                                    >
+                                        {{ statusLabel(value) }}
+                                    </span>
+                                </template>
 
-                                    if (selectedDate instanceof Date) {
-                                        const formatted =
-                                            selectedDate.getFullYear() +
-                                            '-' +
-                                            String(selectedDate.getMonth() + 1).padStart(2, '0') +
-                                            '-' +
-                                            String(selectedDate.getDate()).padStart(2, '0');
-                                        filterModel.value = formatted;
-                                    } else {
-                                        filterModel.value = null;
-                                    }
-                                    filterCallback();
-                                }
-                            "
-                            dateFormat="yy-mm-dd"
-                            placeholder="yy-mm-dd"
-                            :maxDate="new Date()"
-                            showIcon
-                            selectionMode="single"
-                        />
+                                <!-- Dropdown options -->
+                                <template #option="{ option }">
+                                    <span
+                                        v-if="option === 'All'"
+                                        class="inline-block w-full rounded-full bg-gray-100 px-2 py-1 text-center text-xs font-semibold text-gray-800"
+                                    >
+                                        All
+                                    </span>
+                                    <span
+                                        v-else
+                                        :class="getStatusClass(option)"
+                                        class="inline-block w-full rounded-full px-2 py-1 text-center text-xs font-semibold"
+                                    >
+                                        {{ statusLabel(option) }}
+                                    </span>
+                                </template>
+                            </Select>
+                        </div>
                     </template>
                 </Column>
 
-                <Column
-                    header="Action"
-                    style="width: 20%"
-                    v-if="!auth?.user?.role?.includes('Director') || !auth?.user?.role?.includes('Deputy Division')"
-                >
+                <Column header="Action" style="width: 15%" class="justify-items-center">
                     <template #body="{ data }">
                         <div class="flex gap-4">
+                            <button
+                                class="inline-flex cursor-pointer items-center gap-1 rounded bg-blue-400 px-3 py-1 text-xs font-semibold text-black hover:bg-blue-600 hover:text-white"
+                                @click="viewRequest(data.id)"
+                            >
+                                <i class="pi pi-eye" /> View
+                            </button>
+
+                            <!-- Approve Reject by Dept Head / Div Head-->
                             <template v-if="auth?.user?.permissions?.includes('Approve') || auth?.user?.permissions?.includes('Reject')">
                                 <button
-                                    v-if="data.status === 'wait_for_review'"
+                                    v-if="data.status?.status === 'wait_for_review'"
                                     class="inline-flex cursor-pointer items-center gap-1 rounded bg-green-400 px-3 py-1 text-xs font-semibold text-black hover:bg-green-600 hover:text-white"
                                     @click="acceptRequest(data.id)"
                                 >
@@ -500,16 +744,18 @@ const resetForm = () => {
                                 </button>
 
                                 <button
-                                    v-if="data.status === 'wait_for_review'"
+                                    v-if="data.status?.status === 'wait_for_review'"
                                     class="inline-flex cursor-pointer items-center gap-1 rounded bg-red-400 px-3 py-1 text-xs font-semibold text-black hover:bg-red-600 hover:text-white"
                                     @click="rejectRequest(data.id)"
                                 >
                                     <i class="pi pi-times" /> Reject
                                 </button>
                             </template>
+
+                            <!-- Execute by Admin and User Acceptance -->
                             <template v-if="auth?.user?.roles.includes('Admin')">
                                 <button
-                                    v-if="data.status === 'accepted'"
+                                    v-if="data.status?.status === 'accepted' || data.status?.status === 'revision'"
                                     class="inline-flex cursor-pointer items-center gap-1 rounded bg-orange-400 px-3 py-1 text-xs font-semibold text-black hover:bg-orange-600 hover:text-white"
                                     @click="executeRequest(data.id)"
                                 >
@@ -517,28 +763,47 @@ const resetForm = () => {
                                 </button>
 
                                 <button
-                                    v-if="data.status === 'in_progress' && auth?.user?.roles?.includes('Admin')"
+                                    v-if="data.status?.status === 'in_progress' && auth?.user?.roles?.includes('Admin')"
                                     class="inline-flex cursor-pointer items-center gap-1 rounded bg-orange-400 px-3 py-1 text-xs font-semibold text-black hover:bg-orange-600 hover:text-white"
-                                    @click="finishRequest(data.id)"
+                                    @click="userReview(data.id)"
                                 >
-                                    <i class="pi pi-check-square" /> Finish
+                                    <i class="pi pi-check-circle" /> Review
                                 </button>
                             </template>
-                            <div class="flex h-6 w-6 items-center justify-center">
+
+                            <!-- User Review and determined Finish or not yet -->
+                            <template v-if="auth?.user.npk === data.npk">
+                                <button
+                                    v-if="data.status?.status === 'user_acceptance'"
+                                    class="inline-flex cursor-pointer items-center gap-1 rounded bg-orange-400 px-3 py-1 text-xs font-semibold text-black hover:bg-orange-600 hover:text-white"
+                                    @click="user_acceptance(data.id, 'uat')"
+                                >
+                                    <i class="pi pi-cog pi-spin" /> Finish
+                                </button>
+                                <button
+                                    v-if="data.status?.status === 'user_acceptance'"
+                                    class="inline-flex cursor-pointer items-center gap-1 rounded bg-teal-400 px-3 py-1 text-xs font-semibold text-black hover:bg-teal-600 hover:text-white"
+                                    @click="revision(data.id, 'rev')"
+                                >
+                                    <i class="pi pi-pen-to-square" /> Revision
+                                </button>
+                            </template>
+
+                            <!-- <div class="flex h-6 w-6 items-center justify-center">
                                 <i
                                     class="pi pi-spin pi-eye"
                                     style="color: yellow"
-                                    v-if="data.status === 'wait_for_review' && !auth?.user?.permissions?.includes('Approve')"
+                                    v-if="data.status?.status === 'wait_for_review' && !auth?.user?.permissions?.includes('Approve')"
                                 ></i>
                                 <i
                                     class="pi pi-spin pi-spinner"
                                     style="color: cyan"
-                                    v-if="data.status === 'in_progress' && !auth?.user?.permissions?.includes('Execute')"
+                                    v-if="data.status?.status === 'in_progress' && !auth?.user?.permissions?.includes('Execute')"
                                 ></i>
                                 <i class="pi pi-spin pi-hourglass" style="color: cyan" v-if="data.status === 'accepted'"></i>
                                 <i class="pi pi-check-circle" style="color: green" v-if="data.status === 'finish'"></i>
                                 <i class="pi pi-times-circle" style="color: red" v-if="data.status === 'rejected'"></i>
-                            </div>
+                            </div> -->
                         </div>
                     </template>
                 </Column>
@@ -546,9 +811,12 @@ const resetForm = () => {
         </section>
 
         <!-- Create Form Section -->
-        <section ref="createFormSection" v-if="auth?.user?.role !== 'Admin'" class="mx-24 my-8 scroll-mt-8">
-            <div class="mb-8 flex items-center justify-between">
-                <h2 class="text-3xl font-semibold">Create Form</h2>
+        <section ref="createFormSection" v-if="auth?.user?.role !== 'Admin'" class="m-6 scroll-mt-8">
+            <div class="flex items-center justify-between">
+                <div class="flex flex-col gap-1">
+                    <h2 class="text-3xl font-semibold">Create Request</h2>
+                    <p class="text-start text-gray-600 dark:text-gray-400">Fill the form below to request a service.</p>
+                </div>
                 <Button
                     label=" See Data"
                     severity="warn"
@@ -558,6 +826,15 @@ const resetForm = () => {
                     @click="scrollTodataSection"
                     class="rounded-xl border border-amber-500 bg-white px-3 py-1 text-amber-500 hover:border-white hover:bg-amber-500 hover:text-white"
                 />
+            </div>
+
+            <div class="mt-4 mb-8">
+                <div class="relative mb-6 text-center">
+                    <h1 class="relative z-10 inline-block bg-white px-4 text-2xl font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                        Form Request for Service
+                    </h1>
+                    <hr class="absolute top-1/2 left-0 z-0 w-full -translate-y-1/2 border-gray-300 dark:border-gray-600" />
+                </div>
             </div>
 
             <div class="p-6">
@@ -603,10 +880,10 @@ const resetForm = () => {
                                     class="w-full rounded-md border border-border bg-background px-3 py-2 text-card-foreground focus:ring-2 focus:ring-ring focus:outline-none"
                                     :class="{ 'border-red-500': form.errors.priority }"
                                 >
-                                    <option value="low">Low</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="high">High</option>
-                                    <option value="urgent">Urgent</option>
+                                    <option value="1">Low</option>
+                                    <option value="2">Medium</option>
+                                    <option value="3">High</option>
+                                    <option value="4">Urgent</option>
                                 </select>
                                 <div v-if="form.errors.priority" class="text-sm text-red-500">{{ form.errors.priority }}</div>
                             </div>

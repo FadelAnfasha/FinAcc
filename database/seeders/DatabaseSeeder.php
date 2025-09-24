@@ -9,6 +9,8 @@ use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Illuminate\Support\Facades\Hash;
 use App\Models\RequestForService;
+use Illuminate\Support\Facades\DB;
+
 
 
 class DatabaseSeeder extends Seeder
@@ -61,197 +63,514 @@ class DatabaseSeeder extends Seeder
             $u->assignRole($data['role']);
         }
 
-        $request = [
+
+
+        // $request = [
+        //     [
+        //         'name' => 'Ayu',
+        //         'npk' => '190349',
+        //         'priority' => '2',
+        //         'created_at' => '2024-11-20',
+        //         'description' => 'Macro to process VAT crediting data in E-Faktur.',
+        //         'status' => '4',
+        //         'attachment' => null,
+        //         'updated_at' => '2024-11-26',
+
+        //     ],
+        //     [
+        //         'name' => 'Setyaningsih',
+        //         'npk' => '140207',
+        //         'priority' => '2',
+        //         'created_at' => '2024-11-27',
+        //         'description' => 'Macro to process Mass Payment data.',
+        //         'status' => '4',
+        //         'attachment' => null,
+        //         'updated_at' => '2024-12-2',
+
+        //     ],
+        //     [
+        //         'name' => 'Ayu',
+        //         'npk' => '190349',
+        //         'priority' => '2',
+        //         'created_at' => '2024-12-3',
+        //         'description' => 'Macro to input tax data into E-Faktur.',
+        //         'status' => '4',
+        //         'attachment' => null,
+        //         'updated_at' => '2024-12-13',
+        //     ],
+        //     [
+        //         'name' => 'Rudi',
+        //         'npk' => '140023',
+        //         'priority' => '3',
+        //         'created_at' => '2024-12-3',
+        //         'description' => 'Macro to automatically generate statement of account.',
+        //         'status' => '4',
+        //         'attachment' => null,
+        //         'updated_at' => '2024-12-23',
+        //     ],
+        //     [
+        //         'name' => 'Rudi',
+        //         'npk' => '140023',
+        //         'priority' => '3',
+        //         'created_at' => '2024-12-9',
+        //         'description' => 'Macro to generate Bill of Material.',
+        //         'status' => '4',
+        //         'attachment' => null,
+        //         'updated_at' => '2024-12-26',
+        //     ],
+        //     [
+        //         'name' => 'Rudi',
+        //         'npk' => '140023',
+        //         'priority' => '3',
+        //         'created_at' => '2025-01-6',
+        //         'description' => 'Develop an application to calculate Process Cost.',
+        //         'status' => '4',
+        //         'attachment' => null,
+        //         'updated_at' => '2025-03-27',
+        //     ],
+        //     [
+        //         'name' => 'Ayu',
+        //         'npk' => '190349',
+        //         'priority' => '2',
+        //         'created_at' => '2025-02-10',
+        //         'description' => 'Macro to report withholding tax certificates in Coretax.',
+        //         'status' => '4',
+        //         'attachment' => null,
+        //         'updated_at' => '2025-02-11',
+        //     ],
+        //     [
+        //         'name' => 'Ayu',
+        //         'npk' => '190349',
+        //         'priority' => '1',
+        //         'created_at' => '2025-02-10',
+        //         'description' => 'Macro to fetch exchange rates (EUR, JPY, USD) from BI website.',
+        //         'status' => '4',
+        //         'attachment' => null,
+        //         'updated_at' => '2025-02-12',
+        //     ],
+        //     [
+        //         'name' => 'Rudi',
+        //         'npk' => '140023',
+        //         'priority' => '4',
+        //         'created_at' => '2025-05-12',
+        //         'description' => 'Develop an application to explode Bill of Material.',
+        //         'status' => '4',
+        //         'attachment' => null,
+        //         'updated_at' => '2025-6-2',
+        //     ],
+        //     [
+        //         'name' => 'Setyaningsih',
+        //         'npk' => '140023',
+        //         'priority' => '3',
+        //         'created_at' => '2025-06-3',
+        //         'description' => 'Develop an internal Request of Service application for Finance.',
+        //         'status' => '4',
+        //         'attachment' => null,
+        //         'updated_at' => '2025-07-8',
+        //     ],
+        //     [
+        //         'name' => 'Rudi',
+        //         'npk' => '140023',
+        //         'priority' => '3',
+        //         'created_at' => '2025-07-12',
+        //         'description' => 'Develop an feature to export BOM per Product.',
+        //         'status' => '4',
+        //         'attachment' => null,
+        //         'updated_at' => '2025-07-26',
+        //     ],
+        //     [
+        //         'name' => 'Tuti',
+        //         'npk' => '140025',
+        //         'priority' => '3',
+        //         'created_at' => '2025-07-29',
+        //         'description' => 'Modify dialog after updating master data.',
+        //         'status' => '4',
+        //         'attachment' => null,
+        //         'updated_at' => '2025-08-05',
+        //     ],
+        //     [
+        //         'name' => 'Tuti',
+        //         'npk' => '140025',
+        //         'priority' => '3',
+        //         'created_at' => '2025-07-29',
+        //         'description' => 'Creating new input for OPEX dan Profit Margin in Standart Cost.',
+        //         'status' => '4',
+        //         'attachment' => null,
+        //         'updated_at' => '2025-08-07',
+        //     ],
+
+        //     [
+        //         'name' => 'Tuti',
+        //         'npk' => '140025',
+        //         'priority' => '3',
+        //         'created_at' => '2025-08-06',
+        //         'description' => 'Creating new menu for Actual Cost.',
+        //         'status' => '4',
+        //         'attachment' => null,
+        //         'updated_at' => '2025-08-07',
+        //     ],
+
+        //     [
+        //         'name' => 'Tuti',
+        //         'npk' => '140025',
+        //         'priority' => '3',
+        //         'created_at' => '2025-08-07',
+        //         'description' => 'Create new menu for Calculating Difference between Standard vs Actual Cost.',
+        //         'status' => '4',
+        //         'attachment' => null,
+        //         'updated_at' => '2025-08-13',
+        //     ],
+
+        //     [
+        //         'name' => 'Setyaningsih',
+        //         'npk' => '140023',
+        //         'priority' => '1',
+        //         'created_at' => '2025-08-14',
+        //         'description' => 'Create a cash in/out system in Excel (Please also make a sheet with history report to reconcile the ending balance with SAP balance)',
+        //         'status' => '4',
+        //         'attachment' => null,
+        //         'updated_at' => '2025-08-14',
+        //     ],
+        //     [
+        //         'name' => 'Ayu',
+        //         'npk' => '190349',
+        //         'priority' => '2',
+        //         'created_at' => '2025-08-14',
+        //         'description' => 'Create digitialization of Entertainment Form in Personal site.',
+        //         'status' => '2',
+        //         'attachment' => 'attachment/zmmJtfG3mzE1JqBKvpoSMkdmvk8QxYoGzYWqXjWm.xlsx',
+        //         'updated_at' => '2025-08-14',
+        //     ],
+        // ];
+
+
+        $requests = [
             [
                 'name' => 'Ayu',
                 'npk' => '190349',
-                'priority' => 'medium',
-                'created_at' => '2024-11-20',
-                'description' => 'Macro to process VAT crediting data in E-Faktur.',
-                'status' => 'finish',
+                'priority_id' => 2,
+                'description' => 'Macro to process VAT-In crediting data in E-Faktur.',
+                'status_id' => 7,
+                'impact' => 'Makes it easier for users when crediting tax invoices into the system.',
                 'attachment' => null,
+                'created_at' => '2024-11-20',
                 'updated_at' => '2024-11-26',
-
             ],
             [
                 'name' => 'Setyaningsih',
                 'npk' => '140207',
-                'priority' => 'medium',
-                'created_at' => '2024-11-27',
+                'priority_id' => 2,
                 'description' => 'Macro to process Mass Payment data.',
-                'status' => 'finish',
+                'status_id' => 7,
+                'impact' => 'Increase eficiency time when making a batch for upload payment.',
                 'attachment' => null,
+                'created_at' => '2024-11-27',
                 'updated_at' => '2024-12-2',
-
             ],
             [
                 'name' => 'Rudi',
                 'npk' => '140023',
-                'priority' => 'medium',
-                'created_at' => '2024-12-3',
-                'description' => 'Macro to input tax data into E-Faktur.',
-                'status' => 'finish',
+                'priority_id' => 2,
+                'description' => 'Macro to input tax data VAT-Out into E-Faktur.',
+                'status_id' => 7,
+                'impact' => 'Reduce worktime and increase data accuracy for reporting tax.',
                 'attachment' => null,
+                'created_at' => '2024-12-3',
                 'updated_at' => '2024-12-13',
             ],
             [
                 'name' => 'Rudi',
                 'npk' => '140023',
-                'priority' => 'high',
-                'created_at' => '2024-12-3',
+                'priority_id' => 3,
                 'description' => 'Macro to automatically generate statement of account.',
-                'status' => 'finish',
+                'status_id' => 7,
+                'impact' => 'Reduce worktime to create Statement of Account Letter.',
                 'attachment' => null,
+                'created_at' => '2024-12-3',
                 'updated_at' => '2024-12-23',
             ],
             [
                 'name' => 'Rudi',
                 'npk' => '140023',
-                'priority' => 'high',
-                'created_at' => '2024-12-9',
+                'priority_id' => 3,
                 'description' => 'Macro to generate Bill of Material.',
-                'status' => 'finish',
+                'status_id' => 7,
+                'impact' => 'Reduce worktime to create Bill of Material.',
                 'attachment' => null,
+                'created_at' => '2024-12-9',
                 'updated_at' => '2024-12-26',
             ],
             [
                 'name' => 'Rudi',
                 'npk' => '140023',
-                'priority' => 'high',
-                'created_at' => '2025-01-6',
+                'priority_id' => 3,
                 'description' => 'Develop an application to calculate Process Cost.',
-                'status' => 'finish',
+                'status_id' => 7,
+                'impact' => 'Reduce worktime and increase data accuracy for creating process cost report.',
                 'attachment' => null,
+                'created_at' => '2025-01-6',
                 'updated_at' => '2025-03-27',
             ],
             [
                 'name' => 'Ayu',
                 'npk' => '190349',
-                'priority' => 'medium',
-                'created_at' => '2025-02-10',
+                'priority_id' => 2,
                 'description' => 'Macro to report withholding tax certificates in Coretax.',
-                'status' => 'finish',
+                'status_id' => 7,
+                'impact' => 'Reduce worktime to create withholding tax report.',
                 'attachment' => null,
+                'created_at' => '2025-02-10',
                 'updated_at' => '2025-02-11',
             ],
             [
                 'name' => 'Ayu',
                 'npk' => '190349',
-                'priority' => 'low',
-                'created_at' => '2025-02-10',
+                'priority_id' => 1,
                 'description' => 'Macro to fetch exchange rates (EUR, JPY, USD) from BI website.',
-                'status' => 'finish',
+                'status_id' => 7,
+                'impact' => 'Easier to fetch Exchange Rates data from BI Website.',
                 'attachment' => null,
+                'created_at' => '2025-02-10',
                 'updated_at' => '2025-02-12',
             ],
             [
                 'name' => 'Rudi',
                 'npk' => '140023',
-                'priority' => 'urgent',
-                'created_at' => '2025-05-12',
+                'priority_id' => 4,
                 'description' => 'Develop an application to explode Bill of Material.',
-                'status' => 'finish',
+                'status_id' => 7,
+                'impact' => 'Reduce worktime and increase data accuracy for explode Bill of Material Raw data.',
                 'attachment' => null,
+                'created_at' => '2025-05-12',
                 'updated_at' => '2025-6-2',
             ],
             [
                 'name' => 'Setyaningsih',
                 'npk' => '140023',
-                'priority' => 'high',
-                'created_at' => '2025-06-3',
+                'priority_id' => 3,
                 'description' => 'Develop an internal Request of Service application for Finance.',
-                'status' => 'finish',
+                'status_id' => 7,
+                'impact' => 'Tracing finance member request progress.',
                 'attachment' => null,
+                'created_at' => '2025-06-3',
                 'updated_at' => '2025-07-8',
             ],
             [
                 'name' => 'Rudi',
                 'npk' => '140023',
-                'priority' => 'high',
-                'created_at' => '2025-07-12',
-                'description' => 'Develop an feature to export BOM per Product.',
-                'status' => 'finish',
+                'priority_id' => 3,
+                'description' => 'Develop an feature to export Standard Cost per Product.',
+                'status_id' => 7,
+                'impact' => 'Automatically generate Standard Cost per Product.',
                 'attachment' => null,
+                'created_at' => '2025-07-12',
                 'updated_at' => '2025-07-26',
             ],
             [
                 'name' => 'Tuti',
                 'npk' => '140025',
-                'priority' => 'high',
-                'created_at' => '2025-07-29',
+                'priority_id' => 3,
                 'description' => 'Modify dialog after updating master data.',
-                'status' => 'finish',
+                'status_id' => 7,
+                'impact' => 'User more informed about what happen on the system is it already updated/added/deleted/processed or not.',
                 'attachment' => null,
+                'created_at' => '2025-07-29',
                 'updated_at' => '2025-08-05',
             ],
             [
                 'name' => 'Tuti',
                 'npk' => '140025',
-                'priority' => 'high',
-                'created_at' => '2025-07-29',
+                'priority_id' => 3,
                 'description' => 'Creating new input for OPEX dan Profit Margin in Standart Cost.',
-                'status' => 'finish',
+                'status_id' => 7,
+                'impact' => 'User can change percentage of OPEX and Profit Margin.',
                 'attachment' => null,
+                'created_at' => '2025-07-29',
                 'updated_at' => '2025-08-07',
             ],
-
             [
                 'name' => 'Tuti',
                 'npk' => '140025',
-                'priority' => 'high',
-                'created_at' => '2025-08-06',
+                'priority_id' => 3,
                 'description' => 'Creating new menu for Actual Cost.',
-                'status' => 'finish',
+                'status_id' => 7,
+                'impact' => 'User can add new data for actual material price.',
                 'attachment' => null,
+                'created_at' => '2025-08-06',
                 'updated_at' => '2025-08-07',
             ],
-
             [
                 'name' => 'Tuti',
                 'npk' => '140025',
-                'priority' => 'high',
-                'created_at' => '2025-08-07',
+                'priority_id' => 3,
                 'description' => 'Create new menu for Calculating Difference between Standard vs Actual Cost.',
-                'status' => 'finish',
+                'status_id' => 7,
+                'impact' => 'Can calculate automatically difference between Standard vs Actual Cost.',
                 'attachment' => null,
+                'created_at' => '2025-08-07',
                 'updated_at' => '2025-08-13',
             ],
-
             [
                 'name' => 'Setyaningsih',
                 'npk' => '140023',
-                'priority' => 'low',
-                'created_at' => '2025-08-14',
+                'priority_id' => 1,
                 'description' => 'Create a cash in/out system in Excel (Please also make a sheet with history report to reconcile the ending balance with SAP balance)',
-                'status' => 'finish',
+                'status_id' => 7,
+                'impact' => 'Actual In/out pettycash based on denomination, it can easily to check the actual cash when cash opname.',
                 'attachment' => null,
+                'created_at' => '2025-08-14',
                 'updated_at' => '2025-08-14',
             ],
             [
                 'name' => 'Ayu',
                 'npk' => '190349',
-                'priority' => 'medium',
-                'created_at' => '2025-08-14',
+                'priority_id' => 2,
                 'description' => 'Create digitialization of Entertainment Form in Personal site.',
-                'status' => 'wait_for_review',
+                'status_id' => 5,
+                'impact' => null,
                 'attachment' => 'attachment/zmmJtfG3mzE1JqBKvpoSMkdmvk8QxYoGzYWqXjWm.xlsx',
+                'created_at' => '2025-08-14',
                 'updated_at' => '2025-08-14',
             ],
-
         ];
 
+        $histories = [
+            [
+                'rfs_id' => '1',
+                'updated_by' => 'Ayu',
+                'updated_at' => '2024-11-26'
+            ],
+            [
+                'rfs_id' => '2',
+                'updated_by' => 'Setyaningsih',
+                'updated_at' => '2024-12-2'
+            ],
+            [
+                'rfs_id' => '3',
+                'updated_by' => 'Ayu',
+                'updated_at' => '2024-12-13'
+            ],
+            [
+                'rfs_id' => '4',
+                'updated_by' => 'Rudi',
+                'updated_at' => '2024-12-23'
+            ],
+            [
+                'rfs_id' => '5',
+                'updated_by' => 'Rudi',
+                'updated_at' => '2024-12-26'
+            ],
+            [
+                'rfs_id' => '6',
+                'updated_by' => 'Rudi',
+                'updated_at' => '2025-03-27'
+            ],
+            [
+                'rfs_id' => '7',
+                'updated_by' => 'Ayu',
+                'updated_at' => '2025-02-11'
+            ],
+            [
+                'rfs_id' => '8',
+                'updated_by' => 'Ayu',
+                'updated_at' => '2025-02-12'
+            ],
+            [
+                'rfs_id' => '9',
+                'updated_by' => 'Rudi',
+                'updated_at' => '2025-06-02'
+            ],
+            [
+                'rfs_id' => '10',
+                'updated_by' => 'Setyaningsih',
+                'updated_at' => '2025-07-08'
+            ],
+            [
+                'rfs_id' => '11',
+                'updated_by' => 'Rudi',
+                'updated_at' => '2025-07-26'
+            ],
+            [
+                'rfs_id' => '12',
+                'updated_by' => 'Tuti',
+                'updated_at' => '2025-08-05'
+            ],
+            [
+                'rfs_id' => '13',
+                'updated_by' => 'Tuti',
+                'updated_at' => '2025-08-07'
+            ],
+            [
+                'rfs_id' => '14',
+                'updated_by' => 'Tuti',
+                'updated_at' => '2025-08-13'
+            ],
+            [
+                'rfs_id' => '15',
+                'updated_by' => 'Setyaningsih',
+                'updated_at' => '2025-08-14'
+            ],
+            [
+                'rfs_id' => '16',
+                'updated_by' => 'Ayu',
+                'updated_at' => '2025-08-14'
+            ],
+        ];
 
-        for ($i = 0; $i < count($request); $i++) {
-            $u = RequestForService::create([
-                'name' => $request[$i]['name'],
-                'npk' => $request[$i]['npk'],
-                'priority' => $request[$i]['priority'],
-                'created_at' => $request[$i]['created_at'],
-                'description' => $request[$i]['description'],
-                'status' => $request[$i]['status'],
-                'attachment' => $request[$i]['attachment'],
-                'updated_at' => $request[$i]['updated_at'],
-            ]);
-        }
+        DB::table('priorities')->insert([
+            ['id' => 1, 'priority' => 'low'],
+            ['id' => 2, 'priority' => 'medium'],
+            ['id' => 3, 'priority' => 'high'],
+            ['id' => 4, 'priority' => 'urgent'],
+        ]);
+
+        DB::table('statuses')->insert([
+            [
+                'id' => 1,
+                'status' => 'wait_for_review'
+            ],
+            [
+                'id' => 2,
+                'status' => 'accepted'
+            ],
+            [
+                'id' => 3,
+                'status' => 'rejected'
+            ],
+            [
+                'id' => 4,
+                'status' => 'in_progress'
+            ],
+
+            [
+                'id' => 5,
+                'status' => 'user_acceptance'
+            ],
+            [
+                'id' => 6,
+                'status' => 'revision'
+            ],
+            [
+                'id' => 7,
+                'status' => 'finish'
+            ],
+
+        ]);
+
+        DB::table('request_for_services')->insert($requests);
+        DB::table('histories_rfs')->insert($histories);
+
+        // for ($i = 0; $i < count($request); $i++) {
+        //     $u = RequestForService::create([
+        //         'name' => $request[$i]['name'],
+        //         'npk' => $request[$i]['npk'],
+        //         'priority' => $request[$i]['priority'],
+        //         'created_at' => $request[$i]['created_at'],
+        //         'description' => $request[$i]['description'],
+        //         'status' => $request[$i]['status'],
+        //         'attachment' => $request[$i]['attachment'],
+        //         'updated_at' => $request[$i]['updated_at'],
+        //     ]);
+        // }
     }
 }

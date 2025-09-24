@@ -218,7 +218,7 @@ const deletePermission = (permission: Permission) => {
             toast.add({
                 severity: 'error',
                 summary: 'Error',
-                detail: 'Failed to delete permission',
+                detail: `Failed to delete permission ${errors.permission}`,
                 life: 4000,
             });
         },
@@ -231,10 +231,10 @@ const deletePermission = (permission: Permission) => {
 const users = ref<User[]>([...(page.props.users as User[])]);
 const userRoleDialog = ref(false);
 
-const userRoleForm = ref({
-    userId: null,
-    roleId: null,
-});
+// const userRoleForm = ref({
+//     userId: null,
+//     roleId: null,
+// });
 
 const selectedUser = ref<User | null>(null);
 const selectedRole = ref<Role | null>(null);
