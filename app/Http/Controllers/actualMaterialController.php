@@ -102,11 +102,11 @@ class actualMaterialController extends Controller
 
             // --- Langkah 9: Memperbarui progres impor ---
             $progress = intval(($index + 1) / $total * 100);
-            Cache::put('import-progress-acmat', $progress, now()->addMinutes(5));
+            Cache::put('import-progress-actualMat', $progress, now()->addMinutes(5));
         }
 
         // Setelah loop selesai, set progres ke 100%.
-        Cache::put('import-progress-acmat', 100, now()->addMinutes(5));
+        Cache::put('import-progress-actualMat', 100, now()->addMinutes(5));
 
         // --- Langkah 10: Mengalihkan (Redirect) dengan hasil impor ---
         return redirect()->route('bom.master')->with([

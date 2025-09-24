@@ -87,6 +87,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/bom/master', [BOMController::class, 'master'])
         ->name('bom.master');
 
+    // Route::get('/bom/masterStandard', [BOMController::class, 'standardMaster'])
+    //     ->name('bom.masterStandard');
+
+    // Route::get('/bom/masterActual', [BOMController::class, 'actualMaster'])
+    //     ->name('bom.masterActual');
+
     // Report page
     Route::get('/bom/report', [BOMController::class, 'report'])
         ->name('bom.report');

@@ -1336,7 +1336,7 @@ function handleDestroy() {
                         <Tab value="0">Business Partner</Tab>
                         <Tab value="1">Cycle Time</Tab>
                         <Tab value="2">Sales Quantity</Tab>
-                        <Tab value="3">Wages Distribution</Tab>
+                        <Tab value="3">Production Cost</Tab>
                     </TabList>
                     <!-- Process Items Grid -->
                     <TabPanels>
@@ -2307,7 +2307,7 @@ function handleDestroy() {
                             <section ref="wdSection" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
                                     <h2 class="mb-4 text-3xl font-semibold text-gray-900 hover:text-indigo-500 md:mb-0 dark:text-white">
-                                        Wages Distribution
+                                        Production Cost
                                     </h2>
 
                                     <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">

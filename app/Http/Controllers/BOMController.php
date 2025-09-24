@@ -66,6 +66,72 @@ class BOMController extends Controller
         ]);
     }
 
+    // public function standardMaster(Request $request)
+    // {
+    //     $standardMaterial = StandardMaterial::with('bom')->get();
+    //     $addedItems = Session::get('addedItems', []);
+    //     $invalidItems = Session::get('invalidItems', []);
+
+    //     return Inertia::render("bom/master", [
+    //         'standardMaterial' => $standardMaterial,
+    //         'importResult' => [
+    //             'addedItems' => $addedItems,
+    //             'invalidItems' => $invalidItems
+    //         ]
+    //     ]);
+    // }
+
+    // public function actualMaster(Request $request)
+    // {
+    //     $actualdMaterial = ActualMaterial::with('bom')->get();
+    //     $addedItems = Session::get('addedItems', []);
+    //     $invalidItems = Session::get('invalidItems', []);
+
+    //     return Inertia::render("bom/master", [
+    //         'actualMaterial' => $actualdMaterial,
+    //         'importResult' => [
+    //             'addedItems' => $addedItems,
+    //             'invalidItems' => $invalidItems
+    //         ]
+    //     ]);
+    // }
+
+    // public function BOMMaster(Request $request)
+    // {
+    //     $bom = BillOfMaterial::where('depth', 1)->get();
+    //     $processes = Process::all();
+    //     $componentItems = collect();
+    //     $finishGood = null;
+
+    //     if ($request->has('component_id')) {
+    //         $all = BillOfMaterial::orderBy('id')->get();
+    //         $mainIndex = $all->search(fn($item) => $item->id == $request->component_id);
+
+    //         if ($mainIndex !== false) {
+    //             for ($i = $mainIndex + 1; $i < count($all); $i++) {
+    //                 if ($all[$i]->depth == 1) break;
+    //                 $componentItems->push($all[$i]);
+    //             }
+
+    //             $finishGood = $all[$mainIndex];
+    //         }
+    //     }
+
+    //     $addedItems = Session::get('addedItems', []);
+    //     $invalidItems = Session::get('invalidItems', []);
+
+    //     return Inertia::render("bom/master", [
+    //         'billOfMaterials' => $bom,
+    //         'processes' => $processes,
+    //         'finish_good' => $finishGood,
+    //         'component' => $componentItems, // ✅ dikirim ke frontend
+    //         'importResult' => [
+    //             'addedItems' => $addedItems,
+    //             'invalidItems' => $invalidItems
+    //         ]
+    //     ]);
+    // }
+
     public function report(Request $request)
     {
         // $sc = StandardCost::take('10')->get();

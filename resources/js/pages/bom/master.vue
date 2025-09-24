@@ -421,7 +421,7 @@ function handleSave() {
                     severity: 'warn',
                     summary: 'Error',
                     group: 'br',
-                    detail: `Failed to delete data with ${editedData.value.bp_code}`,
+                    detail: `Failed to delete data with ${editedData.value.item_code}`,
                     life: 3000,
                 });
             },
@@ -448,7 +448,7 @@ function handleSave() {
                     severity: 'warn',
                     summary: 'Error',
                     group: 'br',
-                    detail: `Failed to delete data with ${editedData.value.bp_code}`,
+                    detail: `Failed to delete data with ${editedData.value.item_code}`,
                     life: 3000,
                 });
             },
@@ -475,7 +475,7 @@ function handleSave() {
                     severity: 'warn',
                     summary: 'Error',
                     group: 'br',
-                    detail: `Failed to delete data with ${editedData.value.bp_code}`,
+                    detail: `Failed to delete data with ${editedData.value.item_code}`,
                     life: 3000,
                 });
             },
@@ -502,7 +502,7 @@ function handleSave() {
                     severity: 'warn',
                     summary: 'Error',
                     group: 'br',
-                    detail: `Failed to delete data with ${editedData.value.bp_code}`,
+                    detail: `Failed to delete data with ${editedData.value.item_code}`,
                     life: 3000,
                 });
             },
@@ -529,7 +529,7 @@ function handleSave() {
                     severity: 'warn',
                     summary: 'Error',
                     group: 'br',
-                    detail: `Failed to delete data with ${editedData.value.bp_code}`,
+                    detail: `Failed to delete data with ${editedData.value.item_code}`,
                     life: 3000,
                 });
             },
@@ -719,43 +719,6 @@ const formatCurrency = (value: number) => {
         minimumFractionDigits: 0,
     }).format(value);
 };
-
-// // Logika baru untuk mengecek flash data dari controller
-// watch(
-//     () => page.props.importResult,
-//     (newResult) => {
-//         if (newResult) {
-//             console.log('--- Hasil Import ---');
-//             console.log('Pesan Sukses:', newResult.success);
-//             console.log('Item yang Ditambahkan:', newResult.addedItems);
-//             console.log('Item yang Gagal:', newResult.invalidItems);
-//             console.log('--------------------');
-
-//             // Tambahkan logika untuk menampilkan toast
-//             if (newResult.success) {
-//                 toast.add({
-//                     severity: 'success',
-//                     summary: newResult.success,
-//                     detail: `${newResult.addedItems.length} item berhasil ditambahkan`,
-//                     life: 4000,
-//                     group: 'br',
-//                 });
-//             }
-
-//             if (newResult.invalidItems && newResult.invalidItems.length > 0) {
-//                 toast.add({
-//                     severity: 'warn',
-//                     summary: 'Import Gagal',
-//                     detail: `${newResult.invalidItems.length} item gagal diimpor. Lihat konsol untuk detail.`,
-//                     life: 6000,
-//                     group: 'br',
-//                 });
-//             }
-//         }
-//     },
-//     { immediate: true },
-// );
-
 interface ImportResult {
     addedItems: string[];
     invalidItems: { item_code: string; price: string; description: string; reason: string }[];
@@ -1250,18 +1213,140 @@ const importResult = computed(() => {
             <div class="mx-26 mb-26">
                 <Tabs value="0">
                     <TabList>
-                        <Tab value="0">Standard Material Price</Tab>
-                        <!-- <Tab value="1">Packing</Tab> -->
-                        <Tab value="1">Actual Material Price</Tab>
-
-                        <Tab value="2">Valve</Tab>
-                        <!-- <Tab value="3">Process</Tab> -->
-                        <Tab value="3">Bill of Material</Tab>
+                        <Tab value="0">Bill of Material</Tab>
+                        <Tab value="1">Standard Material Price</Tab>
+                        <Tab value="2">Actual Material Price</Tab>
+                        <Tab value="3">Valve</Tab>
                     </TabList>
 
-                    <!-- Process Items Grid -->
                     <TabPanels>
                         <TabPanel value="0">
+                            <section ref="bomSection" class="p-2">
+                                <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Bill of Material</h2>
+
+                                    <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
+                                        <FileUpload
+                                            ref="fileUploaderBP"
+                                            mode="basic"
+                                            name="file"
+                                            :customUpload="true"
+                                            accept=".csv"
+                                            chooseLabel="Import CSV"
+                                            chooseIcon="pi pi-upload"
+                                            @select="(event) => handleCSVImport(event, 'bom')"
+                                            class="w-full sm:w-auto"
+                                        />
+                                    </div>
+
+                                    <div class="text-right text-gray-700 dark:text-gray-300">
+                                        <div>
+                                            Last Update :
+                                            <span class="text-red-300">{{ lastUpdate[3] ? formatlastUpdate(lastUpdate[3]) : '-' }}</span>
+                                        </div>
+                                        <div>
+                                            Data source From :
+                                            <span class="text-cyan-400">{{ dataSource[3] }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <DataTable
+                                    :value="billOfMaterials"
+                                    tableStyle="min-width: 50rem"
+                                    paginator
+                                    :rows="10"
+                                    resizableColumns
+                                    columnResizeMode="expand"
+                                    showGridlines
+                                    removableSort
+                                    v-model:filters="filters"
+                                    filterDisplay="row"
+                                    :loading="loading"
+                                    :globalFilterFields="['item_code', 'description']"
+                                    class="text-md"
+                                    ref="dtBOM"
+                                >
+                                    <Column
+                                        field="item_code"
+                                        header="Item Code"
+                                        :showFilterMenu="false"
+                                        sortable
+                                        :headerStyle="headerStyle"
+                                        :bodyStyle="bodyStyle"
+                                        ><template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search item code"
+                                                class="w-full"
+                                            /> </template
+                                    ></Column>
+                                    <Column
+                                        field="description"
+                                        header="Name"
+                                        :showFilterMenu="false"
+                                        sortable
+                                        :headerStyle="headerStyle"
+                                        :bodyStyle="bodyStyle"
+                                    >
+                                        <template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search description"
+                                                class="w-full"
+                                            />
+                                        </template>
+                                        <template #body="{ data }">
+                                            {{ data ? data.description : 'N/A' }}
+                                        </template>
+                                    </Column>
+                                    <!-- <Column field="description" header="Description" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle" /> -->
+                                    <Column field="uom" header="Unit of Material" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+
+                                    <Column field="quantity" header="Quantity" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="warehouse" header="Warehouse" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+
+                                    <Column field="depth" header="Depth" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                                    <Column field="bom_type" header="BOM Type" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+
+                                    <Column field="created_at_formatted" sortable header="Added at" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="slotProps">
+                                            {{ formatDate(slotProps.data.created_at) }}
+                                        </template>
+                                    </Column>
+
+                                    <Column
+                                        field="updated_at_formatted"
+                                        sortable
+                                        header="Updated at"
+                                        :headerStyle="headerStyle"
+                                        :bodyStyle="bodyStyle"
+                                    >
+                                        <template #body="slotProps">
+                                            {{ formatDate(slotProps.data.updated_at) }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="action" header="Action" :exportable="false" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="slotProps">
+                                            <div class="flex gap-2">
+                                                <Button
+                                                    v-tooltip="'View Component'"
+                                                    icon="pi pi-eye"
+                                                    severity="info"
+                                                    rounded
+                                                    text
+                                                    @click="viewComponents(slotProps.data)"
+                                                />
+                                            </div>
+                                        </template>
+                                    </Column>
+                                </DataTable>
+                            </section>
+                        </TabPanel>
+
+                        <TabPanel value="1">
                             <section ref="matSection" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
                                     <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Standard Material Price</h2>
@@ -1391,7 +1476,7 @@ const importResult = computed(() => {
                             </section>
                         </TabPanel>
 
-                        <TabPanel value="1">
+                        <TabPanel value="2">
                             <section ref="matSection" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
                                     <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Actual Material Price</h2>
@@ -1493,31 +1578,11 @@ const importResult = computed(() => {
                                             {{ formatDate(slotProps.data.updated_at) }}
                                         </template>
                                     </Column>
-
-                                    <!-- <Column field="action" header="Action" :exportable="false" :headerStyle="headerStyle" :bodyStyle="bodyStyle"
-                                        ><template #body="slotProps">
-                                            <div class="flex gap-2">
-                                                <Button
-                                                    icon="pi pi-pencil"
-                                                    severity="warning"
-                                                    rounded
-                                                    text
-                                                    @click="editData(slotProps.data, 'acmat')"
-                                                />
-                                                <Button
-                                                    icon="pi pi-trash"
-                                                    severity="danger"
-                                                    rounded
-                                                    text
-                                                    @click="destroyData(slotProps.data, 'acmat')"
-                                                />
-                                            </div> </template
-                                    ></Column> -->
                                 </DataTable>
                             </section>
                         </TabPanel>
 
-                        <TabPanel value="2">
+                        <TabPanel value="3">
                             <section ref="packSection" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
                                     <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Valve Price</h2>
@@ -1633,132 +1698,6 @@ const importResult = computed(() => {
                                                 />
                                             </div> </template
                                     ></Column>
-                                </DataTable>
-                            </section>
-                        </TabPanel>
-
-                        <TabPanel value="3">
-                            <section ref="bomSection" class="p-2">
-                                <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
-                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Bill of Material</h2>
-
-                                    <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
-                                        <FileUpload
-                                            ref="fileUploaderBP"
-                                            mode="basic"
-                                            name="file"
-                                            :customUpload="true"
-                                            accept=".csv"
-                                            chooseLabel="Import CSV"
-                                            chooseIcon="pi pi-upload"
-                                            @select="(event) => handleCSVImport(event, 'bom')"
-                                            class="w-full sm:w-auto"
-                                        />
-                                    </div>
-
-                                    <div class="text-right text-gray-700 dark:text-gray-300">
-                                        <div>
-                                            Last Update :
-                                            <span class="text-red-300">{{ lastUpdate[3] ? formatlastUpdate(lastUpdate[3]) : '-' }}</span>
-                                        </div>
-                                        <div>
-                                            Data source From :
-                                            <span class="text-cyan-400">{{ dataSource[3] }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <DataTable
-                                    :value="billOfMaterials"
-                                    tableStyle="min-width: 50rem"
-                                    paginator
-                                    :rows="10"
-                                    resizableColumns
-                                    columnResizeMode="expand"
-                                    showGridlines
-                                    removableSort
-                                    v-model:filters="filters"
-                                    filterDisplay="row"
-                                    :loading="loading"
-                                    :globalFilterFields="['item_code', 'description']"
-                                    class="text-md"
-                                    ref="dtBOM"
-                                >
-                                    <Column
-                                        field="item_code"
-                                        header="Item Code"
-                                        :showFilterMenu="false"
-                                        sortable
-                                        :headerStyle="headerStyle"
-                                        :bodyStyle="bodyStyle"
-                                        ><template #filter="{ filterModel, filterCallback }">
-                                            <InputText
-                                                v-model="filterModel.value"
-                                                @input="filterCallback()"
-                                                placeholder="Search item code"
-                                                class="w-full"
-                                            /> </template
-                                    ></Column>
-                                    <Column
-                                        field="description"
-                                        header="Name"
-                                        :showFilterMenu="false"
-                                        sortable
-                                        :headerStyle="headerStyle"
-                                        :bodyStyle="bodyStyle"
-                                    >
-                                        <template #filter="{ filterModel, filterCallback }">
-                                            <InputText
-                                                v-model="filterModel.value"
-                                                @input="filterCallback()"
-                                                placeholder="Search description"
-                                                class="w-full"
-                                            />
-                                        </template>
-                                        <template #body="{ data }">
-                                            {{ data ? data.description : 'N/A' }}
-                                        </template>
-                                    </Column>
-                                    <!-- <Column field="description" header="Description" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle" /> -->
-                                    <Column field="uom" header="Unit of Material" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-
-                                    <Column field="quantity" header="Quantity" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="warehouse" header="Warehouse" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-
-                                    <Column field="depth" header="Depth" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="bom_type" header="BOM Type" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-
-                                    <Column field="created_at_formatted" sortable header="Added at" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
-                                        <template #body="slotProps">
-                                            {{ formatDate(slotProps.data.created_at) }}
-                                        </template>
-                                    </Column>
-
-                                    <Column
-                                        field="updated_at_formatted"
-                                        sortable
-                                        header="Updated at"
-                                        :headerStyle="headerStyle"
-                                        :bodyStyle="bodyStyle"
-                                    >
-                                        <template #body="slotProps">
-                                            {{ formatDate(slotProps.data.updated_at) }}
-                                        </template>
-                                    </Column>
-
-                                    <Column field="action" header="Action" :exportable="false" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
-                                        <template #body="slotProps">
-                                            <div class="flex gap-2">
-                                                <Button
-                                                    v-tooltip="'View Component'"
-                                                    icon="pi pi-eye"
-                                                    severity="info"
-                                                    rounded
-                                                    text
-                                                    @click="viewComponents(slotProps.data)"
-                                                />
-                                            </div>
-                                        </template>
-                                    </Column>
                                 </DataTable>
                             </section>
                         </TabPanel>
