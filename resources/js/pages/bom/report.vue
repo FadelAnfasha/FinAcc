@@ -1721,7 +1721,7 @@ const maxDate = ref(new Date());
                                 </div>
 
                                 <DataTable
-                                    :value="dc"
+                                    :value="combinedData"
                                     tableStyle="min-width: 50rem"
                                     paginator
                                     :rows="10"
