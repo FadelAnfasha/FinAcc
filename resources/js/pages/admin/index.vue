@@ -23,7 +23,7 @@ import { ref } from 'vue';
 
 const toast = useToast();
 const page = usePage();
-const { services, auth } = defineProps({
+const props = defineProps({
     services: Array,
     auth: Object,
 });
