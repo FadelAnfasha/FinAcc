@@ -23,6 +23,7 @@ import { computed, nextTick, ref, watch } from 'vue';
 
 const toast = useToast();
 const page = usePage();
+const dtBOM = ref();
 const dtSC = ref();
 const dtAC = ref();
 const dtDIFF = ref();
@@ -360,18 +361,18 @@ function capitalize(text: string): string {
     return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-function exportCSV(type: 'standardCost' | 'actualCost' | 'diffCost') {
-    // Periksa apakah tipenya 'standardCost' DAN ref dtSC sudah ada
-    if (type === 'standardCost' && dtSC.value) {
-        const exportFilename = `Bill-of-Material-StandardCost-${new Date().toISOString().slice(0, 10)}.csv`;
+function exportCSV(type: 'BOM' | 'standardCost' | 'actualCost' | 'diffCost') {
+    if (type === 'BOM' && dtBOM.value) {
+        const exportFilename = `Bill-of-Material-${new Date().toISOString().slice(0, 10)}.csv`;
+        dtBOM.value.exportCSV({ selectionOnly: false, filename: exportFilename });
+    } else if (type === 'standardCost' && dtSC.value) {
+        const exportFilename = `StandardCost-${new Date().toISOString().slice(0, 10)}.csv`;
         dtSC.value.exportCSV({ selectionOnly: false, filename: exportFilename });
-    }
-    // Jika tidak, periksa apakah tipenya 'actualCost' DAN ref dtAC sudah ada
-    else if (type === 'actualCost' && dtAC.value) {
-        const exportFilename = `Bill-of-Material-ActualCost-${new Date().toISOString().slice(0, 10)}.csv`;
+    } else if (type === 'actualCost' && dtAC.value) {
+        const exportFilename = `ActualCost-${new Date().toISOString().slice(0, 10)}.csv`;
         dtAC.value.exportCSV({ selectionOnly: false, filename: exportFilename });
     } else if (type === 'diffCost' && dtAC.value) {
-        const exportFilename = `Bill-of-Material-DiffCost-${new Date().toISOString().slice(0, 10)}.csv`;
+        const exportFilename = `DiffCost-${new Date().toISOString().slice(0, 10)}.csv`;
         dtDIFF.value.exportCSV({ selectionOnly: false, filename: exportFilename });
     }
 }
@@ -750,13 +751,280 @@ const maxDate = ref(new Date());
             <div class="mx-26 mb-26">
                 <Tabs value="0">
                     <TabList>
-                        <Tab value="0">Standard Cost</Tab>
-                        <Tab value="1">Actual Cost</Tab>
-                        <Tab value="2">Difference</Tab>
+                        <Tab value="0">BOM</Tab>
+                        <Tab value="1">Standard Cost</Tab>
+                        <Tab value="2">Actual Cost</Tab>
+                        <Tab value="3">Difference</Tab>
                     </TabList>
 
                     <TabPanels>
                         <TabPanel value="0">
+                            <section class="p-2">
+                                <div class="mb-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                                    <!-- Title -->
+                                    <h2 class="text-3xl font-semibold text-gray-900 dark:text-white">Bill Of Material</h2>
+
+                                    <!-- Main Controls Container -->
+                                    <div class="flex flex-col gap-4 lg:flex-row lg:items-center">
+                                        <!-- Export and Update Report Buttons -->
+                                        <div class="flex flex-col gap-2 sm:flex-row sm:gap-4">
+                                            <Button
+                                                icon="pi pi-download"
+                                                label=" Export Report"
+                                                unstyled
+                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-orange-700 sm:w-auto"
+                                                @click="exportCSV('BOM')"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Last Update Info -->
+                                <div class="mb-4 text-right text-gray-700 dark:text-gray-300">
+                                    <div>
+                                        Last Update :
+                                        <span class="text-red-300">{{ lastMaster[3] ? formatlastUpdate(lastMaster[3]) : '-' }}</span>
+                                    </div>
+                                </div>
+
+                                <DataTable
+                                    :value="sc"
+                                    tableStyle="min-width: 50rem"
+                                    paginator
+                                    :rows="10"
+                                    :rowsPerPageOptions="[5, 10, 20, 50]"
+                                    resizableColumns
+                                    columnResizeMode="expand"
+                                    showGridlines
+                                    removableSort
+                                    v-model:filters="filtersStandard"
+                                    filterDisplay="row"
+                                    :loading="loading"
+                                    :globalFilterFields="['item_code', 'type_name', 'description', 'report_year', 'report_month']"
+                                    class="text-md"
+                                    ref="dtBOM"
+                                >
+                                    <Column field="no" sortable header="#" :showFilterMenu="true" v-bind="tbStyle('main')"></Column>
+
+                                    <Column field="item_code" header="Item Code" :showFilterMenu="false" sortable v-bind="tbStyle('main')">
+                                        <template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search item code"
+                                                class="w-full"
+                                            />
+                                        </template>
+                                    </Column>
+
+                                    <Column field="type_name" :showFilterMenu="false" sortable header="Type" v-bind="tbStyle('main')">
+                                        <template #filter="{ filterModel, filterCallback }">
+                                            <div class="flex justify-center">
+                                                <Select
+                                                    v-model="filterModel.value"
+                                                    :options="type"
+                                                    placeholder="Select priority"
+                                                    class="w-40"
+                                                    @change="
+                                                        () => {
+                                                            if (filterModel.value === 'All') {
+                                                                filterModel.value = null;
+                                                            }
+                                                            filterCallback();
+                                                        }
+                                                    "
+                                                >
+                                                    <!-- Selected value -->
+                                                    <template #value="{ value }">
+                                                        <span v-if="!value || value === 'All'" class="w-full text-center text-gray-500">
+                                                            Select priority
+                                                        </span>
+                                                        <span
+                                                            v-else
+                                                            :class="getTypeClass(value)"
+                                                            class="inline-block w-full rounded-full px-2 py-1 text-center text-xs font-semibold"
+                                                        >
+                                                            {{ capitalize(value) }}
+                                                        </span>
+                                                    </template>
+
+                                                    <!-- Dropdown options -->
+                                                    <template #option="{ option }">
+                                                        <span
+                                                            v-if="option === 'All'"
+                                                            class="inline-block w-full rounded-full bg-gray-100 px-2 py-1 text-center text-xs font-semibold text-gray-800"
+                                                        >
+                                                            All
+                                                        </span>
+                                                        <span
+                                                            v-else
+                                                            :class="getTypeClass(option)"
+                                                            class="inline-block w-full rounded-full px-2 py-1 text-center text-xs font-semibold"
+                                                        >
+                                                            {{ capitalize(option) }}
+                                                        </span>
+                                                    </template>
+                                                </Select>
+                                            </div>
+                                        </template></Column
+                                    >
+
+                                    <Column field="bom.description" header="Name" :showFilterMenu="false" sortable v-bind="tbStyle('main')">
+                                        <template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search description"
+                                                class="w-full"
+                                            />
+                                        </template>
+                                        <template #body="{ data }">
+                                            {{ data.bom ? data.bom.description : 'N/A' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="disc_qty" sortable header="Qty" v-bind="tbStyle('rm')"></Column>
+                                    <Column field="disc_code" sortable header="Disc" v-bind="tbStyle('rm')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.disc_code || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="rim_qty" sortable header="Qty" v-bind="tbStyle('rm')"></Column>
+                                    <Column field="rim_code" sortable header="Rim" v-bind="tbStyle('rm')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.rim_code || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="sidering_qty" sortable header="Qty" v-bind="tbStyle('rm')"></Column>
+                                    <Column field="sidering_code" sortable header="Sidering" v-bind="tbStyle('rm')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.sidering_code || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="pr_disc" sortable header="Pr Disc" v-bind="tbStyle('pr')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.pr_disc || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="pr_rim" sortable header="Pr Rim" v-bind="tbStyle('pr')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.pr_rim || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="pr_sidering" sortable header="Pr Sidering" v-bind="tbStyle('pr')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.pr_sidering || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="pr_assy" sortable header="Pr Assy" v-bind="tbStyle('pr')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.pr_assy || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="pr_cedW" sortable header="Pr CED W" v-bind="tbStyle('pr')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.pr_cedW || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="pr_cedSR" sortable header="Pr CED SR" v-bind="tbStyle('pr')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.pr_cedSR || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="pr_tcW" sortable header="Pr Topcoat W" v-bind="tbStyle('pr')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.pr_tcW || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="pr_tcSR" sortable header="Pr tcSR" v-bind="tbStyle('pr')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.pr_tcSR || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_disc" sortable header="WiP Disc" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_disc || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_rim" sortable header="WiP Rim" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_rim || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_sidering" sortable header="WiP Sidering" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_sidering || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_assy" sortable header="WiP Assy" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_assy || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_cedW" sortable header="WiP CED W" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_cedW || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_cedSR" sortable header="WiP CED SR" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_cedSR || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_tcW" sortable header="WiP Topcoat W" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_tcW || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_tcSR" sortable header="WiP Topcoat SR" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_tcSR || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_valve" sortable header="WiP Valve" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_valve || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="action" header="Action" :exportable="false" v-bind="tbStyle('fg')">
+                                        <template #body="data">
+                                            <div class="flex gap-2">
+                                                <Button
+                                                    v-tooltip="'Preview Product'"
+                                                    icon="pi pi-eye"
+                                                    severity="info"
+                                                    rounded
+                                                    text
+                                                    @click="openPreviewTab(data.data.item_code, opexDef, proginDef, 'standardCost')"
+                                                />
+                                            </div>
+                                        </template>
+                                    </Column>
+                                </DataTable>
+                            </section>
+                        </TabPanel>
+
+                        <TabPanel value="1">
                             <section class="p-2">
                                 <div class="mb-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                                     <!-- Title -->
@@ -1219,7 +1487,7 @@ const maxDate = ref(new Date());
                             </section>
                         </TabPanel>
 
-                        <TabPanel value="1">
+                        <TabPanel value="2">
                             <section class="p-2">
                                 <div class="mb-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                                     <!-- Title -->
@@ -1664,7 +1932,7 @@ const maxDate = ref(new Date());
                             </section>
                         </TabPanel>
 
-                        <TabPanel value="2">
+                        <TabPanel value="3">
                             <section class="p-2">
                                 <div class="mb-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                                     <!-- Title -->
