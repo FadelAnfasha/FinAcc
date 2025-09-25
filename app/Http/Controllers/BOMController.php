@@ -132,6 +132,8 @@ class BOMController extends Controller
     //     ]);
     // }
 
+
+
     public function report(Request $request)
     {
         // $sc = StandardCost::take('10')->get();
