@@ -39,11 +39,16 @@ class AdminController extends Controller
         });
 
         $users = User::with('roles')->get()->map(function ($user) {
+            // Ambil semua nama role dan simpan sebagai array
+            $roleNames = $user->roles->pluck('name')->toArray();
+
             return [
                 'id' => $user->id,
                 'name' => $user->name,
                 'npk' => $user->npk,
-                'role' => $user->roles->first()?->name ?? 'No Role'
+                // Key diubah menjadi 'roles' (jamak) untuk menampung array
+                // Jika tidak ada role, akan menampilkan array kosong []
+                'roles' => $roleNames
             ];
         });
 
@@ -153,16 +158,23 @@ class AdminController extends Controller
     {
         $request->validate([
             'user_id' => 'required|exists:users,id',
-            'role_id' => 'required|exists:roles,id'
+            'role_ids' => 'nullable|array',
+            'role_ids.*' => 'nullable|exists:roles,id',
         ]);
 
         $user = User::findOrFail($request->user_id);
-        $role = Role::findOrFail($request->role_id);
+        $roleIds = $request->role_ids ?? [];
 
-        // Remove all existing roles and assign the new one
-        $user->syncRoles([$role->name]);
+        if (method_exists($user, 'syncRoles')) {
+            $roleNames = Role::whereIn('id', $roleIds)->pluck('name');
+            $user->syncRoles($roleNames);
+        } elseif (method_exists($user, 'roles')) {
+            $user->roles()->sync($roleIds);
+        } else {
+            return redirect()->back()->withErrors(['role_sync' => 'User model does not have role synchronization capabilities.']);
+        }
 
-        return redirect()->back()->with('success', 'Role assigned successfully');
+        return redirect()->back()->with('success', 'Roles assigned successfully');
     }
 
     /**

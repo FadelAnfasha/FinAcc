@@ -26,30 +26,41 @@ class DatabaseSeeder extends Seeder
         $departemen = Role::create(['name' => 'Deputy Department']);
         $staff = Role::create(['name' => 'Staff']);
         $admin = Role::create(['name' => 'Admin']);
+        $ProCost_view = Role::create(['name' => 'Process Cost - View']);
+        $ProCost_full = Role::create(['name' => 'Process Cost - Full Access']);
+        $BOM_view = Role::create(['name' => 'BOM - View']);
+        $BOM_full = Role::create(['name' => 'BOM - Full Access']);
 
         // 2. Permissions
         Permission::create(['name' => 'Approve']);
         Permission::create(['name' => 'Reject']);
-        Permission::create(['name' => 'Execute']);
+        Permission::create(attributes: ['name' => 'Execute']);
         Permission::create(['name' => 'Finish']);
         Permission::create(['name' => 'CreateRequest']);
         Permission::create(['name' => 'CreateUser']);
+        Permission::create(['name' => 'Update_MasterData']);
+        Permission::create(['name' => 'Update_Report']);
+        Permission::create(['name' => 'View_Report']);
 
         // 3. Assign Permissions
         $director->givePermissionTo(['CreateRequest', 'CreateUser']);
         $division->givePermissionTo(['CreateRequest', 'CreateUser']);
         $departemen->givePermissionTo(['CreateRequest', 'Approve', 'CreateUser']);
         $staff->givePermissionTo(['CreateRequest',]);
-        $admin->givePermissionTo(['CreateUser', 'Approve', 'Reject', 'CreateRequest', 'Execute', 'Finish']);
+        $admin->givePermissionTo(['CreateUser', 'Approve', 'Reject', 'CreateRequest', 'Execute', 'Finish', 'Update_MasterData', 'Update_Report', 'View_Report']);
+        $ProCost_view->givePermissionTo(['View_Report']);
+        $ProCost_full->givePermissionTo(['View_Report', 'Update_Report']);
+        $BOM_view->givePermissionTo(['View_Report']);
+        $BOM_full->givePermissionTo(['View_Report', 'Update_MasterData']);
 
         // 4. Users
         $users = [
-            ['name' => 'Tuti', 'npk' => '140025', 'role' => 'Director'],
-            ['name' => 'Matsuyama', 'npk' => '240458', 'role' => 'Deputy Division'],
-            ['name' => 'Inge', 'npk' => '100101', 'role' => 'Deputy Department'],
-            ['name' => 'Rudi', 'npk' => '140023', 'role' => 'Staff'],
-            ['name' => 'Setyaningsih', 'npk' => '140207', 'role' => 'Staff'],
-            ['name' => 'Ayu', 'npk' => '190349', 'role' => 'Staff'],
+            ['name' => 'Tuti', 'npk' => '140025', 'role' => ['Director', 'Process Cost - Full Access', 'BOM - Full Access']],
+            ['name' => 'Matsuyama', 'npk' => '240458', 'role' => ['Deputy Division', 'Process Cost - Full Access', 'BOM - Full Access']],
+            ['name' => 'Inge', 'npk' => '100101', 'role' => ['Deputy Department', 'Process Cost - Full Access', 'BOM - Full Access']],
+            ['name' => 'Rudi', 'npk' => '140023', 'role' => ['Staff', 'Process Cost - Full Access', 'BOM - Full Access']],
+            ['name' => 'Setyaningsih', 'npk' => '140207', 'role' => ['Staff', 'Process Cost - View', 'BOM - View']],
+            ['name' => 'Ayu', 'npk' => '190349', 'role' => ['Staff', 'Process Cost - View', 'BOM - View']],
             ['name' => 'Fadel', 'npk' => '240473', 'role' => 'Admin'],
         ];
 
@@ -60,10 +71,8 @@ class DatabaseSeeder extends Seeder
                 'password' => Hash::make('qweasd'),
             ]);
 
-            $u->assignRole($data['role']);
+            $u->syncRoles($data['role']);
         }
-
-
 
         // $request = [
         //     [
@@ -554,7 +563,6 @@ class DatabaseSeeder extends Seeder
                 'id' => 7,
                 'status' => 'finish'
             ],
-
         ]);
 
         DB::table('request_for_services')->insert($requests);
