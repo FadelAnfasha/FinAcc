@@ -637,28 +637,34 @@ const maxDate = ref(new Date());
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td class="border-b border-gray-800 px-4 py-2">Material Price</td>
+                                    <tr v-if="updateType === 'standardCost'">
+                                        <td class="border-b border-gray-800 px-4 py-2">Standard Material Price</td>
                                         <td class="border-b border-gray-800 px-4 py-2">
                                             <span class="text-red-300">{{ lastMaster[0] ? formatlastUpdate(lastMaster[0]) : '-' }}</span>
                                         </td>
                                     </tr>
-                                    <tr>
-                                        <td class="border-b border-gray-800 px-4 py-2">Valve Price</td>
+                                    <tr v-if="updateType === 'actualCost'">
+                                        <td class="border-b border-gray-800 px-4 py-2">Actual Material Price</td>
                                         <td class="border-b border-gray-800 px-4 py-2">
                                             <span class="text-red-300">{{ lastMaster[1] ? formatlastUpdate(lastMaster[1]) : '-' }}</span>
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td class="border-b border-gray-800 px-4 py-2">Bill of Material</td>
+                                        <td class="border-b border-gray-800 px-4 py-2">Valve Price</td>
                                         <td class="border-b border-gray-800 px-4 py-2">
                                             <span class="text-red-300">{{ lastMaster[2] ? formatlastUpdate(lastMaster[2]) : '-' }}</span>
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td class="border-b border-gray-800 px-4 py-2">Process Cost</td>
+                                        <td class="border-b border-gray-800 px-4 py-2">Bill of Material</td>
                                         <td class="border-b border-gray-800 px-4 py-2">
                                             <span class="text-red-300">{{ lastMaster[3] ? formatlastUpdate(lastMaster[3]) : '-' }}</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border-b border-gray-800 px-4 py-2">Process Cost</td>
+                                        <td class="border-b border-gray-800 px-4 py-2">
+                                            <span class="text-red-300">{{ lastMaster[4] ? formatlastUpdate(lastMaster[4]) : '-' }}</span>
                                         </td>
                                     </tr>
                                 </tbody>
