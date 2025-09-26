@@ -2,17 +2,53 @@
 import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
-defineProps<{ items: NavItem[]; isCollapsed: boolean }>();
+const props = defineProps<{ items: NavItem[]; isCollapsed: boolean }>();
 
 const page = usePage();
-const role = (page.props.auth.user as { role?: string })?.role ?? '';
 
-// Simpan state menu yang terbuka
+const userRoles = computed<string[]>(() => {
+    const user = page.props.auth.user as { roles?: string[] };
+
+    if (user?.roles && Array.isArray(user.roles)) {
+        return user.roles;
+    }
+    return [];
+});
+
+/**
+ * Memeriksa apakah pengguna saat ini memiliki setidaknya salah satu peran yang dibutuhkan.
+ * @param requiredRoles Array dari peran yang diizinkan.
+ * @returns true jika pengguna dapat melihat item, false jika tidak.
+ */
+function canView(requiredRoles: string[] | undefined): boolean {
+    if (!requiredRoles || requiredRoles.length === 0) {
+        return true;
+    }
+    return requiredRoles.some((requiredRole) => userRoles.value.includes(requiredRole));
+}
+
+const visibleNavItems = computed<NavItem[]>(() => {
+    return props.items.reduce((acc: NavItem[], item: NavItem) => {
+        if (!item.children) {
+            if (canView(item.onlyFor)) {
+                acc.push(item);
+            }
+            return acc;
+        }
+
+        const visibleChildren = item.children.filter((child) => canView(child.onlyFor));
+
+        if (visibleChildren.length > 0) {
+            acc.push({ ...item, children: visibleChildren });
+        }
+        return acc;
+    }, []);
+});
+
 const expandedItems = ref<string[]>(JSON.parse(localStorage.getItem('expandedMenu') || '[]'));
 
-// Toggle function
 function toggleExpand(key: string) {
     if (expandedItems.value.includes(key)) {
         expandedItems.value = expandedItems.value.filter((k) => k !== key);
@@ -22,7 +58,6 @@ function toggleExpand(key: string) {
     localStorage.setItem('expandedMenu', JSON.stringify(expandedItems.value));
 }
 
-// Cek apakah menu terbuka
 function isExpanded(key: string) {
     return expandedItems.value.includes(key);
 }
@@ -32,9 +67,8 @@ function isExpanded(key: string) {
     <SidebarGroup>
         <SidebarGroupLabel class="my-4">Menu</SidebarGroupLabel>
         <SidebarMenu>
-            <template v-for="item in items" :key="item.key">
-                <!-- Parent menu (with children) -->
-                <SidebarMenuItem v-if="item.children && (!item.onlyFor || item.onlyFor.includes(role))">
+            <template v-for="item in visibleNavItems" :key="item.key">
+                <SidebarMenuItem v-if="item.children">
                     <SidebarMenuButton
                         size="lg"
                         :is-active="item.children.some((child) => route(child.href ?? '') === page.url)"
@@ -49,7 +83,6 @@ function isExpanded(key: string) {
                         <i v-if="!isCollapsed" :class="['pi', isExpanded(item.key ?? '') ? 'pi-chevron-down' : 'pi-chevron-right']" />
                     </SidebarMenuButton>
 
-                    <!-- Children -->
                     <div v-if="isExpanded(item.key ?? '')" class="mt-1 ml-3">
                         <SidebarMenuItem v-for="child in item.children" :key="child.key">
                             <SidebarMenuButton size="lg" :is-active="route(child.href ?? '') === page.url" :tooltip="isCollapsed ? child.title : ''">
@@ -66,8 +99,7 @@ function isExpanded(key: string) {
                     </div>
                 </SidebarMenuItem>
 
-                <!-- Single (non-parent) -->
-                <SidebarMenuItem v-else-if="!item.onlyFor || item.onlyFor.includes(role)">
+                <SidebarMenuItem v-else>
                     <SidebarMenuButton size="lg" :is-active="route(item.href ?? '') === page.url" :tooltip="item.title">
                         <Link :href="route(item.href ?? '')" class="flex items-center" :class="[isCollapsed ? 'w-full justify-center' : 'gap-2']">
                             <i :class="['pi h-5 w-5', item.icon]" />

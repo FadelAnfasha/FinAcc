@@ -43,7 +43,7 @@ class RegisteredUserController extends Controller
         ]);
 
         // Assign role default (optional)
-        $user->assignRole('User');
+        $user->assignRole('No Role');
 
         return redirect()->back()->with('success', 'User registered successfully.');
     }

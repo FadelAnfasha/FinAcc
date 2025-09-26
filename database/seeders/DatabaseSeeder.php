@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // 1. Roles
+        $no_role = Role::create(['name' => 'No Role']);
         $director = Role::create(['name' => 'Director']);
         $division = Role::create(['name' => 'Deputy Division']);
         $departemen = Role::create(['name' => 'Deputy Department']);

@@ -48,7 +48,9 @@ class HandleInertiaRequests extends Middleware
                     'id' => $request->user()->id,
                     'name' => $request->user()->name,
                     'npk' => $request->user()->npk,
-                    'role' => $request->user()->getRoleNames()->first(), // ⬅️ Ambil nama role pertama
+                    // 'role' => $request->user()->getRoleNames()->first(), // ⬅️ Ambil nama role pertama
+                    'roles' => $request->user()->getRoleNames()->toArray(),
+
                 ] : null,
             ],
             'ziggy' => [

@@ -136,37 +136,33 @@ class BOMController extends Controller
 
     public function report(Request $request)
     {
-        // $sc = StandardCost::take('10')->get();
+        // $sc = StandardCost::with('bom')->take(10)->get();
         $sc = StandardCost::with('bom')->get();
         $ac = ActualCost::with('bom')->get();
         $dc = DifferenceCost::all();
 
         $lastUpdate = [];
 
-        // Ambil data Material dengan updated_at paling terbaru
         $latestStandardMat = StandardMaterial::latest('updated_at')->first();
 
         $latestActualMat = ActualMaterial::latest('updated_at')->first();
 
-        // Ambil data Valve dengan updated_at paling terbaru
         $latestValve = Valve::latest('updated_at')->first();
         $latestProcessCost = ProcessCost::latest('updated_at')->first();
         $latestBOM = BillOfMaterial::latest('updated_at')->first();
 
-        // Tambahkan created_at dari Material ke array $lastUpdate jika ada
         if ($latestStandardMat) {
             $lastUpdate[] = $latestStandardMat->created_at;
         } else {
-            $lastUpdate[] = null; // Atau nilai default lain jika tidak ada data
+            $lastUpdate[] = null;
         }
 
         if ($latestActualMat) {
             $lastUpdate[] = $latestActualMat->created_at;
         } else {
-            $lastUpdate[] = null; // Atau nilai default lain jika tidak ada data
+            $lastUpdate[] = null;
         }
 
-        // Tambahkan created_at dari Valve ke array $lastUpdate jika ada
         if ($latestValve) {
             $lastUpdate[] = $latestValve->created_at;
         } else {
@@ -185,10 +181,206 @@ class BOMController extends Controller
             $lastUpdate[] = null; // Atau nilai default lain jika tidak ada data
         }
 
+        $bomData = BillOfMaterial::all();
+        $groups = collect();
+        $currentGroup = collect();
+
+        foreach ($bomData as $row) {
+            if ($row->depth == 1) {
+                if ($currentGroup->isNotEmpty()) {
+                    $groups->push($currentGroup);
+                }
+                $currentGroup = collect([$row]);
+            } else {
+                $currentGroup->push($row);
+            }
+        }
+
+        if ($currentGroup->isNotEmpty()) {
+            $groups->push($currentGroup);
+        }
+
+        $finalReportData = collect();
+
+        foreach ($groups as $group) {
+            $main = $group->first();
+            $typeChar = substr($main->item_code, 3, 1);
+            $group->description = $main->description ?? '-';
+
+            // Komponen lain ...
+            $group->disc = $group->first(function ($item) {
+                return substr($item->item_code, 0, 3) === 'RFD';
+            });
+            $group->rim = $group->first(function ($item) {
+                return substr($item->item_code, 0, 3) === 'RFR';
+            });
+            $group->sidering = $group->first(function ($item) {
+                return substr($item->item_code, 0, 3) === 'RFS';
+            });
+
+            // Properti pr_*
+            $group->pr_disc = $group->first(function ($item) {
+                return substr($item->item_code, 0, 5) === 'RS-DC';
+            });
+            $group->pr_rim = $group->first(function ($item) {
+                return substr($item->item_code, 0, 5) === 'RS-RB';
+            });
+            $group->pr_sr = $group->first(function ($item) {
+                return substr($item->item_code, 0, 5) === 'RS-SR';
+            });
+
+            $group->pr_assy = $group->first(function ($item) {
+                return substr($item->item_code, 0, 5) === 'RS-AS';
+            });
+
+            // Logika filter CED
+            $cdItems = $group->filter(function ($item) {
+                return Str::startsWith($item->item_code, 'RS-CD');
+            })->values();
+
+            if ($cdItems->count() >= 2) {
+                $group->cedW = $cdItems[0];
+                $group->cedSR = $cdItems[1];
+            } elseif ($cdItems->count() === 1) {
+                if ($typeChar === 'D') {
+                    $group->cedW = $cdItems[0];
+                    $group->cedSR = null;
+                } elseif ($typeChar === 'N') {
+                    $group->cedW = null;
+                    $group->cedSR = $cdItems[0];
+                } else {
+                    $group->cedW = $cdItems[0];
+                    $group->cedSR = null;
+                }
+            } else {
+                $group->cedW = null;
+                $group->cedSR = null;
+            }
+
+            // Logika filter TC
+            $tcItems = $group->filter(function ($item) {
+                return Str::startsWith($item->item_code, 'RS-TC');
+            })->values();
+
+            if ($tcItems->count() >= 2) {
+                $group->tcW = $tcItems[0];
+                $group->tcSR = $tcItems[1];
+            } elseif ($tcItems->count() === 1) {
+                if ($typeChar === 'D') {
+                    $group->tcW = $tcItems[0];
+                    $group->tcSR = null;
+                } elseif ($typeChar === 'N') {
+                    $group->tcW = null;
+                    $group->tcSR = $tcItems[0];
+                } else {
+                    $group->tcW = $tcItems[0];
+                    $group->tcSR = null;
+                }
+            } else {
+                $group->tcW = null;
+                $group->tcSR = null;
+            }
+
+            // Logika filter WIP
+            $group->wip_disc = $group->first(function ($item) {
+                return substr($item->item_code, 0, 2) === 'WB' && substr($item->item_code, 3, 2) === 'D-';
+            });
+
+            $group->wip_rim = $group->first(function ($item) {
+                return substr($item->item_code, 0, 2) === 'WA' && substr($item->item_code, 3, 2) === 'R-';
+            });
+
+            $group->wip_sr = $group->first(function ($item) {
+                return substr($item->item_code, 0, 2) === 'WD' && substr($item->item_code, 3, 2) === 'S-';
+            });
+
+            $group->wip_assy = $group->first(function ($item) {
+                return substr($item->item_code, 0, 2) === 'WC' && substr($item->item_code, 3, 2) === 'W-';
+            });
+
+            $group->wip_cedW = $group->first(function ($item) {
+                return substr($item->item_code, 0, 2) === 'WE' && substr($item->item_code, 3, 2) === 'W-';
+            });
+
+            $group->wip_cedSR = $group->first(function ($item) {
+                return substr($item->item_code, 0, 2) === 'WE' && substr($item->item_code, 3, 2) === 'S-';
+            });
+
+            $group->wip_tcW = $group->first(function ($item) {
+                return substr($item->item_code, 0, 2) === 'WF' && substr($item->item_code, 3, 2) === 'W-';
+            });
+
+            $group->wip_tcSR = $group->first(function ($item) {
+                return substr($item->item_code, 0, 2) === 'WF' && substr($item->item_code, 3, 2) === 'S-';
+            });
+
+            $group->wip_valve = $group->first(function ($item) {
+                return substr($item->item_code, 0, 3) === 'CGP'
+                    && (
+                        stripos($item->description, 'valve') !== false
+                        || stripos($item->description, 'VLI') !== false
+                    );
+            });
+
+            $data = [
+                'item_code' => $main->item_code,
+                'description' => $group->description,
+
+                // Raw Material
+                'disc_qty' => $group->disc->quantity ?? 0,
+                'disc_code' => $group->disc->item_code ?? '-',
+
+                'rim_qty' => $group->rim->quantity ?? 0,
+                'rim_code' => $group->rim->item_code ?? '-',
+
+                'sidering_qty' => $group->sidering->quantity ?? 0,
+                'sidering_code' => $group->sidering->item_code ?? '-',
+
+                // Process 
+                'pr_disc' => $group->pr_disc->item_code ?? '-',
+
+                'pr_rim' => $group->pr_rim->item_code ?? '-',
+
+                'pr_sidering' => $group->pr_sr->item_code ?? '-',
+
+                'pr_assy' => $group->pr_assy->item_code ?? '-',
+
+                'pr_cedW' => $group->cedW->item_code ?? '-',
+
+                'pr_cedSR' => $group->cedSR->item_code ?? '-',
+
+                'pr_tcW' => $group->tcW->item_code ?? '-',
+
+                'pr_tcSR' => $group->tcSR->item_code ?? '-',
+
+                // WIP
+                'wip_disc' => $group->wip_disc->item_code ?? '-',
+
+                'wip_rim' => $group->wip_rim->item_code ?? '-',
+
+                'wip_sidering' => $group->wip_sr->item_code ?? '-',
+
+                'wip_assy' => $group->wip_assy->item_code ?? '-',
+
+                'wip_cedW' => $group->wip_cedW->item_code ?? '-',
+
+                'wip_cedSR' => $group->wip_cedSR->item_code ?? '-',
+
+                'wip_tcW' => $group->wip_tcW->item_code ?? '-',
+
+                'wip_tcSR' => $group->wip_tcSR->item_code ?? '-',
+
+                'wip_valve' => $group->wip_valve->item_code ?? '-',
+            ];
+
+            $finalReportData->push($data);
+        }
+
         return Inertia::render("bom/report", [
             'sc' => $sc,
             'ac' => $ac,
             'dc' => $dc,
+            'bom' => $finalReportData,
             'lastMaster' => $lastUpdate,
         ]);
     }
@@ -229,7 +421,6 @@ class BOMController extends Controller
         foreach ($groups as $group) {
             $main = $group->first();
             $typeChar = substr($main->item_code, 3, 1);
-
             // Komponen lain ...
             $group->disc = $group->first(function ($item) {
                 return substr($item->item_code, 0, 3) === 'RFD';
@@ -240,6 +431,8 @@ class BOMController extends Controller
             $group->sidering = $group->first(function ($item) {
                 return substr($item->item_code, 0, 3) === 'RFS';
             });
+
+
 
             // Properti pr_*
             $group->pr_disc = $group->first(function ($item) {

@@ -12,15 +12,6 @@ use Illuminate\Validation\Rule;
 
 class AdminController extends Controller
 {
-    // public function __construct()
-    // {
-    //     $this->middleware('auth');
-    //     $this->middleware('permission:CreateUser');
-    // }
-
-    /**
-     * Display the admin panel
-     */
     public function index()
     {
         $roles = Role::with('permissions')->get()->map(function ($role) {
@@ -59,9 +50,6 @@ class AdminController extends Controller
         ]);
     }
 
-    /**
-     * Store a new role
-     */
     public function storeRole(Request $request)
     {
         // dd($request->all());
@@ -82,9 +70,6 @@ class AdminController extends Controller
         return redirect()->back()->with('success', 'Role created successfully');
     }
 
-    /**
-     * Update an existing role
-     */
     public function updateRole(Request $request, Role $role)
     {
         $request->validate([
@@ -103,9 +88,6 @@ class AdminController extends Controller
         return redirect()->back()->with('success', 'Role updated successfully');
     }
 
-    /**
-     * Delete a role
-     */
     public function destroyRole(Role $role)
     {
         // Check if role is assigned to any users
@@ -120,9 +102,6 @@ class AdminController extends Controller
         return redirect()->back()->with('success', 'Role deleted successfully');
     }
 
-    /**
-     * Store a new permission
-     */
     public function storePermission(Request $request)
     {
         $request->validate([
@@ -134,9 +113,17 @@ class AdminController extends Controller
         return redirect()->back()->with('success', 'Permission created successfully');
     }
 
-    /**
-     * Delete a permission
-     */
+    public function updatePermission(Request $request, Permission $permission)
+    {
+        $request->validate([
+            'name' => ['required', 'string', 'max:255', Rule::unique('permissions')->ignore($permission->id)]
+        ]);
+
+        $permission->update(['name' => $request->name]);
+
+        return redirect()->back()->with('success', 'Permission updated successfully');
+    }
+
     public function destroyPermission(Permission $permission)
     {
         // Check if permission is assigned to any roles
@@ -151,9 +138,6 @@ class AdminController extends Controller
         return redirect()->back()->with('success', 'Permission deleted successfully');
     }
 
-    /**
-     * Assign role to user
-     */
     public function assignRole(Request $request)
     {
         $request->validate([
@@ -177,9 +161,6 @@ class AdminController extends Controller
         return redirect()->back()->with('success', 'Roles assigned successfully');
     }
 
-    /**
-     * Get all roles for dropdown
-     */
     public function getRoles()
     {
         return response()->json([
@@ -187,9 +168,6 @@ class AdminController extends Controller
         ]);
     }
 
-    /**
-     * Get all permissions for dropdown
-     */
     public function getPermissions()
     {
         return response()->json([
@@ -197,9 +175,6 @@ class AdminController extends Controller
         ]);
     }
 
-    /**
-     * Get users with their roles
-     */
     public function getUsers()
     {
         $users = User::with('roles')->get()->map(function ($user) {
