@@ -181,11 +181,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 #=============================
 #====> Bill of Materials <====
 #=============================
-
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::post('/bom/import', [BillOfMaterialController::class, 'import'])->name('bom.import');
+    Route::post('/bom/import', [BillOfMaterialController::class, 'import'])
+        ->middleware('role:BOM - Full Access')
+        ->name('bom.import');
 
     Route::get('/bom/components/{id}', [BillOfMaterialController::class, 'components'])
+        ->middleware(['role:BOM - View|BOM - Full Access'])
         ->name('bom.components');
 
     Route::get('/bom/import-progress', function () {
@@ -198,15 +200,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
 #==========================
 #======== PC Route ========
 #==========================
-
 Route::middleware(['auth', 'verified'])->group(function () {
     // Master Data page
     Route::get('/pc/master', [ProcessCostController::class, 'master'])
+        ->middleware('role:Process Cost - Full Access')
         ->name('pc.master');
-
 
     // Report page
     Route::get('/pc/report', [ProcessCostController::class, 'report'])
+        ->middleware(['role:Process Cost - View|Process Cost - Full Access'])
         ->name('pc.report');
 
     Route::post('/pc/update/CTxSQ', [ProcessCostController::class, 'updateCTxSQ'])->name('pc.updateCTxSQ');
@@ -275,7 +277,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 #==========================
 #====== Admin Route =======
 #==========================
-Route::middleware(['auth', 'verified', 'role:Superior|Admin'])->group(function () {
+Route::middleware(['auth', 'verified', 'role:Admin'])->group(function () {
 
     // Admin Panel Main Route
     Route::get('/admin', [AdminController::class, 'index'])

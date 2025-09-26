@@ -10,7 +10,6 @@ import DataTable from 'primevue/datatable';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import MultiSelect from 'primevue/multiselect';
-import Select from 'primevue/select';
 import Tab from 'primevue/tab';
 import TabList from 'primevue/tablist';
 import TabPanel from 'primevue/tabpanel';
@@ -20,19 +19,31 @@ import Tag from 'primevue/tag';
 import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
 import { ref } from 'vue';
+import { computed } from 'vue';
 
 const toast = useToast();
 const page = usePage();
 const props = defineProps({
     services: Array,
     auth: Object,
+    // Pastikan `users`, `roles`, dan `permissions` dikirimkan dari controller
+    users: Array as () => User[],
+    roles: Array as () => Role[],
+    permissions: Array as () => Permission[],
 });
-// Dialog states
 
-// ===========================
-// ==== Methods for Roles ====
-// ===========================
-const roles = ref<Role[]>([...(page.props.roles as Role[])]);
+const userRoles = computed<string[]>(() => {
+    // Mengakses array roles dari props Inertia
+    const roles = page.props.auth.user?.roles;
+    return Array.isArray(roles) ? roles : roles ? [roles] : [];
+});
+
+const isAdmin = computed<boolean>(() => {
+    // Memeriksa apakah array userRoles mengandung string 'Admin'
+    return userRoles.value.includes('Admin');
+});
+
+const roles = ref<Role[]>(props.roles || []);
 const roleDialog = ref(false);
 
 const roleForm = ref<{
@@ -77,7 +88,6 @@ const saveRole = () => {
 
     const isUpdate = !!roleForm.value.id;
     const routeUrl = isUpdate ? `/admin/roles/${roleForm.value.id}` : '/admin/roles';
-
     const method = isUpdate ? 'put' : 'post';
 
     router.visit(routeUrl, {
@@ -133,10 +143,7 @@ const deleteRole = (role: Role) => {
     });
 };
 
-// =================================
-// ==== Methods for Permissions ====
-// =================================
-const permissions = ref<Permission[]>([...(page.props.permissions as Permission[])]);
+const permissions = ref<Permission[]>(props.permissions || []);
 const permissionDialog = ref(false);
 const permissionForm = ref<{
     id: number | null;
@@ -225,49 +232,57 @@ const deletePermission = (permission: Permission) => {
     });
 };
 
-// =================================
-// ==== Methods for Assign Role ====
-// =================================
-const users = ref<User[]>([...(page.props.users as User[])]);
+const users = ref<User[]>(props.users || []);
 const userRoleDialog = ref(false);
 
-// const userRoleForm = ref({
-//     userId: null,
-//     roleId: null,
-// });
+interface Users {
+    id: number;
+    name: string;
+    npk: string;
+    roles: Role[]; // Ini adalah kunci agar MultiSelect bisa mencocokkan
+}
 
 const selectedUser = ref<User | null>(null);
-const selectedRole = ref<Role | null>(null);
+const selectedRole = ref<number[]>([]);
 
-// Methods for User Role Assignment
 const openUserRoleDialog = (user: User | null = null) => {
     selectedUser.value = user;
-    selectedRole.value = user ? (roles.value.find((r) => r.name === user.role) ?? null) : null;
+
+    if (user) {
+        const userCurrentRoleNames: string[] = Array.isArray(user.roles) ? user.roles : user.roles ? [user.roles] : [];
+        const userCurrentRoleObjects = roles.value.filter((roleObject) => userCurrentRoleNames.includes(roleObject.name));
+        const userCurrentRoleIds = userCurrentRoleObjects.map((r) => r.id);
+        selectedRole.value = userCurrentRoleIds.filter((id): id is number => id !== null);
+    } else {
+        selectedRole.value = [];
+    }
     userRoleDialog.value = true;
 };
 
-const assignRole = () => {
-    if (!selectedRole.value || !selectedUser.value) {
-        toast.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'User and Role must be selected',
-            life: 3000,
-        });
+const assignRoles = () => {
+    // 1. Validasi
+    if (!selectedUser.value || selectedRole.value.length === 0) {
+        // ...
         return;
     }
 
+    // 2. Ekstraksi Role IDs (sudah tidak perlu map lagi, karena selectedRole sudah array ID)
+    const roleIds = selectedRole.value; // selectedRole.value sudah berisi [1, 5, 8]
+
+    // 3. Kirim permintaan ke backend (Pastikan backend Anda siap menerima array role_ids)
     router.visit(`/admin/users/${selectedUser.value.id}/assign-role`, {
+        // URL diubah menjadi jamak (optional)
         method: 'post',
         data: {
             user_id: selectedUser.value.id,
-            role_id: selectedRole.value.id,
+            // Perubahan Kunci: Mengirim array role_ids
+            role_ids: roleIds,
         },
         onSuccess: () => {
             toast.add({
                 severity: 'success',
                 summary: 'Success',
-                detail: 'Role assigned successfully',
+                detail: 'Roles assigned successfully',
                 life: 3000,
             });
             userRoleDialog.value = false;
@@ -283,24 +298,58 @@ const assignRole = () => {
     });
 };
 
-const getRoleTagClass = (roleName: string) => {
-    const base = 'inline-block text-center w-30 text-white text-sm font-medium px-3 py-1 rounded-full hover:text-black cursor-pointer';
+const dynamicColors = [
+    'bg-indigo-500 hover:bg-indigo-700',
+    'bg-lime-600 hover:bg-lime-800',
+    'bg-fuchsia-600 hover:bg-fuchsia-800',
+    'bg-cyan-600 hover:bg-cyan-800',
+    'bg-rose-500 hover:bg-rose-700',
+];
 
-    switch (roleName) {
-        case 'Admin':
-            return `${base} bg-slate-500 hover:bg-slate-700`;
-        case 'Superior':
-            return `${base} bg-teal-600 hover:bg-teal-800`;
-        case 'User':
-            return `${base} bg-amber-500 hover:bg-amber-700`;
-        default:
-            return `${base} bg-gray-500 hover:bg-gray-700`;
+const getHashColor = (roleName: string) => {
+    let hash = 0;
+    for (let i = 0; i < roleName.length; i++) {
+        hash = roleName.charCodeAt(i) + ((hash << 5) - hash);
     }
+    const index = Math.abs(hash) % dynamicColors.length;
+    return dynamicColors[index];
 };
 
-// =================================
-// ==== Methods for Regist User ====
-// =================================
+const getRoleTagClass = (roleName: string) => {
+    // Sesuaikan base class agar konsisten dengan lebar tetap yang sudah kita terapkan sebelumnya (misal: w-48)
+    const base = 'inline-block text-center text-white text-sm font-medium px-3 py-1 rounded-full hover:text-black cursor-pointer';
+
+    // Definisikan warna spesifik untuk role yang sering muncul
+    switch (roleName.toLowerCase()) {
+        case 'director':
+        case 'admin':
+            return `${base} bg-red-600 hover:bg-red-800`;
+
+        case 'deputy division':
+        case 'superior':
+            return `${base} bg-teal-600 hover:bg-teal-800`;
+
+        case 'deputy department':
+        case 'manager':
+            return `${base} bg-blue-600 hover:bg-blue-800`;
+
+        case 'staff':
+        case 'user':
+            return `${base} bg-amber-500 hover:bg-amber-700`;
+
+        case 'process cost - full access':
+        case 'bom - full access':
+            return `${base} bg-green-700 hover:bg-green-900`;
+
+        case 'process cost - view':
+        case 'bom - view':
+            return `${base} bg-gray-500 hover:bg-gray-700`;
+
+        default:
+            // Opsi 2: Warna Otomatis (Hash)
+            return `${base} ${getHashColor(roleName)}`;
+    }
+};
 
 const registUser = () => {
     const name = (document.getElementById('name') as HTMLInputElement)?.value.trim();
@@ -359,6 +408,7 @@ const registUser = () => {
 <template>
     <Head title="Administrator" />
     <AppLayout>
+        <Toast />
         <div class="p-6">
             <div class="mb-4">
                 <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Administrator Panel</h1>
@@ -368,13 +418,56 @@ const registUser = () => {
             <Tabs value="0">
                 <TabList>
                     <Tab value="0">Create User</Tab>
-                    <Tab v-if="auth?.user?.role === 'Admin'" value="1">Roles Management</Tab>
-                    <Tab v-if="auth?.user?.role === 'Admin'" value="2">Permission Management</Tab>
-                    <Tab v-if="auth?.user?.role === 'Admin'" value="3">User Role Assignment</Tab>
+                    <Tab v-if="isAdmin" value="1">Roles Management</Tab>
+                    <Tab v-if="isAdmin" value="2">Permission Management</Tab>
+                    <Tab v-if="isAdmin" value="3">User Role Assignment</Tab>
                 </TabList>
                 <TabPanels>
+                    <!-- Register new user Tab -->
+                    <TabPanel v-if="isAdmin" header="Create User" value="0">
+                        <Card>
+                            <template #header>
+                                <div class="p-4">
+                                    <h2 class="text-xl font-semibold">Register User</h2>
+                                    <p class="text-gray-600 dark:text-gray-400">Add new user account</p>
+                                </div>
+                            </template>
+                            <template #content>
+                                <form>
+                                    <div class="mb-5 flex w-full flex-row gap-4">
+                                        <!-- Input kiri -->
+                                        <div class="flex w-1/2 flex-col gap-1">
+                                            <label for="name">Name :</label>
+                                            <InputText id="name" name="name" type="text" placeholder="Type here..." />
+                                        </div>
+
+                                        <!-- Input kanan -->
+                                        <div class="flex w-1/2 flex-col gap-1">
+                                            <label for="npk">NPK:</label>
+                                            <InputText id="npk" name="npk" type="text" placeholder="Type here..." />
+                                        </div>
+                                    </div>
+                                    <div class="mb-5 flex w-full flex-row gap-4">
+                                        <!-- Input kiri -->
+                                        <div class="flex w-1/2 flex-col gap-1">
+                                            <label for="password">Password :</label>
+                                            <InputText id="password" name="password" type="password" placeholder="Type here..." />
+                                        </div>
+
+                                        <!-- Input kanan -->
+                                        <div class="flex w-1/2 flex-col gap-1">
+                                            <label for="confirm_password">Confirm Password :</label>
+                                            <InputText id="confirm_password" name="confirm_password" type="password" placeholder="Type here..." />
+                                        </div>
+                                    </div>
+                                    <Button label="Save" icon="pi pi-check" severity="success" @click="registUser" />
+                                </form>
+                            </template>
+                        </Card>
+                    </TabPanel>
+
                     <!-- Roles Tab -->
-                    <TabPanel v-if="auth?.user?.role === 'Admin'" header="Roles Management" value="1">
+                    <TabPanel v-if="isAdmin" header="Roles Management" value="1">
                         <Card>
                             <template #header>
                                 <div class="flex items-center justify-between p-4">
@@ -421,7 +514,7 @@ const registUser = () => {
                     </TabPanel>
 
                     <!-- Permissions Management -->
-                    <TabPanel v-if="auth?.user?.role === 'Admin'" header="Permissions Management" value="2">
+                    <TabPanel v-if="isAdmin" header="Permissions Management" value="2">
                         <Card>
                             <template #header>
                                 <div class="flex items-center justify-between p-4">
@@ -456,7 +549,7 @@ const registUser = () => {
                     </TabPanel>
 
                     <!-- User Role Assignment Tab -->
-                    <TabPanel v-if="auth?.user?.role === 'Admin'" header="User Role Assignment" value="3">
+                    <TabPanel v-if="isAdmin" header="User Role Assignment" value="3">
                         <Card>
                             <template #header>
                                 <div class="p-4">
@@ -468,9 +561,20 @@ const registUser = () => {
                                 <DataTable :value="users" responsiveLayout="scroll">
                                     <Column field="name" header="Name" sortable></Column>
                                     <Column field="npk" header="NPK" sortable></Column>
-                                    <Column header="Current Role">
+                                    <Column header="Current Roles">
                                         <template #body="slotProps">
-                                            <Tag :value="slotProps.data.role" :class="getRoleTagClass(slotProps.data.role)" unstyled />
+                                            <div class="flex flex-wrap gap-2">
+                                                <Tag
+                                                    v-for="role in slotProps.data.roles"
+                                                    :key="role"
+                                                    :value="role"
+                                                    :class="getRoleTagClass(role)"
+                                                    unstyled
+                                                    class="/* Contoh: Atur lebar tetap (w-48 = 12rem/192px). Sesuaikan nilai ini. */ /* Aktifkan Flexbox */ /* Pusat horizontal */ /* Pusat vertikal */ /* Pastikan teks di tengah */ /* Tambahkan ellipsis jika teks terlalu panjang */ mb-1 flex w-48 items-center justify-center truncate text-center"
+                                                />
+                                            </div>
+
+                                            <span v-if="slotProps.data.roles.length === 0">No Role</span>
                                         </template>
                                     </Column>
                                     <Column header="Actions">
@@ -484,49 +588,6 @@ const registUser = () => {
                                         </template>
                                     </Column>
                                 </DataTable>
-                            </template>
-                        </Card>
-                    </TabPanel>
-
-                    <!-- Register new user Tab -->
-                    <TabPanel v-if="auth?.user?.role === 'Admin' || auth?.user?.role === 'Superior'" header="Create User" value="0">
-                        <Card>
-                            <template #header>
-                                <div class="p-4">
-                                    <h2 class="text-xl font-semibold">Register User</h2>
-                                    <p class="text-gray-600 dark:text-gray-400">Add new user account</p>
-                                </div>
-                            </template>
-                            <template #content>
-                                <form>
-                                    <div class="mb-5 flex w-full flex-row gap-4">
-                                        <!-- Input kiri -->
-                                        <div class="flex w-1/2 flex-col gap-1">
-                                            <label for="name">Name :</label>
-                                            <InputText id="name" name="name" type="text" placeholder="Type here..." />
-                                        </div>
-
-                                        <!-- Input kanan -->
-                                        <div class="flex w-1/2 flex-col gap-1">
-                                            <label for="npk">NPK:</label>
-                                            <InputText id="npk" name="npk" type="text" placeholder="Type here..." />
-                                        </div>
-                                    </div>
-                                    <div class="mb-5 flex w-full flex-row gap-4">
-                                        <!-- Input kiri -->
-                                        <div class="flex w-1/2 flex-col gap-1">
-                                            <label for="password">Password :</label>
-                                            <InputText id="password" name="password" type="password" placeholder="Type here..." />
-                                        </div>
-
-                                        <!-- Input kanan -->
-                                        <div class="flex w-1/2 flex-col gap-1">
-                                            <label for="confirm_password">Confirm Password :</label>
-                                            <InputText id="confirm_password" name="confirm_password" type="password" placeholder="Type here..." />
-                                        </div>
-                                    </div>
-                                    <Button label="Save" icon="pi pi-check" severity="success" @click="registUser" />
-                                </form>
                             </template>
                         </Card>
                     </TabPanel>
@@ -573,24 +634,31 @@ const registUser = () => {
             </Dialog>
 
             <!-- User Role Assignment Dialog -->
-            <Dialog v-model:visible="userRoleDialog" :style="{ width: '450px' }" header="Assign Role" :modal="true">
+            <Dialog v-model:visible="userRoleDialog" :style="{ width: '450px' }" header="Assign Roles" :modal="true">
                 <div class="flex flex-col gap-4" v-if="selectedUser">
                     <div>
                         <label class="mb-2 block text-sm font-medium">User</label>
                         <p class="text-lg font-semibold">{{ selectedUser.name }} ({{ selectedUser.npk }})</p>
                     </div>
                     <div>
-                        <label for="userRole" class="mb-2 block text-sm font-medium">Select Role</label>
-                        <Select v-model="selectedRole" :options="roles" optionLabel="name" placeholder="Select a role" class="w-full" />
+                        <label for="userRoles" class="mb-2 block text-sm font-medium">Select Roles</label>
+
+                        <MultiSelect
+                            v-model="selectedRole"
+                            :options="roles"
+                            optionLabel="name"
+                            optionValue="id"
+                            placeholder="Select one or more roles"
+                            class="w-full"
+                            display="chip"
+                        />
                     </div>
                 </div>
                 <template #footer>
                     <Button label="Cancel" icon="pi pi-times" class="p-button-text" @click="userRoleDialog = false" />
-                    <Button label="Assign" icon="pi pi-check" class="p-button-text" @click="assignRole" />
+                    <Button label="Assign" icon="pi pi-check" class="p-button-text" @click="assignRoles" />
                 </template>
             </Dialog>
-
-            <Toast />
         </div>
     </AppLayout>
 </template>

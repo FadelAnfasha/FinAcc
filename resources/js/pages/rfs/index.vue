@@ -94,7 +94,6 @@ const viewRequest = (id: number) => {
 // Properti terkomputasi untuk mencari item yang sesuai dari `items`
 const selectedRequest = computed(() => {
     return items.value.find((req) => req.id === selectedId.value);
-    console.log(selectedRequest.value);
 });
 
 const closeViewDialog = () => {

@@ -76,6 +76,25 @@ const dc = computed(() =>
     })),
 );
 
+const bom = computed(() =>
+    (page.props.bom as any[]).map((bom, index) => {
+        const typeChar: string = bom.item_code?.charAt(3) ?? '';
+        const typeMap: Record<string, string> = {
+            D: 'Disc',
+            N: 'Sidering',
+            W: 'Wheel',
+            R: 'Rim',
+        };
+        const type_name = typeMap[typeChar] ?? bom.item_code;
+
+        return {
+            ...bom,
+            no: index + 1,
+            type_name,
+        };
+    }),
+);
+
 const makePeriod = (year: number, month: number) => {
     // Buat objek Date untuk mendapatkan nama bulan singkat
     const date = new Date(year, month - 1);
@@ -271,6 +290,12 @@ const filtersDifference = ref({
     standard_month: { value: null as number | null, matchMode: FilterMatchMode.EQUALS },
     actual_year: { value: null as number | null, matchMode: FilterMatchMode.EQUALS },
     actual_month: { value: null as number | null, matchMode: FilterMatchMode.EQUALS },
+});
+
+const filtersBOM = ref({
+    item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    type_name: { value: null, matchMode: FilterMatchMode.EQUALS },
+    description: { value: null, matchMode: FilterMatchMode.CONTAINS },
 });
 
 const getMonthName = (monthNumber: number): string => {
@@ -788,7 +813,7 @@ const maxDate = ref(new Date());
                                 </div>
 
                                 <DataTable
-                                    :value="sc"
+                                    :value="bom"
                                     tableStyle="min-width: 50rem"
                                     paginator
                                     :rows="10"
@@ -797,10 +822,10 @@ const maxDate = ref(new Date());
                                     columnResizeMode="expand"
                                     showGridlines
                                     removableSort
-                                    v-model:filters="filtersStandard"
+                                    v-model:filters="filtersBOM"
                                     filterDisplay="row"
                                     :loading="loading"
-                                    :globalFilterFields="['item_code', 'type_name', 'description', 'report_year', 'report_month']"
+                                    :globalFilterFields="['item_code', 'type_name', 'description']"
                                     class="text-md"
                                     ref="dtBOM"
                                 >
@@ -869,7 +894,7 @@ const maxDate = ref(new Date());
                                         </template></Column
                                     >
 
-                                    <Column field="bom.description" header="Name" :showFilterMenu="false" sortable v-bind="tbStyle('main')">
+                                    <Column field="description" header="Name" :showFilterMenu="false" sortable v-bind="tbStyle('main')">
                                         <template #filter="{ filterModel, filterCallback }">
                                             <InputText
                                                 v-model="filterModel.value"
@@ -879,7 +904,7 @@ const maxDate = ref(new Date());
                                             />
                                         </template>
                                         <template #body="{ data }">
-                                            {{ data.bom ? data.bom.description : 'N/A' }}
+                                            {{ data.description ?? 'N/A' }}
                                         </template>
                                     </Column>
 

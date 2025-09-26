@@ -32,7 +32,7 @@ export interface User {
     created_at: string;
     updated_at: string;
 
-    role?: string;
+    roles?: string;
 }
 
 export interface Role {
