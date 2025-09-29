@@ -13,6 +13,8 @@ use App\Models\SalesQuantity;
 use App\Models\WagesDistribution;
 use App\Services\ReportService;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Auth;
+
 
 
 class ProcessCostController extends Controller
@@ -145,7 +147,15 @@ class ProcessCostController extends Controller
             'cppTotal' => $cppTotals,
             'processCost' => $pc,
             'pcTotal' => $pcTotals,
-            'lastUpdate' => $lastUpdate
+            'lastUpdate' => $lastUpdate,
+            'auth' => [
+                'user' => Auth::check() ? [
+                    'name' => Auth::user()->name,
+                    'npk' => Auth::user()->npk,
+                    'roles' => Auth::user()->getRoleNames()->toArray(), // Pastikan ini diubah ke array
+                    'permissions' => Auth::user()->getAllPermissions()->pluck('name')->toArray(), // Juga pastikan ini dikirim
+                ] : null,
+            ],
         ]);
     }
 

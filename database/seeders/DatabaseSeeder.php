@@ -50,9 +50,9 @@ class DatabaseSeeder extends Seeder
         $staff->givePermissionTo(['CreateRequest',]);
         $admin->givePermissionTo(['CreateUser', 'Approve', 'Reject', 'CreateRequest', 'Execute', 'Finish', 'Update_MasterData', 'Update_Report', 'View_Report']);
         $ProCost_view->givePermissionTo(['View_Report']);
-        $ProCost_full->givePermissionTo(['View_Report', 'Update_Report']);
+        $ProCost_full->givePermissionTo(['View_Report', 'Update_MasterData', 'Update_Report']);
         $BOM_view->givePermissionTo(['View_Report']);
-        $BOM_full->givePermissionTo(['View_Report', 'Update_MasterData']);
+        $BOM_full->givePermissionTo(['View_Report', 'Update_MasterData', 'Update_Report']);
 
         // 4. Users
         $users = [
@@ -62,7 +62,7 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Rudi', 'npk' => '140023', 'role' => ['Staff', 'Process Cost - Full Access', 'BOM - Full Access']],
             ['name' => 'Setyaningsih', 'npk' => '140207', 'role' => ['Staff', 'Process Cost - View', 'BOM - View']],
             ['name' => 'Ayu', 'npk' => '190349', 'role' => ['Staff', 'Process Cost - View', 'BOM - View']],
-            ['name' => 'Fadel', 'npk' => '240473', 'role' => 'Admin'],
+            ['name' => 'Fadel', 'npk' => '240473', 'role' => ['Admin', 'Process Cost - Full Access', 'BOM - Full Access']],
         ];
 
         foreach ($users as $data) {

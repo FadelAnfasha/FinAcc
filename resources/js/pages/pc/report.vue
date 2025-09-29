@@ -31,6 +31,10 @@ const filters = ref({
     item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
 });
 
+const props = defineProps({
+    auth: Object,
+});
+
 const loading = ref(false);
 
 const ctxsq = computed(() =>
@@ -449,8 +453,9 @@ function closeDialog(type: 'pc' | null) {
                                                 @click="exportCSV('ctxsq')"
                                             />
                                             <Button
+                                                v-if="auth?.user?.roles?.includes('Process Cost - Full Access')"
                                                 icon="pi pi-sync"
-                                                label=" Update Report?"
+                                                label="Update Report?"
                                                 unstyled
                                                 class="w-28 cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900"
                                                 @click="showUpdateDialog('ctxsq')"
@@ -785,8 +790,8 @@ function closeDialog(type: 'pc' | null) {
                                                 @click="exportCSV('base')"
                                             />
                                             <Button
-                                                icon="pi pi-sync
-"
+                                                v-if="auth?.user?.roles?.includes('Process Cost - Full Access')"
+                                                icon="pi pi-sync"
                                                 label=" Update Report?"
                                                 unstyled
                                                 class="w-28 cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900"
@@ -1115,8 +1120,8 @@ function closeDialog(type: 'pc' | null) {
                                                 @click="exportCSV('ctxsq')"
                                             />
                                             <Button
-                                                icon="pi pi-sync
-"
+                                                v-if="auth?.user?.roles?.includes('Process Cost - Full Access')"
+                                                icon="pi pi-sync"
                                                 label=" Update Report?"
                                                 unstyled
                                                 class="w-28 cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900"
@@ -1445,8 +1450,8 @@ function closeDialog(type: 'pc' | null) {
                                                 @click="exportCSV('pc')"
                                             />
                                             <Button
-                                                icon="pi pi-sync
-"
+                                                v-if="auth?.user?.roles?.includes('Process Cost - Full Access')"
+                                                icon="pi pi-sync"
                                                 label=" Update Report?"
                                                 unstyled
                                                 class="w-28 cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900"

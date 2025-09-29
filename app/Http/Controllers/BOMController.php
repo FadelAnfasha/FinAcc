@@ -17,6 +17,8 @@ use App\Models\StandardCost;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Auth;
+
 
 
 class BOMController extends Controller
@@ -382,6 +384,14 @@ class BOMController extends Controller
             'dc' => $dc,
             'bom' => $finalReportData,
             'lastMaster' => $lastUpdate,
+            'auth' => [
+                'user' => Auth::check() ? [
+                    'name' => Auth::user()->name,
+                    'npk' => Auth::user()->npk,
+                    'roles' => Auth::user()->getRoleNames()->toArray(), // Pastikan ini diubah ke array
+                    'permissions' => Auth::user()->getAllPermissions()->pluck('name')->toArray(), // Juga pastikan ini dikirim
+                ] : null,
+            ],
         ]);
     }
 
@@ -1110,10 +1120,14 @@ class BOMController extends Controller
             ->get();
 
         $differenceCosts = [];
+        $processedItemCodes = []; // Array untuk melacak item_code yang sudah diproses
+
+        // 1. ITERASI UNTUK ITEM YANG ADA DI STANDARD COST (SC vs AC)
         foreach ($standardCost as $sc) {
             $ac = $actualCost->firstWhere('item_code', $sc->item_code);
 
             if ($ac) {
+                // Item ada di SC dan AC: Hitung selisih SC - AC
                 $differenceCosts[] = [
                     'item_code' => $sc->item_code,
                     'standard_year' => $validatedData['standard_year'],
@@ -1126,7 +1140,44 @@ class BOMController extends Controller
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
+                // Tambahkan item_code yang sudah diproses
+                $processedItemCodes[] = $sc->item_code;
+            } else {
+                // Item hanya ada di SC: Hitung selisih SC - 0
+                $differenceCosts[] = [
+                    'item_code' => $sc->item_code,
+                    'standard_year' => $validatedData['standard_year'],
+                    'standard_month' => $validatedData['standard_month'],
+                    'actual_year' => $validatedData['actual_year'],
+                    'actual_month' => $validatedData['actual_month'],
+                    'total_raw_material' => $sc->total_raw_material, // SC - 0 = SC
+                    'total_process' => $sc->total_process,      // SC - 0 = SC
+                    'total' => $sc->total,                   // SC - 0 = SC
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
             }
+        }
+
+        // 2. ITERASI UNTUK ITEM YANG HANYA ADA DI ACTUAL COST (0 - AC)
+        // Gunakan koleksi Actual Cost, dan hanya ambil yang belum diproses
+        $onlyActualCost = $actualCost->whereNotIn('item_code', $processedItemCodes);
+
+        foreach ($onlyActualCost as $ac) {
+            // Item hanya ada di AC: Hitung selisih 0 - AC
+            $differenceCosts[] = [
+                'item_code' => $ac->item_code,
+                'standard_year' => $validatedData['standard_year'],
+                'standard_month' => $validatedData['standard_month'],
+                'actual_year' => $validatedData['actual_year'],
+                'actual_month' => $validatedData['actual_month'],
+                // Nilai Standard dibuat 0, sehingga hasilnya menjadi negatif (0 - AC)
+                'total_raw_material' => 0 - $ac->total_raw_material,
+                'total_process' => 0 - $ac->total_process,
+                'total' => 0 - $ac->total,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
         }
 
         // Simpan ke database menggunakan upsert

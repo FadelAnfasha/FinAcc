@@ -31,6 +31,10 @@ const loading = ref(false);
 const year = ref();
 const month = ref();
 
+const props = defineProps({
+    auth: Object,
+});
+
 const sc = computed(() =>
     (page.props.sc as any[]).map((sc, index) => {
         const typeChar: string = sc.item_code?.charAt(3) ?? '';
@@ -1067,6 +1071,7 @@ const maxDate = ref(new Date());
                                                 @click="exportCSV('standardCost')"
                                             />
                                             <Button
+                                                v-if="auth?.user?.roles?.includes('Process Cost - Full Access')"
                                                 icon="pi pi-sync"
                                                 label=" Update Report?"
                                                 unstyled
@@ -1530,6 +1535,7 @@ const maxDate = ref(new Date());
                                                 @click="exportCSV('actualCost')"
                                             />
                                             <Button
+                                                v-if="auth?.user?.roles?.includes('Process Cost - Full Access')"
                                                 icon="pi pi-sync"
                                                 label=" Update Report?"
                                                 unstyled
@@ -1975,6 +1981,7 @@ const maxDate = ref(new Date());
                                                 @click="exportCSV('diffCost')"
                                             />
                                             <Button
+                                                v-if="auth?.user?.roles?.includes('Process Cost - Full Access')"
                                                 icon="pi pi-sync"
                                                 label=" Calcuate Difference?"
                                                 unstyled
