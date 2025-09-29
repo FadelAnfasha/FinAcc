@@ -109,7 +109,7 @@ class actualMaterialController extends Controller
         Cache::put('import-progress-actualMat', 100, now()->addMinutes(5));
 
         // --- Langkah 10: Mengalihkan (Redirect) dengan hasil impor ---
-        return redirect()->route('bom.master')->with([
+        return redirect()->route('bom.masterActual')->with([
             'success' => 'CSV import process completed!',
             'addedItems' => $addedItems,
             'invalidItems' => $invalidItems

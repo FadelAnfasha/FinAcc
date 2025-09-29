@@ -37,7 +37,7 @@ const filters = ref({
 const loading = ref(false);
 
 const standardMaterial = computed(() =>
-    (page.props.standardMaterial as any[]).map((standardmat, index) => ({
+    ((page.props.standardMaterial as any[]) ?? []).map((standardmat, index) => ({
         ...standardmat,
         no: index + 1,
         created_at_formatted: formatDate(standardmat.created_at),
@@ -46,7 +46,7 @@ const standardMaterial = computed(() =>
 );
 
 const actualMaterial = computed(() =>
-    (page.props.actualMaterial as any[]).map((actualmat, index) => ({
+    ((page.props.actualMaterial as any[]) ?? []).map((actualmat, index) => ({
         ...actualmat,
         no: index + 1,
         created_at_formatted: formatDate(actualmat.created_at),
@@ -55,7 +55,7 @@ const actualMaterial = computed(() =>
 );
 
 const billOfMaterials = computed(() =>
-    (page.props.billOfMaterials as any[]).map((bom, index) => ({
+    ((page.props.billOfMaterials as any[]) ?? []).map((bom, index) => ({
         ...bom,
         no: index + 1,
         created_at_formatted: formatDate(bom.created_at),
@@ -64,13 +64,31 @@ const billOfMaterials = computed(() =>
 );
 
 const valves = computed(() =>
-    (page.props.valve as any[]).map((valves, index) => ({
+    ((page.props.valve as any[]) ?? []).map((valves, index) => ({
         ...valves,
         no: index + 1,
         created_at_formatted: formatDate(valves.created_at),
         updated_at_formatted: formatDate(valves.updated_at),
     })),
 );
+
+const getDefaultActiveTab = (): string | null => {
+    if (billOfMaterials.value.length > 0) {
+        return '0';
+    }
+    if (standardMaterial.value.length > 0) {
+        return '1';
+    }
+    if (actualMaterial.value.length > 0) {
+        return '2';
+    }
+    if (valves.value.length > 0) {
+        return '3';
+    }
+    return null;
+};
+
+const activeTab = ref<string | null>(getDefaultActiveTab());
 
 const userName = computed(() => page.props.auth?.user?.name ?? '');
 
@@ -1211,16 +1229,16 @@ const importResult = computed(() => {
             </div>
 
             <div class="mx-26 mb-26">
-                <Tabs value="0">
+                <Tabs :value="activeTab ?? '0'">
                     <TabList>
-                        <Tab value="0">Bill of Material</Tab>
-                        <Tab value="1">Standard Material Price</Tab>
-                        <Tab value="2">Actual Material Price</Tab>
-                        <Tab value="3">Valve</Tab>
+                        <Tab v-if="billOfMaterials && billOfMaterials.length > 0" value="0">Bill of Material</Tab>
+                        <Tab v-if="standardMaterial && standardMaterial.length > 0" value="1">Standard Material Price</Tab>
+                        <Tab v-if="actualMaterial && actualMaterial.length > 0" value="2">Actual Material Price</Tab>
+                        <Tab v-if="valves && valves.length > 0" value="3">Valve</Tab>
                     </TabList>
 
                     <TabPanels>
-                        <TabPanel value="0">
+                        <TabPanel v-if="billOfMaterials && billOfMaterials.length > 0" value="0">
                             <section ref="bomSection" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
                                     <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Bill of Material</h2>
@@ -1301,7 +1319,6 @@ const importResult = computed(() => {
                                             {{ data ? data.description : 'N/A' }}
                                         </template>
                                     </Column>
-                                    <!-- <Column field="description" header="Description" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle" /> -->
                                     <Column field="uom" header="Unit of Material" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
 
                                     <Column field="quantity" header="Quantity" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
@@ -1346,7 +1363,7 @@ const importResult = computed(() => {
                             </section>
                         </TabPanel>
 
-                        <TabPanel value="1">
+                        <TabPanel v-if="standardMaterial && standardMaterial.length > 0" value="1">
                             <section ref="matSection" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
                                     <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Standard Material Price</h2>
@@ -1476,7 +1493,7 @@ const importResult = computed(() => {
                             </section>
                         </TabPanel>
 
-                        <TabPanel value="2">
+                        <TabPanel v-if="actualMaterial && actualMaterial.length > 0" value="2">
                             <section ref="matSection" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
                                     <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Actual Material Price</h2>
@@ -1582,7 +1599,7 @@ const importResult = computed(() => {
                             </section>
                         </TabPanel>
 
-                        <TabPanel value="3">
+                        <TabPanel v-if="billOfMaterials && billOfMaterials.length > 0" value="3">
                             <section ref="packSection" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
                                     <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Valve Price</h2>

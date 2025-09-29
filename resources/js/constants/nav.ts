@@ -50,8 +50,23 @@ export const mainNavItems: NavItem[] = [
         icon: 'pi-wrench',
         children: [
             {
+                key: 'bomMasterStandard',
+                title: 'Standard Master Data',
+                icon: 'pi-database',
+                href: 'bom.masterStandard',
+                onlyFor: ['BOM - Full Access'],
+            },
+            {
+                key: 'bomMasterActual',
+                title: 'Actual Master Data',
+                icon: 'pi-database',
+                href: 'bom.masterActual',
+                onlyFor: ['BOM - Full Access'],
+            },
+
+            {
                 key: 'bomMaster',
-                title: 'Master Data',
+                title: 'BOM Master Data',
                 icon: 'pi-database',
                 href: 'bom.master',
                 onlyFor: ['BOM - Full Access'],
