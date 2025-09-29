@@ -1243,7 +1243,7 @@ const importResult = computed(() => {
                         <Tab v-if="type === 'bom'" value="0">Bill of Material</Tab>
                         <Tab v-if="type === 'standardMaterial'" value="1">Standard Material Price</Tab>
                         <Tab v-if="type === 'actualMaterial'" value="2">Actual Material Price</Tab>
-                        <Tab v-if="type === 'valve'" value="3">Valve</Tab>
+                        <Tab v-if="type === 'bom'" value="3">Valve</Tab>
                     </TabList>
 
                     <TabPanels>
