@@ -23,50 +23,51 @@ use Illuminate\Support\Facades\Auth;
 
 class BOMController extends Controller
 {
-    public function master(Request $request)
-    {
-        $standardMaterial = StandardMaterial::with('bom')->get();
-        $actualMaterial = ActualMaterial::with('bom')->get();
-        $bom = BillOfMaterial::where('depth', 1)->get();
-        $packings = Packing::all();
-        $valve = Valve::all();
-        $processes = Process::all();
-        $componentItems = collect();
-        $finishGood = null;
+    // public function master(Request $request)
+    // {
+    //     $standardMaterial = StandardMaterial::with('bom')->get();
+    //     $actualMaterial = ActualMaterial::with('bom')->get();
+    //     $bom = BillOfMaterial::where('depth', 1)->get();
+    //     $packings = Packing::all();
+    //     $valve = Valve::all();
+    //     $processes = Process::all();
+    //     $componentItems = collect();
+    //     $finishGood = null;
 
-        if ($request->has('component_id')) {
-            $all = BillOfMaterial::orderBy('id')->get();
-            $mainIndex = $all->search(fn($item) => $item->id == $request->component_id);
+    //     if ($request->has('component_id')) {
+    //         $all = BillOfMaterial::orderBy('id')->get();
+    //         $mainIndex = $all->search(fn($item) => $item->id == $request->component_id);
 
-            if ($mainIndex !== false) {
-                for ($i = $mainIndex + 1; $i < count($all); $i++) {
-                    if ($all[$i]->depth == 1) break;
-                    $componentItems->push($all[$i]);
-                }
+    //         if ($mainIndex !== false) {
+    //             for ($i = $mainIndex + 1; $i < count($all); $i++) {
+    //                 if ($all[$i]->depth == 1) break;
+    //                 $componentItems->push($all[$i]);
+    //             }
 
-                // Ambil finish good-nya berdasarkan posisi index
-                $finishGood = $all[$mainIndex];
-            }
-        }
+    //             // Ambil finish good-nya berdasarkan posisi index
+    //             $finishGood = $all[$mainIndex];
+    //         }
+    //     }
 
-        $addedItems = Session::get('addedItems', []);
-        $invalidItems = Session::get('invalidItems', []);
+    //     $addedItems = Session::get('addedItems', []);
+    //     $invalidItems = Session::get('invalidItems', []);
 
-        return Inertia::render("bom/master", [
-            'standardMaterial' => $standardMaterial,
-            'actualMaterial' => $actualMaterial,
-            'packings' => $packings,
-            'valve' => $valve,
-            'billOfMaterials' => $bom,
-            'processes' => $processes,
-            'finish_good' => $finishGood,
-            'component' => $componentItems, // ✅ dikirim ke frontend
-            'importResult' => [
-                'addedItems' => $addedItems,
-                'invalidItems' => $invalidItems
-            ]
-        ]);
-    }
+    //     return Inertia::render("bom/master", [
+    //         'standardMaterial' => $standardMaterial,
+    //         'actualMaterial' => $actualMaterial,
+    //         'packings' => $packings,
+    //         'valve' => $valve,
+    //         'billOfMaterials' => $bom,
+    //         'processes' => $processes,
+    //         'finish_good' => $finishGood,
+    //         'component' => $componentItems, // ✅ dikirim ke frontend
+    //         'importResult' => [
+    //             'addedItems' => $addedItems,
+    //             'invalidItems' => $invalidItems
+    //         ]
+    //     ]);
+    // }
+
 
     public function standardMaster(Request $request)
     {
@@ -76,6 +77,7 @@ class BOMController extends Controller
 
         return Inertia::render("bom/master", [
             'standardMaterial' => $standardMaterial,
+            'type' => 'standardMaterial',
             'importResult' => [
                 'addedItems' => $addedItems,
                 'invalidItems' => $invalidItems
@@ -91,6 +93,7 @@ class BOMController extends Controller
 
         return Inertia::render("bom/master", [
             'actualMaterial' => $actualMaterial,
+            'type' => 'actualMaterial',
             'importResult' => [
                 'addedItems' => $addedItems,
                 'invalidItems' => $invalidItems
@@ -126,6 +129,7 @@ class BOMController extends Controller
 
         return Inertia::render("bom/master", [
             'billOfMaterials' => $bom,
+            'type' => 'bom',
             'processes' => $processes,
             'finish_good' => $finishGood,
             'component' => $componentItems,

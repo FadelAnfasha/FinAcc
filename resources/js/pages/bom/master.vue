@@ -72,24 +72,33 @@ const valves = computed(() =>
     })),
 );
 
+const type = computed(() => page.props.type as string | undefined);
+console.log('Current type from server:', type.value);
 const getDefaultActiveTab = (): string | null => {
-    if (billOfMaterials.value.length > 0) {
-        return '0';
+    // Ambil nilai dari computed property 'type'
+    const currentType = type.value;
+
+    switch (currentType) {
+        // Jika Controller mengirimkan type: 'billOfMaterials' atau 'bom'
+        case 'billOfMaterials':
+        case 'bom':
+            return '0';
+
+        // Jika Controller mengirimkan type: 'standardMaterial'
+        case 'standardMaterial':
+            return '1';
+
+        // Jika Controller mengirimkan type: 'actualMaterial'
+        case 'actualMaterial':
+            return '2';
+
+        default:
+            // Jika 'type' tidak terdefinisi atau tidak cocok dengan kasus di atas
+            return null;
     }
-    if (standardMaterial.value.length > 0) {
-        return '1';
-    }
-    if (actualMaterial.value.length > 0) {
-        return '2';
-    }
-    if (valves.value.length > 0) {
-        return '3';
-    }
-    return null;
 };
 
 const activeTab = ref<string | null>(getDefaultActiveTab());
-
 const userName = computed(() => page.props.auth?.user?.name ?? '');
 
 interface ComponentItem {
@@ -1231,14 +1240,14 @@ const importResult = computed(() => {
             <div class="mx-26 mb-26">
                 <Tabs :value="activeTab ?? '0'">
                     <TabList>
-                        <Tab v-if="billOfMaterials && billOfMaterials.length > 0" value="0">Bill of Material</Tab>
-                        <Tab v-if="standardMaterial && standardMaterial.length > 0" value="1">Standard Material Price</Tab>
-                        <Tab v-if="actualMaterial && actualMaterial.length > 0" value="2">Actual Material Price</Tab>
-                        <Tab v-if="valves && valves.length > 0" value="3">Valve</Tab>
+                        <Tab v-if="type === 'bom'" value="0">Bill of Material</Tab>
+                        <Tab v-if="type === 'standardMaterial'" value="1">Standard Material Price</Tab>
+                        <Tab v-if="type === 'actualMaterial'" value="2">Actual Material Price</Tab>
+                        <Tab v-if="type === 'valve'" value="3">Valve</Tab>
                     </TabList>
 
                     <TabPanels>
-                        <TabPanel v-if="billOfMaterials && billOfMaterials.length > 0" value="0">
+                        <TabPanel v-if="type === 'bom'" value="0">
                             <section ref="bomSection" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
                                     <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Bill of Material</h2>
@@ -1363,7 +1372,7 @@ const importResult = computed(() => {
                             </section>
                         </TabPanel>
 
-                        <TabPanel v-if="standardMaterial && standardMaterial.length > 0" value="1">
+                        <TabPanel v-if="type === 'standardMaterial'" value="1">
                             <section ref="matSection" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
                                     <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Standard Material Price</h2>
@@ -1493,7 +1502,7 @@ const importResult = computed(() => {
                             </section>
                         </TabPanel>
 
-                        <TabPanel v-if="actualMaterial && actualMaterial.length > 0" value="2">
+                        <TabPanel v-if="type === 'actualMaterial'" value="2">
                             <section ref="matSection" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
                                     <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Actual Material Price</h2>
@@ -1599,7 +1608,7 @@ const importResult = computed(() => {
                             </section>
                         </TabPanel>
 
-                        <TabPanel v-if="billOfMaterials && billOfMaterials.length > 0" value="3">
+                        <TabPanel v-if="type === 'bom'" value="3">
                             <section ref="packSection" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
                                     <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Valve Price</h2>
