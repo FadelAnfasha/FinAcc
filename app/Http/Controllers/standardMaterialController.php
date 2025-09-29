@@ -114,7 +114,7 @@ class standardMaterialController extends Controller
         Cache::put('import-progress-standardMat', 100, now()->addMinutes(5));
 
         // --- Langkah 10: Mengalihkan (Redirect) dengan hasil impor ---
-        return redirect()->route('bom.master')->with([
+        return redirect()->route('bom.masterStandard')->with([
             'success' => 'CSV import process completed!',
             'addedItems' => $addedItems,
             'invalidItems' => $invalidItems

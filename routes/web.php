@@ -83,15 +83,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 #======= BOM Route ========
 #==========================
 Route::middleware(['auth', 'verified'])->group(function () {
-    // Master Data page
-    Route::get('/bom/master', [BOMController::class, 'master'])
+    Route::get('/bom/masterStandard', [BOMController::class, 'standardMaster'])
+        ->name('bom.masterStandard');
+
+    Route::get('/bom/masterActual', [BOMController::class, 'actualMaster'])
+        ->name('bom.masterActual');
+
+    Route::get('/bom/master', [BOMController::class, 'BOMMaster'])
         ->name('bom.master');
-
-    // Route::get('/bom/masterStandard', [BOMController::class, 'standardMaster'])
-    //     ->name('bom.masterStandard');
-
-    // Route::get('/bom/masterActual', [BOMController::class, 'actualMaster'])
-    //     ->name('bom.masterActual');
 
     // Report page
     Route::get('/bom/report', [BOMController::class, 'report'])
@@ -103,7 +102,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/bom/previewSC/{item_code}', action: [BOMController::class, 'previewSC'])->name('preview.sc');
     Route::get('/bom/previewAC/{item_code}', action: [BOMController::class, 'previewAC'])->name('preview.ac');
-
     Route::get('/bom/download/{item_code}', [BOMController::class, 'downloadReport'])->name('report.download');
 });
 
