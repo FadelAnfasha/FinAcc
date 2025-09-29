@@ -351,8 +351,8 @@ class DatabaseSeeder extends Seeder
                 'status_id' => 7,
                 'impact' => 'Reduce worktime and increase data accuracy for explode Bill of Material Raw data.',
                 'attachment' => null,
-                'created_at' => '2025-05-12',
-                'updated_at' => '2025-6-2',
+                'created_at' => '2025-05-13',
+                'updated_at' => '2025-06-02',
             ],
             [
                 'name' => 'Setyaningsih',
@@ -362,8 +362,8 @@ class DatabaseSeeder extends Seeder
                 'status_id' => 7,
                 'impact' => 'Tracing finance member request progress.',
                 'attachment' => null,
-                'created_at' => '2025-06-3',
-                'updated_at' => '2025-07-8',
+                'created_at' => '2025-06-03',
+                'updated_at' => '2025-07-08',
             ],
             [
                 'name' => 'Rudi',
@@ -373,8 +373,8 @@ class DatabaseSeeder extends Seeder
                 'status_id' => 7,
                 'impact' => 'Automatically generate Standard Cost per Product.',
                 'attachment' => null,
-                'created_at' => '2025-07-12',
-                'updated_at' => '2025-07-26',
+                'created_at' => '2025-07-09',
+                'updated_at' => '2025-07-28',
             ],
             [
                 'name' => 'Tuti',
@@ -385,7 +385,7 @@ class DatabaseSeeder extends Seeder
                 'impact' => 'User more informed about what happen on the system is it already updated/added/deleted/processed or not.',
                 'attachment' => null,
                 'created_at' => '2025-07-29',
-                'updated_at' => '2025-08-05',
+                'updated_at' => '2025-08-07',
             ],
             [
                 'name' => 'Tuti',
@@ -406,8 +406,8 @@ class DatabaseSeeder extends Seeder
                 'status_id' => 7,
                 'impact' => 'User can add new data for actual material price.',
                 'attachment' => null,
-                'created_at' => '2025-08-06',
-                'updated_at' => '2025-08-07',
+                'created_at' => '2025-08-07',
+                'updated_at' => '2025-08-09',
             ],
             [
                 'name' => 'Tuti',
@@ -418,7 +418,7 @@ class DatabaseSeeder extends Seeder
                 'impact' => 'Can calculate automatically difference between Standard vs Actual Cost.',
                 'attachment' => null,
                 'created_at' => '2025-08-07',
-                'updated_at' => '2025-08-13',
+                'updated_at' => '2025-08-14',
             ],
             [
                 'name' => 'Setyaningsih',
@@ -442,6 +442,28 @@ class DatabaseSeeder extends Seeder
                 'created_at' => '2025-08-14',
                 'updated_at' => '2025-08-14',
             ],
+            [
+                'name' => 'Rudi',
+                'npk' => '140023',
+                'priority_id' => 3,
+                'description' => 'Change display of few menu in the system. Wages Rate become Production Cost, Bill of Material become Standard Cost, Adding export feature in BOM without the price (only BOM structur).',
+                'status_id' => 5,
+                'impact' => '',
+                'attachment' => null,
+                'created_at' => '2025-09-24',
+                'updated_at' => '2025-07-29',
+            ],
+            [
+                'name' => 'Rudi',
+                'npk' => '140023',
+                'priority_id' => 3,
+                'description' => 'Spliting master data between Standard Cost, Actual Cost, and Bill of Material.',
+                'status_id' => 5,
+                'impact' => '',
+                'attachment' => null,
+                'created_at' => '2025-09-24',
+                'updated_at' => '2025-07-29',
+            ]
         ];
 
         $histories = [
