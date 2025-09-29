@@ -652,7 +652,7 @@ const resetForm = () => {
 
                 <Column field="description" header="Req. Description" :showFilterMenu="false" sortable style="width: 20%">
                     <template #body="{ data }">
-                        <div class="max-w-[200px] truncate" :title="data.description" v-tooltip.top="data.description">
+                        <div class="max-w-[550px] truncate" :title="data.description" v-tooltip.top="data.description">
                             {{ data.description }}
                         </div>
                     </template>
