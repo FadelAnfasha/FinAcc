@@ -1034,21 +1034,6 @@ const maxDate = ref(new Date());
                                             {{ slotProps.data.wip_valve || '-' }}
                                         </template>
                                     </Column>
-
-                                    <Column field="action" header="Action" :exportable="false" v-bind="tbStyle('fg')">
-                                        <template #body="data">
-                                            <div class="flex gap-2">
-                                                <Button
-                                                    v-tooltip="'Preview Product'"
-                                                    icon="pi pi-eye"
-                                                    severity="info"
-                                                    rounded
-                                                    text
-                                                    @click="openPreviewTab(data.data.item_code, opexDef, proginDef, 'standardCost')"
-                                                />
-                                            </div>
-                                        </template>
-                                    </Column>
                                 </DataTable>
                             </section>
                         </TabPanel>
@@ -1071,7 +1056,7 @@ const maxDate = ref(new Date());
                                                 @click="exportCSV('standardCost')"
                                             />
                                             <Button
-                                                v-if="auth?.user?.roles?.includes('Process Cost - Full Access')"
+                                                v-if="auth?.user?.permissions?.includes('Update_Report')"
                                                 icon="pi pi-sync"
                                                 label=" Update Report?"
                                                 unstyled
@@ -1535,7 +1520,7 @@ const maxDate = ref(new Date());
                                                 @click="exportCSV('actualCost')"
                                             />
                                             <Button
-                                                v-if="auth?.user?.roles?.includes('Process Cost - Full Access')"
+                                                v-if="auth?.user?.permissions?.includes('Update_Report')"
                                                 icon="pi pi-sync"
                                                 label=" Update Report?"
                                                 unstyled
@@ -1981,7 +1966,7 @@ const maxDate = ref(new Date());
                                                 @click="exportCSV('diffCost')"
                                             />
                                             <Button
-                                                v-if="auth?.user?.roles?.includes('Process Cost - Full Access')"
+                                                v-if="auth?.user?.permissions?.includes('Update_Report')"
                                                 icon="pi pi-sync"
                                                 label=" Calcuate Difference?"
                                                 unstyled

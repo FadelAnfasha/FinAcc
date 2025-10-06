@@ -453,7 +453,7 @@ function closeDialog(type: 'pc' | null) {
                                                 @click="exportCSV('ctxsq')"
                                             />
                                             <Button
-                                                v-if="auth?.user?.roles?.includes('Process Cost - Full Access')"
+                                                v-if="auth?.user?.permissions?.includes('Update_Report')"
                                                 icon="pi pi-sync"
                                                 label="Update Report?"
                                                 unstyled
@@ -790,7 +790,7 @@ function closeDialog(type: 'pc' | null) {
                                                 @click="exportCSV('base')"
                                             />
                                             <Button
-                                                v-if="auth?.user?.roles?.includes('Process Cost - Full Access')"
+                                                v-if="auth?.user?.permissions?.includes('Update_Report')"
                                                 icon="pi pi-sync"
                                                 label=" Update Report?"
                                                 unstyled
@@ -1120,7 +1120,7 @@ function closeDialog(type: 'pc' | null) {
                                                 @click="exportCSV('ctxsq')"
                                             />
                                             <Button
-                                                v-if="auth?.user?.roles?.includes('Process Cost - Full Access')"
+                                                v-if="auth?.user?.permissions?.includes('Update_Report')"
                                                 icon="pi pi-sync"
                                                 label=" Update Report?"
                                                 unstyled
@@ -1450,7 +1450,7 @@ function closeDialog(type: 'pc' | null) {
                                                 @click="exportCSV('pc')"
                                             />
                                             <Button
-                                                v-if="auth?.user?.roles?.includes('Process Cost - Full Access')"
+                                                v-if="auth?.user?.permissions?.includes('Update_Report')"
                                                 icon="pi pi-sync"
                                                 label=" Update Report?"
                                                 unstyled

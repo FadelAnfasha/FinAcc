@@ -74,6 +74,83 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('permission:Finish');
 });
 
+#==========================
+#======== PC Route ========
+#==========================
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Master Data page
+    Route::get('/pc/master', [ProcessCostController::class, 'master'])
+        // ->middleware('role:Process Cost - Full Access')
+        ->name('pc.master');
+
+    // Report page
+    Route::get('/pc/report', [ProcessCostController::class, 'report'])
+        // ->middleware(['role:Process Cost - View|Process Cost - Full Access'])
+        ->name('pc.report');
+
+    Route::post('/pc/update/CTxSQ', [ProcessCostController::class, 'updateCTxSQ'])->middleware('permission:Update_Report')->name('pc.updateCTxSQ');
+    Route::post('/pc/update/BaseCost', [ProcessCostController::class, 'updateBaseCost'])->middleware('permission:Update_Report')->name('pc.updateBaseCost');
+    Route::post('/pc/update/CPP', [ProcessCostController::class, 'updateCPP'])->middleware('permission:Update_Report')->name('pc.updateCPP');
+    Route::post('/pc/update/PC', [ProcessCostController::class, 'updatePC'])->middleware('permission:Update_Report')->name('pc.updatePC');
+});
+
+#=============================
+#====> Business Partner <=====
+#=============================
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/bp/import', [BusinessPartnerController::class, 'import'])->middleware('permission:Update_MasterData')->name('bp.import');
+    Route::post('/bp/store', [BusinessPartnerController::class, 'store'])->name('bp.store');
+    Route::get('/bp/import-progress', function () {
+        return response()->json([
+            'progress' => Cache::get('import-progress-bp', 0),
+        ]);
+    });
+});
+
+#=============================
+#=======> Cycle Time <========
+#=============================
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/ct/import', [CycleTimeController::class, 'import'])->middleware('permission:Update_MasterData')->name('ct.import');
+    Route::get('/ct/import-progress', function () {
+        return response()->json([
+            'progress' => Cache::get('import-progress-ct', 0),
+        ]);
+    });
+});
+
+#=============================
+#=====> Sales Quantity <======
+#=============================
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/sq/import', [SalesQuantityController::class, 'import'])->middleware('permission:Update_MasterData')->name('sq.import');
+    Route::put('/sq/update/{id}', [SalesQuantityController::class, 'update'])->name('sq.update');
+    Route::delete('/sq/destroy/{id}', [SalesQuantity::class, 'destroy'])->name('sq.destroy');
+    Route::get('/sq/import-progress', function () {
+        return response()->json([
+            'progress' => Cache::get('import-progress-sq', 0),
+        ]);
+    });
+});
+
+#=============================
+#===> Wages Distribution <====
+#=============================
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/wd/import', [WagesDistributionController::class, 'import'])->middleware('permission:Update_MasterData')->name('wd.import');
+    Route::put('/wd/update', [WagesDistributionController::class, 'update'])->name('wd.update');
+    Route::get('/wd/import-progress', function () {
+        return response()->json([
+            'progress' => Cache::get('import-progress-wd', 0),
+        ]);
+    });
+});
+
+
 
 #==========================
 #======= BOM Route ========
@@ -92,9 +169,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/bom/report', [BOMController::class, 'report'])
         ->name('bom.report');
 
-    Route::post('/bom/update/SC', [BOMController::class, 'updateStandardCost'])->name('bom.updateSC');
-    Route::post('/bom/update/AC', [BOMController::class, 'updateActualCost'])->name('bom.updateAC');
-    Route::post('/bom/update/DC', [BOMController::class, 'updateDifferenceCost'])->name('bom.updateDC');
+    Route::post('/bom/update/SC', [BOMController::class, 'updateStandardCost'])->middleware('permission:Update_Report')->name('bom.updateSC');
+    Route::post('/bom/update/AC', [BOMController::class, 'updateActualCost'])->middleware('permission:Update_Report')->name('bom.updateAC');
+    Route::post('/bom/update/DC', [BOMController::class, 'updateDifferenceCost'])->middleware('permission:Update_Report')->name('bom.updateDC');
 
     Route::get('/bom/previewSC/{item_code}', action: [BOMController::class, 'previewSC'])->name('preview.sc');
     Route::get('/bom/previewAC/{item_code}', action: [BOMController::class, 'previewAC'])->name('preview.ac');
@@ -106,7 +183,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 #=============================
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::post('/standardMat/import', [standardMaterialController::class, 'import'])->name('stamat.import');
+    Route::post('/standardMat/import', [standardMaterialController::class, 'import'])->middleware('permission:Update_MasterData')->name('stamat.import');
     Route::put('/standardMat/update/{id}', [standardMaterialController::class, 'update'])->name('stamat.update');
     Route::delete('/standardMat/destroy/{id}', [standardMaterialController::class, 'destroy'])->name('stamat.destroy');
     Route::get('/standardMat/import-progress', function () {
@@ -115,7 +192,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ]);
     });
 
-    Route::post('/actualMat/import', [actualMaterialController::class, 'import'])->name('acmat.import');
+    Route::post('/actualMat/import', [actualMaterialController::class, 'import'])->middleware('permission:Update_MasterData')->name('acmat.import');
     Route::put('/actualMat/update/{id}', [actualMaterialController::class, 'update'])->name('acmat.update');
     Route::delete('/actualMat/destroy/{id}', [actualMaterialController::class, 'destroy'])->name('acmat.destroy');
     Route::get('/actualMat/import-progress', function () {
@@ -126,27 +203,29 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 #=============================
-#========> Packings <=========
+#====> Bill of Materials <====
 #=============================
-
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::post('/pack/import', [PackingController::class, 'import'])->name('pack.import');
-    Route::put('/pack/update/{id}', [PackingController::class, 'update'])->name('pack.update');
-    Route::delete('/pack/destroy/{id}', [PackingController::class, 'destroy'])->name('pack.destroy');
-    Route::get('/pack/import-progress', function () {
+    Route::post('/bom/import', [BillOfMaterialController::class, 'import'])
+        ->middleware('permission:Update_MasterData')
+        ->name('bom.import');
+
+    Route::get('/bom/components/{id}', [BillOfMaterialController::class, 'components'])
+        ->name('bom.components');
+
+    Route::get('/bom/import-progress', function () {
         return response()->json([
-            'progress' => Cache::get('import-progress-pack', 0),
+            'progress' => Cache::get('import-progress-bom', 0),
         ]);
     });
 });
-
 
 #=============================
 #=========> Valves <==========
 #=============================
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::post('/valve/import', [ValveController::class, 'import'])->name('valve.import');
+    Route::post('/valve/import', [ValveController::class, 'import'])->middleware('permission:Update_MasterData')->name('valve.import');
     Route::put('/valve/update/{id}', [ValveController::class, 'update'])->name('valve.update');
     Route::delete('/valve/destroy/{id}', [ValveController::class, 'destroy'])->name('valve.destroy');
     Route::get('/valve/import-progress', function () {
@@ -157,116 +236,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 
-#=============================
-#=======> Processes <=========
-#=============================
-
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::post('/proc/import', [ProcessController::class, 'import'])->name('proc.import');
-    Route::put('/proc/update/{id}', [ProcessController::class, 'update'])->name('proc.update');
-    Route::delete('/proc/destroy/{id}', [ProcessController::class, 'destroy'])->name('proc.destroy');
-    Route::get('/proc/import-progress', function () {
-        return response()->json([
-            'progress' => Cache::get('import-progress-proc', 0),
-        ]);
-    });
-});
-
-#=============================
-#====> Bill of Materials <====
-#=============================
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::post('/bom/import', [BillOfMaterialController::class, 'import'])
-        ->middleware('role:BOM - Full Access')
-        ->name('bom.import');
-
-    Route::get('/bom/components/{id}', [BillOfMaterialController::class, 'components'])
-        ->middleware(['role:BOM - View|BOM - Full Access'])
-        ->name('bom.components');
-
-    Route::get('/bom/import-progress', function () {
-        return response()->json([
-            'progress' => Cache::get('import-progress-bom', 0),
-        ]);
-    });
-});
-
-#==========================
-#======== PC Route ========
-#==========================
-Route::middleware(['auth', 'verified'])->group(function () {
-    // Master Data page
-    Route::get('/pc/master', [ProcessCostController::class, 'master'])
-        ->middleware('role:Process Cost - Full Access')
-        ->name('pc.master');
-
-    // Report page
-    Route::get('/pc/report', [ProcessCostController::class, 'report'])
-        ->middleware(['role:Process Cost - View|Process Cost - Full Access'])
-        ->name('pc.report');
-
-    Route::post('/pc/update/CTxSQ', [ProcessCostController::class, 'updateCTxSQ'])->name('pc.updateCTxSQ');
-    Route::post('/pc/update/BaseCost', [ProcessCostController::class, 'updateBaseCost'])->name('pc.updateBaseCost');
-    Route::post('/pc/update/CPP', [ProcessCostController::class, 'updateCPP'])->name('pc.updateCPP');
-    Route::post('/pc/update/PC', [ProcessCostController::class, 'updatePC'])->name('pc.updatePC');
-});
-
-#=============================
-#====> Business Partner <=====
-#=============================
-
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::post('/bp/import', [BusinessPartnerController::class, 'import'])->name('bp.import');
-    Route::post('/bp/store', [BusinessPartnerController::class, 'store'])->name('bp.store');
-    Route::get('/bp/import-progress', function () {
-        return response()->json([
-            'progress' => Cache::get('import-progress-bp', 0),
-        ]);
-    });
-});
-
-
-#=============================
-#=======> Cycle Time <========
-#=============================
-
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::post('/ct/import', [CycleTimeController::class, 'import'])->name('ct.import');
-    Route::get('/ct/import-progress', function () {
-        return response()->json([
-            'progress' => Cache::get('import-progress-ct', 0),
-        ]);
-    });
-});
-
-#=============================
-#=====> Sales Quantity <======
-#=============================
-
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::post('/sq/import', [SalesQuantityController::class, 'import'])->name('sq.import');
-    Route::put('/sq/update/{id}', [SalesQuantityController::class, 'update'])->name('sq.update');
-    Route::delete('/sq/destroy/{id}', [SalesQuantity::class, 'destroy'])->name('sq.destroy');
-    Route::get('/sq/import-progress', function () {
-        return response()->json([
-            'progress' => Cache::get('import-progress-sq', 0),
-        ]);
-    });
-});
-
-#=============================
-#===> Wages Distribution <====
-#=============================
-
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::post('/wd/import', [WagesDistributionController::class, 'import'])->name('wd.import');
-    Route::put('/wd/update', [WagesDistributionController::class, 'update'])->name('wd.update');
-    Route::get('/wd/import-progress', function () {
-        return response()->json([
-            'progress' => Cache::get('import-progress-wd', 0),
-        ]);
-    });
-});
 
 #==========================
 #====== Admin Route =======

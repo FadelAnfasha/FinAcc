@@ -73,7 +73,6 @@ const valves = computed(() =>
 );
 
 const type = computed(() => page.props.type as string | undefined);
-console.log('Current type from server:', type.value);
 const getDefaultActiveTab = (): string | null => {
     // Ambil nilai dari computed property 'type'
     const currentType = type.value;
@@ -786,6 +785,10 @@ const importResult = computed(() => {
         invalidItems: invalidItems,
     };
 });
+
+const props = defineProps({
+    auth: Object,
+});
 </script>
 
 <template>
@@ -1254,6 +1257,7 @@ const importResult = computed(() => {
 
                                     <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
                                         <FileUpload
+                                            v-if="auth?.user?.permissions?.includes('Update_MasterData')"
                                             ref="fileUploaderBP"
                                             mode="basic"
                                             name="file"
@@ -1379,6 +1383,7 @@ const importResult = computed(() => {
 
                                     <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
                                         <FileUpload
+                                            v-if="auth?.user?.permissions?.includes('Update_MasterData')"
                                             ref="fileUploaderBP"
                                             mode="basic"
                                             name="file"
@@ -1509,6 +1514,7 @@ const importResult = computed(() => {
 
                                     <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
                                         <FileUpload
+                                            v-if="auth?.user?.permissions?.includes('Update_MasterData')"
                                             ref="fileUploaderBP"
                                             mode="basic"
                                             name="file"
@@ -1615,6 +1621,7 @@ const importResult = computed(() => {
 
                                     <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
                                         <FileUpload
+                                            v-if="auth?.user?.permissions?.includes('Update_MasterData')"
                                             ref="fileUploaderBP"
                                             mode="basic"
                                             name="file"

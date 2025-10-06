@@ -754,6 +754,10 @@ function handleDestroy() {
         });
     }
 }
+
+const props = defineProps({
+    auth: Object,
+});
 </script>
 
 <template>
@@ -1344,9 +1348,9 @@ function handleDestroy() {
                             <section ref="bpSection" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
                                     <h2 class="mb-4 text-3xl font-semibold text-slate-900 md:mb-0 dark:text-white">Business Partner</h2>
-
                                     <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
                                         <FileUpload
+                                            v-if="auth?.user?.permissions?.includes('Update_MasterData')"
                                             ref="fileUploaderBP"
                                             mode="basic"
                                             name="file"
@@ -1367,6 +1371,7 @@ function handleDestroy() {
                                                 @click="exportCSV('bp')"
                                             />
                                             <Button
+                                                v-if="auth?.user?.permissions?.includes('Update_MasterData')"
                                                 icon="pi pi-users"
                                                 label=" Add BP"
                                                 unstyled
@@ -1467,6 +1472,7 @@ function handleDestroy() {
 
                                     <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
                                         <FileUpload
+                                            v-if="auth?.user?.permissions?.includes('Update_MasterData')"
                                             ref="fileUploaderBP"
                                             mode="basic"
                                             name="file"
@@ -2142,6 +2148,7 @@ function handleDestroy() {
 
                                     <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
                                         <FileUpload
+                                            v-if="auth?.user?.permissions?.includes('Update_MasterData')"
                                             ref="fileUploaderBP"
                                             mode="basic"
                                             name="file"
@@ -2312,6 +2319,7 @@ function handleDestroy() {
 
                                     <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
                                         <FileUpload
+                                            v-if="auth?.user?.permissions?.includes('Update_MasterData')"
                                             ref="fileUploaderBP"
                                             mode="basic"
                                             name="file"
