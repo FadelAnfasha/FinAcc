@@ -1117,7 +1117,7 @@ function closeDialog(type: 'pc' | null) {
                                                 label=" Export"
                                                 unstyled
                                                 class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 sm:w-28"
-                                                @click="exportCSV('ctxsq')"
+                                                @click="exportCSV('cpp')"
                                             />
                                             <Button
                                                 v-if="auth?.user?.permissions?.includes('Update_Report')"
