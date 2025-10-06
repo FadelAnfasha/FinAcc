@@ -50,6 +50,7 @@ class HandleInertiaRequests extends Middleware
                     'npk' => $request->user()->npk,
                     // 'role' => $request->user()->getRoleNames()->first(), // ⬅️ Ambil nama role pertama
                     'roles' => $request->user()->getRoleNames()->toArray(),
+                    'permissions' => $request->user()->getAllPermissions()->pluck('name')->toArray(),
 
                 ] : null,
             ],
