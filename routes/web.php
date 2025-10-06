@@ -55,27 +55,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // RFS Routes
     Route::resource('rfs', RequestForServiceController::class);
 
-
     Route::post('/rfs/{id}/accept', [RequestForServiceController::class, 'accept'])
-        ->middleware('role:Admin||Deputy Department||Deputy Division');
+        ->middleware('permission:Approve');
 
     Route::post('/rfs/{id}/reject', [RequestForServiceController::class, 'reject'])
-        ->middleware('role:Admin||Deputy Department||Deputy Division');
+        ->middleware('permission:Reject');
 
     Route::post('/rfs/{id}/execute', [RequestForServiceController::class, 'execute'])
-        ->middleware('role:Admin');
+        ->middleware('permission:Execute');
 
     Route::post('/rfs/{id}/uat', [RequestForServiceController::class, 'user_accept'])
-        ->middleware('role:Admin');
+        ->middleware('permission:UserAcceptance');
 
     Route::post('/rfs/{id}/revision', [RequestForServiceController::class, 'revision'])
-        ->middleware('role:Staff');
+        ->middleware('permission:Revision');
 
     Route::post('/rfs/{id}/finish', [RequestForServiceController::class, 'finish'])
-        ->middleware('role:Staff');
-
-    Route::post('/rfs/{id}/revision', [RequestForServiceController::class, 'revision'])
-        ->middleware('role:Staff');
+        ->middleware('permission:Finish');
 });
 
 
