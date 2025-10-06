@@ -36,6 +36,8 @@ class DatabaseSeeder extends Seeder
         Permission::create(['name' => 'Approve']);
         Permission::create(['name' => 'Reject']);
         Permission::create(attributes: ['name' => 'Execute']);
+        Permission::create(['name' => 'UserAcceptance']);
+        Permission::create(['name' => 'Revision']);
         Permission::create(['name' => 'Finish']);
         Permission::create(['name' => 'CreateRequest']);
         Permission::create(['name' => 'CreateUser']);
@@ -44,11 +46,11 @@ class DatabaseSeeder extends Seeder
         Permission::create(['name' => 'View_Report']);
 
         // 3. Assign Permissions
-        $director->givePermissionTo(['CreateRequest', 'CreateUser']);
-        $division->givePermissionTo(['CreateRequest', 'CreateUser']);
-        $departemen->givePermissionTo(['CreateRequest', 'Approve', 'CreateUser']);
-        $staff->givePermissionTo(['CreateRequest',]);
-        $admin->givePermissionTo(['CreateUser', 'Approve', 'Reject', 'CreateRequest', 'Execute', 'Finish', 'Update_MasterData', 'Update_Report', 'View_Report']);
+        $director->givePermissionTo(['CreateRequest', 'CreateUser', 'Approve', 'Reject', 'Revision', 'Finish']);
+        $division->givePermissionTo(['CreateRequest', 'CreateUser', 'Approve', 'Reject', 'Revision', 'Finish']);
+        $departemen->givePermissionTo(['CreateRequest', 'Approve', 'CreateUser', 'Reject', 'Revision', 'Finish']);
+        $staff->givePermissionTo(['CreateRequest', 'Revision', 'Finish']);
+        $admin->givePermissionTo(['CreateUser', 'Approve', 'Reject', 'CreateRequest', 'Execute', 'UserAcceptance', 'Revision', 'Finish', 'Update_MasterData', 'Update_Report', 'View_Report']);
         $ProCost_view->givePermissionTo(['View_Report']);
         $ProCost_full->givePermissionTo(['View_Report', 'Update_MasterData', 'Update_Report']);
         $BOM_view->givePermissionTo(['View_Report']);
