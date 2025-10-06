@@ -134,11 +134,15 @@ const combinedData = computed(() => {
         actualCostMap.set(key, item);
     });
 
-    const combined = dc.map((dcItem) => {
+    const sortedDc = [...dc].sort((a, b) => a.item_code.localeCompare(b.item_code));
+
+    const combined = sortedDc.map((dcItem, index) => {
         const standardKey = `${dcItem.standard_year}-${dcItem.standard_month}-${dcItem.item_code}`;
         const actualKey = `${dcItem.actual_year}-${dcItem.actual_month}-${dcItem.item_code}`;
 
         return {
+            no: index + 1, // Nomor urut sekarang sesuai dengan item_code
+
             item_code: dcItem.item_code,
 
             // Cost data
