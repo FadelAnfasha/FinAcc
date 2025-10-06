@@ -181,10 +181,10 @@ const cardData = [
     },
     {
         img: 'report_bom',
-        title: 'Bill of Material',
+        title: 'Standard Cost',
         subtitle: 'BOM',
         content:
-            'This menu is used to automatically calculate Bill of Material Report. It requires three types of master data: Material Price, Valve Price, BOM raw data.',
+            'This menu is used to automatically explode Bill of Material and calculate Standard/Actual Cost. It requires four types of master data: Standard/Actual Material Price, Valve Price, BOM raw data.',
         href: 'bom.master',
         guideHref: '/storage/guidance/bom.pdf',
     },
