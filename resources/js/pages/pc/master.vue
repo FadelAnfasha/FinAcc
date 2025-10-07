@@ -2367,7 +2367,13 @@ const props = defineProps({
                                             </template>
 
                                             <template #footer>
-                                                <Button label="Edit" class="w-full" severity="info" @click="editData(wagesDistribution, 'wd')" />
+                                                <Button
+                                                    v-if="auth?.user?.permissions?.includes('Update_MasterData')"
+                                                    label="Edit"
+                                                    class="w-full"
+                                                    severity="info"
+                                                    @click="editData(wagesDistribution, 'wd')"
+                                                />
                                             </template>
                                         </Card>
                                     </div>
