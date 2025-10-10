@@ -4,15 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class DifferenceCost extends Model
+class DiffCostXSalesQty extends Model
 {
-    protected $table = 'difference_cost';
+    protected $table = 'diff_cost_x_sales_quantities';
+
     protected $fillable = [
         'item_code',
-        'standard_year',
-        'standard_month',
-        'actual_year',
-        'actual_month',
+        'difference_period',
+        'sales_month',
+        'quantity',
         'total_raw_material',
         'total_process',
         'total'

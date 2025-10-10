@@ -43,13 +43,13 @@ class standardMaterialController extends Controller
             }
             fclose($handle);
         } else {
-            return redirect()->route('bom.master')->withErrors(['file' => 'Failed to open the CSV file.']);
+            return redirect()->route('bom.masterActual')->withErrors(['file' => 'Failed to open the CSV file.']);
         }
 
         // --- Langkah 4: Validasi Awal Jumlah Data ---
         $total = count($csvData);
         if ($total === 0) {
-            return redirect()->route('bom.master')->withErrors(['file' => 'The CSV file is empty.']);
+            return redirect()->route('bom.masterActual')->withErrors(['file' => 'The CSV file is empty.']);
         }
 
         // --- Langkah 5: Mengosongkan tabel Material sebelum impor ---

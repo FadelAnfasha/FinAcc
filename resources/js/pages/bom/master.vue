@@ -72,6 +72,15 @@ const valves = computed(() =>
     })),
 );
 
+const actualSalesQty = computed(() =>
+    ((page.props.actualSalesQty as any[]) ?? []).map((acsqty, index) => ({
+        ...acsqty,
+        no: index + 1,
+        created_at_formatted: formatDate(acsqty.created_at),
+        updated_at_formatted: formatDate(acsqty.updated_at),
+    })),
+);
+
 const type = computed(() => page.props.type as string | undefined);
 const getDefaultActiveTab = (): string | null => {
     // Ambil nilai dari computed property 'type'
@@ -116,10 +125,13 @@ const lastUpdate = computed(() => {
     const valve_update = ((page.props.valve as any[]) ?? []).map((valve) => new Date(valve.updated_at));
     const Max_valveUpdate = valve_update.length ? new Date(Math.max(...valve_update.map((d) => d.getTime()))) : null;
 
+    const actualSalesQty_update = ((page.props.actualSalesQty as any[]) ?? []).map((actualSalesQty) => new Date(actualSalesQty.updated_at));
+    const Max_actualSalesQtyUpdate = actualSalesQty_update.length ? new Date(Math.max(...actualSalesQty_update.map((d) => d.getTime()))) : null;
+
     const bom_update = ((page.props.billOfMaterials as any[]) ?? []).map((bom) => new Date(bom.updated_at));
     const Max_bomUpdate = bom_update.length ? new Date(Math.max(...bom_update.map((d) => d.getTime()))) : null;
 
-    return [Max_stamatUpdate, Max_acmatUpdate, Max_valveUpdate, Max_bomUpdate];
+    return [Max_stamatUpdate, Max_acmatUpdate, Max_valveUpdate, Max_bomUpdate, Max_actualSalesQtyUpdate];
 });
 
 const dataSource = [
@@ -127,6 +139,7 @@ const dataSource = [
     'Share Others/Finacc/Bill of Material/Actual Material Price/actualMat_master.csv',
     'Share Others/Finacc/Bill of Material/Valve Price (VP)/vp_master.csv',
     'Share Others/Finacc/Bill of Material/Bill of Material (BOM)/bom_master.csv',
+    'Share Others/Finacc/Bill of Material/Bill of Material (BOM)/actualSalesQty_master.csv',
 ];
 
 function formatlastUpdate(date: Date | string) {
@@ -187,7 +200,7 @@ const manufacturer = ref([
 const showImportDialog: Ref<boolean> = ref(false);
 const importName = ref<any>({});
 const selectedFile = ref<File | null>(null);
-const importType = ref<'stamat' | 'acmat' | 'pack' | 'proc' | 'valve' | 'bom' | null>(null);
+const importType = ref<'stamat' | 'acmat' | 'pack' | 'proc' | 'valve' | 'bom' | 'acsqty' | null>(null);
 const notImported = ref(true);
 const fileUploaderSTAMAT = ref<any>(null);
 const fileUploaderACMAT = ref<any>(null);
@@ -198,7 +211,7 @@ const fileUploaderBOM = ref<any>(null);
 const uploadProgress = ref(0);
 const isUploading = ref(false);
 
-function handleCSVImport(event: FileUploadUploaderEvent, type: 'stamat' | 'acmat' | 'pack' | 'proc' | 'valve' | 'bom') {
+function handleCSVImport(event: FileUploadUploaderEvent, type: 'stamat' | 'acmat' | 'pack' | 'proc' | 'valve' | 'bom' | 'acsqty') {
     let file: File | undefined;
 
     if (Array.isArray(event.files)) {
@@ -216,6 +229,7 @@ function handleCSVImport(event: FileUploadUploaderEvent, type: 'stamat' | 'acmat
         proc: 'proc_master.csv',
         valve: 'valve_master.csv',
         bom: 'bom_master.csv',
+        acsqty: 'actualSalesQty_master.csv',
     };
 
     const expectedFileName = expectedNames[type];
@@ -237,6 +251,7 @@ function handleCSVImport(event: FileUploadUploaderEvent, type: 'stamat' | 'acmat
             if (type === 'valve') fileUploaderVALVE.value?.clear();
             if (type === 'proc') fileUploaderPROC.value?.clear();
             if (type === 'bom') fileUploaderBOM.value?.clear();
+            if (type === 'acsqty') fileUploaderBOM.value?.clear();
         });
         return;
     }
@@ -250,7 +265,7 @@ function handleCSVImport(event: FileUploadUploaderEvent, type: 'stamat' | 'acmat
     });
 }
 
-function cancelCSVimport(type: 'stamat' | 'acmat' | 'pack' | 'proc' | 'valve' | 'bom') {
+function cancelCSVimport(type: 'stamat' | 'acmat' | 'pack' | 'proc' | 'valve' | 'bom' | 'acsqty') {
     showImportDialog.value = false;
     selectedFile.value = null;
 
@@ -264,7 +279,7 @@ function cancelCSVimport(type: 'stamat' | 'acmat' | 'pack' | 'proc' | 'valve' | 
     });
 }
 
-function confirmUpload(type: 'stamat' | 'acmat' | 'pack' | 'proc' | 'valve' | 'bom') {
+function confirmUpload(type: 'stamat' | 'acmat' | 'pack' | 'proc' | 'valve' | 'bom' | 'acsqty') {
     if (!selectedFile.value || !importType.value) return;
 
     const formData = new FormData();
@@ -277,6 +292,7 @@ function confirmUpload(type: 'stamat' | 'acmat' | 'pack' | 'proc' | 'valve' | 'b
         proc: 'proc.import',
         valve: 'valve.import',
         bom: 'bom.import',
+        acsqty: 'acsqty.import',
     };
 
     isUploading.value = true;
@@ -339,7 +355,7 @@ function resetImportState() {
     notImported.value = true;
 }
 
-function startPollingProgress(type: 'stamat' | 'acmat' | 'pack' | 'proc' | 'valve' | 'bom') {
+function startPollingProgress(type: 'stamat' | 'acmat' | 'pack' | 'proc' | 'valve' | 'bom' | 'acsqty') {
     uploadProgress.value = 0;
 
     const endpointMap = {
@@ -349,6 +365,7 @@ function startPollingProgress(type: 'stamat' | 'acmat' | 'pack' | 'proc' | 'valv
         proc: '/finacc/proc/import-progress',
         valve: '/finacc/valve/import-progress',
         bom: '/finacc/bom/import-progress',
+        acsqty: '/finacc/acsqty/import-progress',
     };
 
     const interval = setInterval(async () => {
@@ -1247,6 +1264,7 @@ const props = defineProps({
                         <Tab v-if="type === 'standardMaterial'" value="1">Standard Material Price</Tab>
                         <Tab v-if="type === 'actualMaterial'" value="2">Actual Material Price</Tab>
                         <Tab v-if="type === 'bom'" value="3">Valve</Tab>
+                        <Tab v-if="type === 'actualMaterial'" value="4">Sales Quantity</Tab>
                     </TabList>
 
                     <TabPanels>
@@ -1731,6 +1749,121 @@ const props = defineProps({
                                                 />
                                             </div> </template
                                     ></Column>
+                                </DataTable>
+                            </section>
+                        </TabPanel>
+
+                        <TabPanel v-if="type === 'actualMaterial'" value="4">
+                            <section ref="matSection" class="p-2">
+                                <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Actual Sales Quantity</h2>
+
+                                    <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
+                                        <FileUpload
+                                            v-if="auth?.user?.permissions?.includes('Update_MasterData')"
+                                            ref="fileUploaderBP"
+                                            mode="basic"
+                                            name="file"
+                                            :customUpload="true"
+                                            accept=".csv"
+                                            chooseLabel="Import CSV"
+                                            chooseIcon="pi pi-upload"
+                                            @select="(event) => handleCSVImport(event, 'acsqty')"
+                                            class="w-full sm:w-auto"
+                                        />
+
+                                        <div class="flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row">
+                                            <Button
+                                                icon="pi pi-download"
+                                                label=" Export"
+                                                unstyled
+                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 sm:w-28"
+                                                @click="exportCSV('acmat')"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div class="text-right text-gray-700 dark:text-gray-300">
+                                        <div>
+                                            Last Update :
+                                            <span class="text-red-300">{{ lastUpdate[4] ? formatlastUpdate(lastUpdate[4]) : '-' }}</span>
+                                        </div>
+                                        <div>
+                                            Data source From :
+                                            <span class="text-cyan-400">{{ dataSource[4] }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <DataTable
+                                    :value="actualSalesQty"
+                                    tableStyle="min-width: 50rem"
+                                    paginator
+                                    :rows="10"
+                                    :rowsPerPageOptions="[10, 20, 50, 100]"
+                                    resizableColumns
+                                    columnResizeMode="expand"
+                                    showGridlines
+                                    removableSort
+                                    v-model:filters="filters"
+                                    filterDisplay="row"
+                                    :loading="loading"
+                                    :globalFilterFields="['item_code']"
+                                    class="text-md"
+                                    ref="dtMAT"
+                                >
+                                    <Column
+                                        field="item_code"
+                                        header="Item Code"
+                                        :showFilterMenu="false"
+                                        sortable
+                                        :headerStyle="headerStyle"
+                                        :bodyStyle="bodyStyle"
+                                        ><template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search item code"
+                                                class="w-full"
+                                            /> </template
+                                    ></Column>
+
+                                    <Column field="description" sortable header="Description" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ data?.bom?.description ?? '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="jan_qty" sortable header="January (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    </Column>
+
+                                    <Column field="feb_qty" sortable header="February (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    </Column>
+
+                                    <Column field="mar_qty" sortable header="March (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle"> </Column>
+
+                                    <Column field="apr_qty" sortable header="April (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle"> </Column>
+
+                                    <Column field="may_qty" sortable header="May (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle"> </Column>
+
+                                    <Column field="jun_qty" sortable header="June (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle"> </Column>
+
+                                    <Column field="jul_qty" sortable header="July (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle"> </Column>
+
+                                    <Column field="aug_qty" sortable header="August (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    </Column>
+
+                                    <Column field="sep_qty" sortable header="September (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    </Column>
+
+                                    <Column field="oct_qty" sortable header="October (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    </Column>
+
+                                    <Column field="nov_qty" sortable header="November (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    </Column>
+
+                                    <Column field="dec_qty" sortable header="December (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    </Column>
                                 </DataTable>
                             </section>
                         </TabPanel>

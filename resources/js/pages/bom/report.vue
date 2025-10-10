@@ -27,6 +27,7 @@ const dtBOM = ref();
 const dtSC = ref();
 const dtAC = ref();
 const dtDIFF = ref();
+const dtDCxSQ = ref();
 const loading = ref(false);
 const year = ref();
 const month = ref();
@@ -80,6 +81,20 @@ const dc = computed(() =>
     })),
 );
 
+const acxsq = computed(() =>
+    (page.props.actual_sales as any[]).map((acxsq, index) => ({
+        ...acxsq,
+        no: index + 1,
+    })),
+);
+
+const dcxsq = computed(() =>
+    (page.props.dcxsq as any[]).map((dcxsq, index) => ({
+        ...dcxsq,
+        no: index + 1,
+    })),
+);
+
 const bom = computed(() =>
     (page.props.bom as any[]).map((bom, index) => {
         const typeChar: string = bom.item_code?.charAt(3) ?? '';
@@ -98,18 +113,6 @@ const bom = computed(() =>
         };
     }),
 );
-
-const makePeriod = (year: number, month: number) => {
-    // Buat objek Date untuk mendapatkan nama bulan singkat
-    const date = new Date(year, month - 1);
-    const monthName = date.toLocaleString('en-US', { month: 'short' });
-
-    // Ambil dua digit terakhir dari tahun
-    const yearDigits = String(year).slice(-2);
-
-    // Gabungkan dengan tanda hubung secara manual
-    return `${monthName}-${yearDigits}`;
-};
 
 const combinedData = computed(() => {
     const sc = (page.props.sc || []) as any[];
@@ -139,11 +142,13 @@ const combinedData = computed(() => {
     const combined = sortedDc.map((dcItem, index) => {
         const standardKey = `${dcItem.standard_year}-${dcItem.standard_month}-${dcItem.item_code}`;
         const actualKey = `${dcItem.actual_year}-${dcItem.actual_month}-${dcItem.item_code}`;
+        const descriptionFromBom = dcItem.bom ? dcItem.bom.description : '-';
 
         return {
             no: index + 1, // Nomor urut sekarang sesuai dengan item_code
 
             item_code: dcItem.item_code,
+            description: descriptionFromBom,
 
             // Cost data
             standard_cost: standardCostMap.get(standardKey) || { total_raw_material: 0, total_process: 0, total: 0 },
@@ -158,56 +163,6 @@ const combinedData = computed(() => {
 
     return combined.sort((a, b) => a.item_code.localeCompare(b.item_code));
 });
-
-interface StandardPeriod {
-    name: string;
-    code: string;
-}
-
-interface ActualPeriod {
-    name: string;
-    code: string;
-}
-
-const selectStandardPeriod = ref<StandardPeriod | null>(null); // Inisialisasi dengan tipe data yang benar
-const selectActualPeriod = ref<ActualPeriod | null>(null); // Inisialisasi dengan tipe data yang benar
-
-// Watcher untuk menghubungkan Select ke filters
-watch(selectStandardPeriod, (newValue) => {
-    if (newValue) {
-        // Pisahkan string 'code' menjadi tahun dan bulan
-        const [year, month] = newValue.code.split('-').map(Number);
-
-        // Perbarui filters
-        filtersStandard.value.report_year.value = year;
-        filtersStandard.value.report_month.value = month;
-        filtersDifference.value.standardPeriod.value = makePeriod(year, month);
-    } else {
-        // Reset filter jika Select dikosongkan
-        filtersStandard.value.report_year.value = null;
-        filtersStandard.value.report_month.value = null;
-        filtersDifference.value.standardPeriod.value = null;
-    }
-});
-
-watch(selectActualPeriod, (newValue) => {
-    if (newValue) {
-        // Pisahkan string 'code' menjadi tahun dan bulan
-        const [year, month] = newValue.code.split('-').map(Number);
-
-        // Perbarui filters
-        filtersActual.value.report_year.value = year;
-        filtersActual.value.report_month.value = month;
-        filtersDifference.value.actualPeriod.value = makePeriod(year, month);
-    } else {
-        // Reset filter jika Select dikosongkan
-        filtersActual.value.report_year.value = null;
-        filtersActual.value.report_month.value = null;
-        filtersDifference.value.actualPeriod.value = null;
-    }
-});
-
-const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const listStandardPeriod = computed(() => {
     // 1. Ambil semua kombinasi tahun dan bulan yang tersedia
@@ -271,6 +226,309 @@ const listActualPeriod = computed(() => {
     });
 });
 
+const listDifferencePeriod = computed(() => {
+    const formatPeriod = (year: number, month: number) => {
+        if (!year || !month) return '-';
+        const date = new Date(year, month - 1);
+        const monthName = date.toLocaleString('en-US', { month: 'short' });
+        const fullYear = year.toString();
+        return `${monthName}'${fullYear}`;
+    };
+    // 1. Ambil semua kombinasi tahun dan bulan yang tersedia
+    const periods = (page.props.dc as any[]).map((item) => ({
+        standard_year: item.standard_year,
+        standard_month: item.standard_month,
+        actual_year: item.actual_year,
+        actual_month: item.actual_month,
+    }));
+    const uniquePeriodsMap = new Map<string, { standard_year: number; standard_month: number; actual_year: number; actual_month: number }>();
+    periods.forEach((p) => {
+        const key = `${p.standard_month}'${p.standard_year} - ${p.actual_month}'${p.actual_year} `;
+        uniquePeriodsMap.set(key, p);
+    });
+
+    const sortedPeriods = Array.from(uniquePeriodsMap.values()).sort((a, b) => {
+        if (a.standard_year !== b.standard_year) {
+            return a.standard_year - b.standard_year;
+        }
+
+        if (a.standard_month !== b.standard_month) {
+            return a.standard_month - b.standard_month;
+        }
+
+        if (a.actual_year !== b.actual_year) {
+            return a.actual_year - b.actual_year;
+        }
+
+        return a.actual_month - b.actual_month;
+    });
+
+    return sortedPeriods.map((p) => {
+        const standardPeriod = formatPeriod(p.standard_year, p.standard_month);
+        const actualPeriod = formatPeriod(p.actual_year, p.actual_month);
+        const combinedName = `${standardPeriod} - ${actualPeriod}`;
+
+        // Buat objek output dengan name dan code yang unik
+        return {
+            name: combinedName,
+            // Code unik menggunakan format numerik untuk identifikasi
+            code: `${p.standard_month}'${p.standard_year} - ${p.actual_month}'${p.actual_year}`,
+        };
+    });
+});
+
+const listSalesMonth = computed(() => {
+    const data = (page.props.actual_sales as any[]) || [];
+    if (data.length === 0) {
+        return []; // Tidak ada data sama sekali
+    }
+
+    // Daftar semua kolom kuantitas bulanan
+    const monthFields = [
+        'jan_qty',
+        'feb_qty',
+        'mar_qty',
+        'apr_qty',
+        'may_qty',
+        'jun_qty',
+        'jul_qty',
+        'aug_qty',
+        'sep_qty',
+        'oct_qty',
+        'nov_qty',
+        'dec_qty',
+    ];
+
+    // Objek yang akan melacak apakah bulan memiliki kuantitas > 0
+    const monthHasData: { [key: string]: boolean } = {
+        Jan: false,
+        Feb: false,
+        Mar: false,
+        Apr: false,
+        May: false,
+        Jun: false,
+        Jul: false,
+        Aug: false,
+        Sep: false,
+        Oct: false,
+        Nov: false,
+        Dec: false,
+    };
+
+    // Peta dari field (jan_qty) ke nama bulan (Jan)
+    const fieldToMonthName: { [key: string]: string } = {
+        jan_qty: 'Jan',
+        feb_qty: 'Feb',
+        mar_qty: 'Mar',
+        apr_qty: 'Apr',
+        may_qty: 'May',
+        jun_qty: 'Jun',
+        jul_qty: 'Jul',
+        aug_qty: 'Aug',
+        sep_qty: 'Sep',
+        oct_qty: 'Oct',
+        nov_qty: 'Nov',
+        dec_qty: 'Dec',
+    };
+
+    // Iterasi melalui setiap baris data
+    data.forEach((item) => {
+        // Iterasi melalui setiap kolom kuantitas
+        monthFields.forEach((field) => {
+            const qty = Number(item[field] || 0); // Ambil nilai kuantitas, pastikan itu angka (atau 0)
+
+            if (qty > 0) {
+                const monthName = fieldToMonthName[field];
+                monthHasData[monthName] = true; // Set bulan ini memiliki data > 0
+            }
+        });
+    });
+
+    // 2. Buat Array Output Bulan yang Tersedia
+    const result = [];
+    let foundNonZero = false;
+
+    // Kita harus memproses dari Desember ke Januari untuk menemukan batas terakhir
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    // Cari bulan terakhir yang memiliki data (dari belakang)
+    let lastAvailableIndex = -1;
+    for (let i = monthNames.length - 1; i >= 0; i--) {
+        const month = monthNames[i];
+        if (monthHasData[month]) {
+            lastAvailableIndex = i;
+            break;
+        }
+    }
+
+    // Jika tidak ada data > 0 sama sekali, kembalikan array kosong
+    if (lastAvailableIndex === -1) {
+        return [];
+    }
+
+    // Buat daftar bulan dari Januari hingga bulan terakhir yang tersedia
+    for (let i = 0; i <= lastAvailableIndex; i++) {
+        const month = monthNames[i];
+        const code = monthFields[i];
+
+        result.push({
+            name: month,
+            // Anda bisa menggunakan kode numerik atau string lain yang unik untuk backend
+            code: code,
+        });
+    }
+
+    return result;
+});
+
+const listSalesMonths = computed(() => {
+    const data = (page.props.dcxsq as any[]) || [];
+    if (data.length === 0) return ['All'];
+
+    const uniqueMonths = new Set<string>();
+
+    // Asumsikan kolom sales_month sudah berisi string bulan (misal: "Jan")
+    data.forEach((item) => {
+        if (item.sales_month) {
+            uniqueMonths.add(item.sales_month);
+        }
+    });
+
+    // Tambahkan opsi 'All' dan sorting standar (alfabetis)
+    const sortedMonths = Array.from(uniqueMonths).sort();
+    return ['All', ...sortedMonths];
+});
+
+const listDCxSQ = computed(() => {
+    const data = (page.props.dcxsq as any[]) || [];
+    if (data.length === 0) {
+        return [];
+    }
+
+    const uniqueNames = new Set<string>();
+    const result: { name: string; code: string }[] = [];
+
+    data.forEach((item) => {
+        const name = item.difference_period;
+
+        if (name && !uniqueNames.has(name)) {
+            uniqueNames.add(name);
+            result.push({
+                name: name,
+                code: name,
+            });
+        }
+    });
+    result.sort((a, b) => {
+        return a.name.localeCompare(b.name);
+    });
+
+    return result;
+});
+
+const selectStandardPeriod = ref<StandardPeriod | null>(null);
+const selectActualPeriod = ref<ActualPeriod | null>(null);
+const selectDifferencePeriod = ref<DifferencePeriod | null>(null);
+const selectSalesPeriod = ref<SalesPeriod | null>(null);
+const selectDCxSQPeriod = ref<DCxSQPeriod | null>(null);
+
+interface StandardPeriod {
+    name: string;
+    code: string;
+}
+
+interface ActualPeriod {
+    name: string;
+    code: string;
+}
+
+interface DifferencePeriod {
+    name: string;
+    code: string;
+}
+
+interface SalesPeriod {
+    name: string;
+    code: string;
+}
+
+interface DCxSQPeriod {
+    name: string;
+    code: string;
+}
+
+// Watcher buat ngehubungin Select ke filters
+watch(selectStandardPeriod, (newValue) => {
+    if (newValue) {
+        // Pisahkan string 'code' menjadi tahun dan bulan
+        const [year, month] = newValue.code.split('-').map(Number);
+
+        // Perbarui filters
+        filtersStandard.value.report_year.value = year;
+        filtersStandard.value.report_month.value = month;
+        filtersDifference.value.standardPeriod.value = makePeriod(year, month);
+    } else {
+        // Reset filter jika Select dikosongkan
+        filtersStandard.value.report_year.value = null;
+        filtersStandard.value.report_month.value = null;
+        filtersDifference.value.standardPeriod.value = null;
+    }
+});
+
+watch(selectActualPeriod, (newValue) => {
+    if (newValue) {
+        // Pisahkan string 'code' menjadi tahun dan bulan
+        const [year, month] = newValue.code.split('-').map(Number);
+
+        // Perbarui filters
+        filtersActual.value.report_year.value = year;
+        filtersActual.value.report_month.value = month;
+        filtersDifference.value.actualPeriod.value = makePeriod(year, month);
+    } else {
+        // Reset filter jika Select dikosongkan
+        filtersActual.value.report_year.value = null;
+        filtersActual.value.report_month.value = null;
+        filtersDifference.value.actualPeriod.value = null;
+    }
+});
+
+watch(selectDifferencePeriod, (newValue) => {
+    if (newValue) {
+        filtersDifference.value.standardPeriod.value = newValue.code;
+    } else {
+        filtersDifference.value.standardPeriod.value = null;
+    }
+});
+
+watch(selectDCxSQPeriod, (newValue) => {
+    if (newValue) {
+        // Nilai code di sini diharapkan adalah string yang mewakili seluruh periode DCxSQ
+        filtersDCxSQ.value.difference_period.value = newValue.code;
+    } else {
+        filtersDCxSQ.value.difference_period.value = null;
+    }
+});
+
+const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const makePeriod = (year: number, month: number) => {
+    // Buat objek Date untuk mendapatkan nama bulan singkat
+    const date = new Date(year, month - 1);
+    const monthName = date.toLocaleString('en-US', { month: 'short' });
+
+    // Ambil dua digit terakhir dari tahun
+    const yearDigits = String(year).slice(-2);
+
+    // Gabungkan dengan tanda hubung secara manual
+    return `${monthName}-${yearDigits}`;
+};
+
+const filtersBOM = ref({
+    item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    type_name: { value: null, matchMode: FilterMatchMode.EQUALS },
+    description: { value: null, matchMode: FilterMatchMode.CONTAINS },
+});
+
 const filtersStandard = ref({
     item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
     type_name: { value: null, matchMode: FilterMatchMode.EQUALS },
@@ -289,8 +547,7 @@ const filtersActual = ref({
 
 const filtersDifference = ref({
     item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    type_name: { value: null, matchMode: FilterMatchMode.EQUALS },
-    'bom.description': { value: null, matchMode: FilterMatchMode.CONTAINS },
+    description: { value: null, matchMode: FilterMatchMode.CONTAINS },
     standardPeriod: { value: null as string | null, matchMode: FilterMatchMode.EQUALS },
     actualPeriod: { value: null as string | null, matchMode: FilterMatchMode.EQUALS },
 
@@ -300,10 +557,11 @@ const filtersDifference = ref({
     actual_month: { value: null as number | null, matchMode: FilterMatchMode.EQUALS },
 });
 
-const filtersBOM = ref({
+const filtersDCxSQ = ref({
     item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    type_name: { value: null, matchMode: FilterMatchMode.EQUALS },
-    description: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    'bom.description': { value: null, matchMode: FilterMatchMode.CONTAINS },
+    difference_period: { value: null as string | null, matchMode: FilterMatchMode.EQUALS },
+    sales_month: { value: null as number | null, matchMode: FilterMatchMode.EQUALS },
 });
 
 const getMonthName = (monthNumber: number): string => {
@@ -314,49 +572,6 @@ const getMonthName = (monthNumber: number): string => {
     // Kurangi 1 karena array berbasis 0
     return monthNames[monthNumber - 1];
 };
-
-// const selectedStandardYear = ref<Date | null>(null);
-// const selectedStandardMonth = ref<Date | null>(null);
-// const selectedActualYear = ref<Date | null>(null);
-// const selectedActualMonth = ref<Date | null>(null);
-
-// watch(selectedStandardYear, (newValue: Date | null) => {
-//     if (newValue instanceof Date) {
-//         // This check is now valid because newValue can be a Date
-//         filters.value.report_year.value = newValue.getFullYear();
-//     } else {
-//         filters.value.report_year.value = null;
-//     }
-// });
-
-// watch(selectedStandardMonth, (newValue: Date | null) => {
-//     if (newValue instanceof Date) {
-//         // .getMonth() mengembalikan nilai 0-11.
-//         // Jika data Anda 1-12, tambahkan +1.
-//         filters.value.report_month.value = newValue.getMonth() + 1;
-//     } else {
-//         filters.value.report_month.value = null;
-//     }
-// });
-
-// watch(selectedActualYear, (newValue: Date | null) => {
-//     if (newValue instanceof Date) {
-//         // This check is now valid because newValue can be a Date
-//         filters.value.report_year.value = newValue.getFullYear();
-//     } else {
-//         filters.value.report_year.value = null;
-//     }
-// });
-
-// watch(selectedActualMonth, (newValue: Date | null) => {
-//     if (newValue instanceof Date) {
-//         // .getMonth() mengembalikan nilai 0-11.
-//         // Jika data Anda 1-12, tambahkan +1.
-//         filters.value.report_month.value = newValue.getMonth() + 1;
-//     } else {
-//         filters.value.report_month.value = null;
-//     }
-// });
 
 function tbStyle(section: 'main' | 'rm' | 'pr' | 'wip' | 'fg') {
     const styles = {
@@ -394,7 +609,7 @@ function capitalize(text: string): string {
     return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-function exportCSV(type: 'BOM' | 'standardCost' | 'actualCost' | 'diffCost') {
+function exportCSV(type: 'BOM' | 'standardCost' | 'actualCost' | 'diffCost' | 'dcXsq') {
     if (type === 'BOM' && dtBOM.value) {
         const exportFilename = `Bill-of-Material-${new Date().toISOString().slice(0, 10)}.csv`;
         dtBOM.value.exportCSV({ selectionOnly: false, filename: exportFilename });
@@ -404,9 +619,12 @@ function exportCSV(type: 'BOM' | 'standardCost' | 'actualCost' | 'diffCost') {
     } else if (type === 'actualCost' && dtAC.value) {
         const exportFilename = `ActualCost-${new Date().toISOString().slice(0, 10)}.csv`;
         dtAC.value.exportCSV({ selectionOnly: false, filename: exportFilename });
-    } else if (type === 'diffCost' && dtAC.value) {
+    } else if (type === 'diffCost' && dtDIFF.value) {
         const exportFilename = `DiffCost-${new Date().toISOString().slice(0, 10)}.csv`;
         dtDIFF.value.exportCSV({ selectionOnly: false, filename: exportFilename });
+    } else if (type === 'dcXsq' && dtDCxSQ.value) {
+        const exportFilename = `DiffCost x Sales Quantity-${new Date().toISOString().slice(0, 10)}.csv`;
+        dtDCxSQ.value.exportCSV({ selectionOnly: false, filename: exportFilename });
     }
 }
 
@@ -431,7 +649,7 @@ const updateConstDialog = ref(false);
 type UpdateStatus = 'idle' | 'updating' | 'done';
 const updateStatus = ref<UpdateStatus>('idle');
 const userName = computed(() => page.props.auth?.user?.name ?? '');
-const updateType = ref<'standardCost' | 'actualCost' | 'diffCost' | 'opgin' | null>(null);
+const updateType = ref<'standardCost' | 'actualCost' | 'diffCost' | 'opgin' | 'dcXsq' | null>(null);
 
 const saveOpexProgin = () => {
     if (tempOpex.value !== null && tempProgin.value !== null) {
@@ -445,7 +663,7 @@ const cancelOpexProgin = () => {
     updateConstDialog.value = false; // Tutup dialog
 };
 
-function showUpdateDialog(type: 'standardCost' | 'actualCost' | 'opgin' | 'diffCost') {
+function showUpdateDialog(type: 'standardCost' | 'actualCost' | 'opgin' | 'diffCost' | 'dcXsq') {
     updateType.value = type;
     updateStatus.value = 'idle';
 
@@ -462,20 +680,18 @@ function showUpdateDialog(type: 'standardCost' | 'actualCost' | 'opgin' | 'diffC
     }
 }
 
+const validationErrors = ref({
+    sac: '',
+    diffCost: '',
+    dcXsq: '',
+});
+
 function confirmUpdate() {
     if (!updateType.value) return;
-
-    let payload = {}; // Inisialisasi payload di awal
-
-    if (updateType.value !== 'diffCost') {
+    let payload = {};
+    if (updateType.value === 'standardCost' || updateType.value === 'actualCost') {
         if (!year.value || !month.value) {
-            toast.add({
-                severity: 'warn',
-                summary: 'Peringatan',
-                group: 'br',
-                detail: 'Silakan pilih tahun dan bulan terlebih dahulu',
-                life: 3000,
-            });
+            validationErrors.value.sac = 'Year and Month cannot be empty.';
             return;
         }
 
@@ -487,13 +703,7 @@ function confirmUpdate() {
     } else if (updateType.value === 'diffCost') {
         // Logika validasi dan payload untuk 'diffCost'
         if (!selectStandardPeriod.value || !selectActualPeriod.value) {
-            toast.add({
-                severity: 'warn',
-                summary: 'Peringatan',
-                group: 'br',
-                detail: 'Silakan pilih periode standard dan actual terlebih dahulu',
-                life: 3000,
-            });
+            validationErrors.value.diffCost = 'Standard Period and Actual Period cannot be empty.';
             return;
         }
 
@@ -506,6 +716,27 @@ function confirmUpdate() {
             actual_year: actualYear,
             actual_month: actualMonth,
         };
+    } else if (updateType.value === 'dcXsq') {
+        // Logika validasi dan payload untuk 'diffCost'
+        if (!selectDifferencePeriod.value || !selectSalesPeriod.value) {
+            validationErrors.value.dcXsq = 'Different Cost Period and Sales Month Period cannot be empty.';
+            return;
+        }
+        const [standardPeriodStr, actualPeriodStr] = selectDifferencePeriod.value.code.split(' - ');
+        const [standardMonth, standardYear] = standardPeriodStr.split("'");
+        const [actualMonth, actualYear] = actualPeriodStr.split("'");
+        const salesPeriod = selectSalesPeriod.value;
+        payload = {
+            standard_year: standardYear.trim(),
+            standard_month: standardMonth.trim(),
+            actual_year: actualYear.trim(),
+            actual_month: actualMonth.trim(),
+            sales_period: salesPeriod.code,
+        };
+    } else if (updateType.value === 'opgin') {
+    }
+
+    if (Object.keys(payload).length === 0 && updateType.value === 'opgin') {
     }
 
     updateStatus.value = 'updating';
@@ -516,6 +747,7 @@ function confirmUpdate() {
         actualCost: 'bom.updateAC',
         diffCost: 'bom.updateDC',
         opgin: 'bom.updateOpGin',
+        dcXsq: 'bom.updateDCxSQ',
     };
 
     const messages = {
@@ -523,6 +755,7 @@ function confirmUpdate() {
         actualCost: 'Actual Cost',
         diffCost: 'Difference Cost',
         opgin: 'OPEX / Profit Margin',
+        dcXsq: 'Difference x Quantity',
     };
 
     router.post(
@@ -559,6 +792,11 @@ function closeDialog() {
     updateReportDialog.value = false;
     updateStatus.value = 'idle';
     updateType.value = null;
+    validationErrors.value = {
+        sac: '',
+        diffCost: '',
+        dcXsq: '',
+    };
 }
 
 function openPreviewTab(item_code: string, opex: number, progin: number, previewType: string) {
@@ -625,85 +863,127 @@ const maxDate = ref(new Date());
                             >,
                         </p>
                         <p>Are you sure you want to update the report?</p>
-                        <div v-if="updateType !== 'diffCost'" class="mt-6 mb-2 font-semibold">Select Period:</div>
-                        <div v-if="updateType !== 'diffCost'" class="flex space-x-4">
-                            <div class="flex-1">
-                                <label for="report-month" class="block text-sm font-medium text-gray-400">Month</label>
-                                <DatePicker v-model="month" view="month" dateFormat="mm" :maxDate="maxDate" />
+                        <div v-if="updateType !== 'diffCost' && updateType !== 'dcXsq'">
+                            <div class="mt-6 mb-2 font-semibold">Select Period:</div>
+                            <div class="flex space-x-4">
+                                <div class="flex-1">
+                                    <label for="report-month" class="block text-sm font-medium text-gray-400">Month</label>
+                                    <DatePicker v-model="month" view="month" dateFormat="mm" :maxDate="maxDate" />
+                                </div>
+                                <div class="flex-1">
+                                    <label for="report-year" class="block text-sm font-medium text-gray-400">Year</label>
+                                    <DatePicker v-model="year" view="year" dateFormat="yy" :maxDate="maxDate" />
+                                </div>
                             </div>
-                            <div class="flex-1">
-                                <label for="report-year" class="block text-sm font-medium text-gray-400">Year</label>
-                                <DatePicker v-model="year" view="year" dateFormat="yy" :maxDate="maxDate" />
+                            <p v-if="validationErrors.sac" class="mt-2 inline-block rounded bg-red-500 px-2 py-1 text-sm font-medium text-white">
+                                {{ validationErrors.sac }}
+                            </p>
+                        </div>
+
+                        <div v-if="updateType === 'diffCost'">
+                            <div class="mt-6 mb-2 font-semibold">Select Report Period:</div>
+                            <div class="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4">
+                                <div class="flex-1">
+                                    <label for="standard-month" class="block text-sm font-medium text-gray-400">Standard Period</label>
+                                    <Select
+                                        v-model="selectStandardPeriod"
+                                        :options="listStandardPeriod"
+                                        optionLabel="name"
+                                        placeholder="Select a period"
+                                        class="w-64"
+                                    />
+                                </div>
+                                <div class="flex-1">
+                                    <label for="standard-month" class="block text-sm font-medium text-gray-400">Actual Period</label>
+                                    <Select
+                                        v-model="selectActualPeriod"
+                                        :options="listActualPeriod"
+                                        optionLabel="name"
+                                        placeholder="Select a period"
+                                        class="w-64"
+                                    />
+                                </div>
+                            </div>
+                            <p v-if="validationErrors.diffCost" class="mt-2 inline-block rounded bg-red-500 px-2 py-1 text-sm font-medium text-white">
+                                {{ validationErrors.diffCost }}
+                            </p>
+                        </div>
+
+                        <div v-if="updateType === 'dcXsq'">
+                            <div class="mt-6 mb-2 font-semibold">Select Report Period:</div>
+                            <div class="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4">
+                                <div class="flex-1">
+                                    <label for="dcPeriod" class="block text-sm font-medium text-gray-400">Difference Cost Period</label>
+                                    <Select
+                                        v-model="selectDifferencePeriod"
+                                        :options="listDifferencePeriod"
+                                        optionLabel="name"
+                                        placeholder="Select a period"
+                                        class="w-64"
+                                    />
+                                </div>
+                                <div class="flex-1">
+                                    <label for="monthPeriod" class="block text-sm font-medium text-gray-400">Month Period</label>
+                                    <Select
+                                        v-model="selectSalesPeriod"
+                                        :options="listSalesMonth"
+                                        optionLabel="name"
+                                        placeholder="Select sales period"
+                                        class="w-64"
+                                    />
+                                </div>
+                            </div>
+                            <p v-if="validationErrors.dcXsq" class="mt-2 inline-block rounded bg-red-500 px-2 py-1 text-sm font-medium text-white">
+                                {{ validationErrors.dcXsq }}
+                            </p>
+                        </div>
+
+                        <div v-if="updateType !== 'diffCost' && updateType !== 'dcXsq'">
+                            <p class="mt-6 mb-2 font-semibold">Make sure this data is up to date:</p>
+                            <div class="overflow-x-auto">
+                                <table v-if="updateType === 'standardCost' || updateType === 'actualCost'" class="w-full border-collapse text-left">
+                                    <thead>
+                                        <tr>
+                                            <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Data</th>
+                                            <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Last Update</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-if="updateType === 'standardCost'">
+                                            <td class="border-b border-gray-800 px-4 py-2">Standard Material Price</td>
+                                            <td class="border-b border-gray-800 px-4 py-2">
+                                                <span class="text-red-300">{{ lastMaster[0] ? formatlastUpdate(lastMaster[0]) : '-' }}</span>
+                                            </td>
+                                        </tr>
+                                        <tr v-if="updateType === 'actualCost'">
+                                            <td class="border-b border-gray-800 px-4 py-2">Actual Material Price</td>
+                                            <td class="border-b border-gray-800 px-4 py-2">
+                                                <span class="text-red-300">{{ lastMaster[1] ? formatlastUpdate(lastMaster[1]) : '-' }}</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="border-b border-gray-800 px-4 py-2">Valve Price</td>
+                                            <td class="border-b border-gray-800 px-4 py-2">
+                                                <span class="text-red-300">{{ lastMaster[2] ? formatlastUpdate(lastMaster[2]) : '-' }}</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="border-b border-gray-800 px-4 py-2">Bill of Material</td>
+                                            <td class="border-b border-gray-800 px-4 py-2">
+                                                <span class="text-red-300">{{ lastMaster[3] ? formatlastUpdate(lastMaster[3]) : '-' }}</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="border-b border-gray-800 px-4 py-2">Process Cost</td>
+                                            <td class="border-b border-gray-800 px-4 py-2">
+                                                <span class="text-red-300">{{ lastMaster[4] ? formatlastUpdate(lastMaster[4]) : '-' }}</span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
 
-                        <div v-if="updateType === 'diffCost'" class="mt-6 mb-2 font-semibold">Select Report Period:</div>
-                        <div v-if="updateType === 'diffCost'" class="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4">
-                            <div class="flex-1">
-                                <label for="standard-month" class="block text-sm font-medium text-gray-400">Standard Period</label>
-                                <Select
-                                    v-model="selectStandardPeriod"
-                                    :options="listStandardPeriod"
-                                    optionLabel="name"
-                                    placeholder="Select a period"
-                                    class="w-64"
-                                />
-                            </div>
-                            <div class="flex-1">
-                                <label for="standard-month" class="block text-sm font-medium text-gray-400">Actual Period</label>
-                                <Select
-                                    v-model="selectActualPeriod"
-                                    :options="listActualPeriod"
-                                    optionLabel="name"
-                                    placeholder="Select a period"
-                                    class="w-64"
-                                />
-                            </div>
-                        </div>
-
-                        <p v-if="updateType !== 'diffCost'" class="mt-6 mb-2 font-semibold">Make sure this data is up to date:</p>
-                        <div v-if="updateType !== 'diffCost'" class="overflow-x-auto">
-                            <table v-if="updateType === 'standardCost' || 'actualCost'" class="w-full border-collapse text-left">
-                                <thead>
-                                    <tr>
-                                        <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Data</th>
-                                        <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Last Update</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-if="updateType === 'standardCost'">
-                                        <td class="border-b border-gray-800 px-4 py-2">Standard Material Price</td>
-                                        <td class="border-b border-gray-800 px-4 py-2">
-                                            <span class="text-red-300">{{ lastMaster[0] ? formatlastUpdate(lastMaster[0]) : '-' }}</span>
-                                        </td>
-                                    </tr>
-                                    <tr v-if="updateType === 'actualCost'">
-                                        <td class="border-b border-gray-800 px-4 py-2">Actual Material Price</td>
-                                        <td class="border-b border-gray-800 px-4 py-2">
-                                            <span class="text-red-300">{{ lastMaster[1] ? formatlastUpdate(lastMaster[1]) : '-' }}</span>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="border-b border-gray-800 px-4 py-2">Valve Price</td>
-                                        <td class="border-b border-gray-800 px-4 py-2">
-                                            <span class="text-red-300">{{ lastMaster[2] ? formatlastUpdate(lastMaster[2]) : '-' }}</span>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="border-b border-gray-800 px-4 py-2">Bill of Material</td>
-                                        <td class="border-b border-gray-800 px-4 py-2">
-                                            <span class="text-red-300">{{ lastMaster[3] ? formatlastUpdate(lastMaster[3]) : '-' }}</span>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="border-b border-gray-800 px-4 py-2">Process Cost</td>
-                                        <td class="border-b border-gray-800 px-4 py-2">
-                                            <span class="text-red-300">{{ lastMaster[4] ? formatlastUpdate(lastMaster[4]) : '-' }}</span>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
                         <div class="flex justify-end gap-3 pt-4">
                             <Button
                                 label=" Cancel"
@@ -788,6 +1068,7 @@ const maxDate = ref(new Date());
                         <Tab value="1">Standard Cost</Tab>
                         <Tab value="2">Actual Cost</Tab>
                         <Tab value="3">Difference</Tab>
+                        <Tab value="4">Difference x Quantity</Tab>
                     </TabList>
 
                     <TabPanels>
@@ -1216,6 +1497,7 @@ const maxDate = ref(new Date());
                                             {{ slotProps.data.disc_code || '-' }}
                                         </template>
                                     </Column>
+
                                     <Column field="disc_price" sortable header="Price" v-bind="tbStyle('rm')">
                                         <template #body="{ data }">
                                             {{ Number(data.disc_price).toLocaleString('id-ID') }}
@@ -1978,40 +2260,6 @@ const maxDate = ref(new Date());
                                                 @click="showUpdateDialog('diffCost')"
                                             />
                                         </div>
-
-                                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-                                            <!-- Date Pickers -->
-                                            <div class="flex gap-2">
-                                                <div class="flex-1">
-                                                    <label for="report-period" class="block py-2 text-sm font-medium text-gray-400"
-                                                        >Standard Period :</label
-                                                    >
-                                                    <Select
-                                                        v-model="selectStandardPeriod"
-                                                        :options="listStandardPeriod"
-                                                        optionLabel="name"
-                                                        placeholder="Select a period"
-                                                        class="w-64"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <!-- Date Pickers -->
-                                            <div class="flex gap-2">
-                                                <div class="flex-1">
-                                                    <label for="report-period" class="block py-2 text-sm font-medium text-gray-400"
-                                                        >Actual Period :</label
-                                                    >
-                                                    <Select
-                                                        v-model="selectActualPeriod"
-                                                        :options="listActualPeriod"
-                                                        optionLabel="name"
-                                                        placeholder="Select a period"
-                                                        class="w-64"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
 
@@ -2022,13 +2270,13 @@ const maxDate = ref(new Date());
                                     :rows="10"
                                     :rowsPerPageOptions="[5, 10, 20, 50]"
                                     resizableColumns
-                                    columnResizeMode="expand"
+                                    columnResizeMode="fit"
                                     showGridlines
                                     removableSort
                                     v-model:filters="filtersDifference"
                                     filterDisplay="row"
                                     :loading="loading"
-                                    :globalFilterFields="['item_code']"
+                                    :globalFilterFields="['item_code', 'description']"
                                     class="text-md"
                                     ref="dtDIFF"
                                 >
@@ -2036,6 +2284,8 @@ const maxDate = ref(new Date());
                                         <Row>
                                             <Column field="no" header="#" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
                                             <Column field="item_code" header="Item Code" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
+                                            <Column field="description" header="Description" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
+
                                             <Column
                                                 field="standardPeriod"
                                                 header="Standard Period"
@@ -2104,9 +2354,46 @@ const maxDate = ref(new Date());
                                             />
                                         </template>
                                     </Column>
-                                    <Column field="standardPeriod" v-bind="tbStyle('main')" />
-                                    <Column field="actualPeriod" v-bind="tbStyle('main')" />
-
+                                    <Column field="description" v-bind="tbStyle('main')">
+                                        <template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search Description"
+                                                class="w-full"
+                                            />
+                                        </template>
+                                    </Column>
+                                    <Column field="standardPeriod" header="Standard Period" sortable v-bind="tbStyle('main')" :showFilterMenu="false">
+                                        <template #filter="{ filterModel, filterCallback }">
+                                            <div class="flex justify-center">
+                                                <Select
+                                                    v-model="filterModel.value"
+                                                    :options="listStandardPeriod"
+                                                    optionLabel="name"
+                                                    optionValue="name"
+                                                    placeholder="Std Period"
+                                                    class="w-full"
+                                                    @change="filterCallback()"
+                                                />
+                                            </div>
+                                        </template>
+                                    </Column>
+                                    <Column field="actualPeriod" header="Actual Period" sortable v-bind="tbStyle('main')" :showFilterMenu="false">
+                                        <template #filter="{ filterModel, filterCallback }">
+                                            <div class="flex justify-center">
+                                                <Select
+                                                    v-model="filterModel.value"
+                                                    :options="listActualPeriod"
+                                                    optionLabel="name"
+                                                    optionValue="name"
+                                                    placeholder="Act Period"
+                                                    class="w-full"
+                                                    @change="filterCallback()"
+                                                />
+                                            </div>
+                                        </template>
+                                    </Column>
                                     <Column field="standard_cost.total_raw_material" sortable v-bind="tbStyle('rm')">
                                         <template #body="{ data }">
                                             {{ Number(data.standard_cost.total_raw_material).toLocaleString('id-ID') }}
@@ -2170,6 +2457,187 @@ const maxDate = ref(new Date());
                                                 }"
                                             >
                                                 {{ Number(data.difference_cost.total).toLocaleString('id-ID') }}
+                                            </span>
+                                        </template>
+                                    </Column>
+                                </DataTable>
+                            </section>
+                        </TabPanel>
+
+                        <TabPanel value="4">
+                            <section class="p-2">
+                                <div class="mb-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                                    <!-- Title -->
+                                    <h2 class="text-3xl font-semibold text-gray-900 dark:text-white">Difference x Sales Quantity</h2>
+
+                                    <!-- Main Controls Container -->
+                                    <div class="flex flex-col gap-4 lg:flex-row lg:items-center">
+                                        <!-- Export and Update Report Buttons -->
+                                        <div class="flex flex-col gap-2 sm:flex-row sm:gap-4">
+                                            <Button
+                                                icon="pi pi-download"
+                                                label=" Export Report"
+                                                unstyled
+                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-orange-700 sm:w-auto"
+                                                @click="exportCSV('dcXsq')"
+                                            />
+                                            <Button
+                                                v-if="auth?.user?.permissions?.includes('Update_Report')"
+                                                icon="pi pi-sync"
+                                                label=" Calcuate Difference?"
+                                                unstyled
+                                                class="w-full cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-cyan-700 sm:w-auto"
+                                                @click="showUpdateDialog('dcXsq')"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <DataTable
+                                    :value="dcxsq"
+                                    tableStyle="min-width: 50rem"
+                                    paginator
+                                    :rows="10"
+                                    :rowsPerPageOptions="[5, 10, 20, 50]"
+                                    resizableColumns
+                                    columnResizeMode="expand"
+                                    showGridlines
+                                    removableSort
+                                    v-model:filters="filtersDCxSQ"
+                                    filterDisplay="row"
+                                    :loading="loading"
+                                    :globalFilterFields="['item_code', 'difference_period']"
+                                    class="text-md"
+                                    ref="dtDCxSQ"
+                                >
+                                    <Column field="no" header="No" sortable v-bind="tbStyle('main')"></Column>
+                                    <Column field="item_code" header="Item Code" sortable v-bind="tbStyle('main')">
+                                        <template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search item code"
+                                                class="w-full"
+                                            />
+                                        </template>
+                                    </Column>
+                                    <Column field="bom.description" header="Name" :showFilterMenu="false" sortable v-bind="tbStyle('main')">
+                                        <template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search description"
+                                                class="w-full"
+                                            />
+                                        </template>
+                                        <template #body="{ data }">
+                                            {{ data.bom ? data.bom.description : 'N/A' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column
+                                        field="difference_period"
+                                        header="Difference Cost Period"
+                                        sortable
+                                        v-bind="tbStyle('main')"
+                                        :showFilterMenu="false"
+                                    >
+                                        <template #filter="{ filterModel, filterCallback }">
+                                            <div class="flex justify-center">
+                                                <Select
+                                                    v-model="filterModel.value"
+                                                    :options="listDCxSQ"
+                                                    optionLabel="name"
+                                                    optionValue="code"
+                                                    placeholder="Select a period"
+                                                    class="w-full"
+                                                    @change="filterCallback()"
+                                                >
+                                                </Select>
+                                            </div>
+                                        </template>
+                                    </Column>
+                                    <Column field="sales_month" :showFilterMenu="false" sortable header="Sales Month" v-bind="tbStyle('main')">
+                                        <template #filter="{ filterModel, filterCallback }">
+                                            <div class="flex justify-center">
+                                                <Select
+                                                    v-model="filterModel.value"
+                                                    :options="listSalesMonths"
+                                                    placeholder="Select month"
+                                                    class="w-40"
+                                                    @change="
+                                                        () => {
+                                                            if (filterModel.value === 'All') {
+                                                                filterModel.value = null;
+                                                            }
+                                                            filterCallback();
+                                                        }
+                                                    "
+                                                >
+                                                    <template #value="{ value }">
+                                                        <span v-if="!value || value === 'All'" class="w-full text-center text-gray-500">
+                                                            Select month
+                                                        </span>
+                                                        <span
+                                                            v-else
+                                                            class="inline-block w-full rounded-full bg-blue-100 px-2 py-1 text-center text-xs font-semibold text-blue-800"
+                                                        >
+                                                            {{ capitalize(value) }}
+                                                        </span>
+                                                    </template>
+
+                                                    <template #option="{ option }">
+                                                        <span
+                                                            v-if="option === 'All'"
+                                                            class="inline-block w-full rounded-full bg-gray-100 px-2 py-1 text-center text-xs font-semibold text-gray-800"
+                                                        >
+                                                            All
+                                                        </span>
+                                                        <span
+                                                            v-else
+                                                            class="inline-block w-full rounded-full bg-blue-100 px-2 py-1 text-center text-xs font-semibold text-blue-800"
+                                                        >
+                                                            {{ capitalize(option) }}
+                                                        </span>
+                                                    </template>
+                                                </Select>
+                                            </div>
+                                        </template>
+                                    </Column>
+                                    <Column field="quantity" header="Quantity" sortable v-bind="tbStyle('main')" />
+                                    <Column field="total_raw_material" header="Total Raw Material" sortable v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            <span
+                                                :class="{
+                                                    'text-red-500': data.total_raw_material < 0,
+                                                    'text-green-500': data.total_raw_material > 0,
+                                                }"
+                                            >
+                                                {{ Number(data.total_raw_material).toLocaleString('id-ID') }}
+                                            </span>
+                                        </template>
+                                    </Column>
+                                    <Column field="total_process" header="Total Process" sortable v-bind="tbStyle('pr')">
+                                        <template #body="{ data }">
+                                            <span
+                                                :class="{
+                                                    'text-red-500': data.total_process < 0,
+                                                    'text-green-500': data.total_process > 0,
+                                                }"
+                                            >
+                                                {{ Number(data.total_process).toLocaleString('id-ID') }}
+                                            </span>
+                                        </template>
+                                    </Column>
+                                    <Column field="total" header="Total" sortable v-bind="tbStyle('fg')">
+                                        <template #body="{ data }">
+                                            <span
+                                                :class="{
+                                                    'text-red-500': data.total < 0,
+                                                    'text-green-500': data.total > 0,
+                                                }"
+                                            >
+                                                {{ Number(data.total).toLocaleString('id-ID') }}
                                             </span>
                                         </template>
                                     </Column>
