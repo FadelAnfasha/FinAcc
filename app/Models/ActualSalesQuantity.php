@@ -2,26 +2,29 @@
 
 namespace App\Models;
 
-use Faker\Provider\Biased;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class StandardMaterial extends Model
+class ActualSalesQuantity extends Model
 {
-    use HasFactory;
-
-    protected $table = 'standard_materials'; // pastikan nama tabel sesuai dengan yang ada di database
+    protected $table = 'actual_salesquantities'; // pastikan nama tabel sesuai dengan yang ada di database
     protected $primaryKey = 'item_code';
     public $incrementing = false; // jika item_no bukan auto-increment
     protected $keyType = 'string'; // jika item_no bukan integer
     protected $fillable = [
         'item_code',
-        'in_stock',
-        'item_group',
-        'price',
-        'manufacturer',
+        'jan_qty',
+        'feb_qty',
+        'mar_qty',
+        'apr_qty',
+        'may_qty',
+        'jun_qty',
+        'jul_qty',
+        'aug_qty',
+        'sep_qty',
+        'oct_qty',
+        'nov_qty',
+        'dec_qty',
     ];
-
     public function bom()
     {
         return $this->hasOne(BillOfMaterial::class, 'item_code', 'item_code');

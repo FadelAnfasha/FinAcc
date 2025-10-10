@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\standardMaterialController;
 use App\Http\Controllers\actualMaterialController;
+use App\Http\Controllers\actualSalesQuantityController;
 use App\Http\Controllers\SalesQuantityController;
 use App\Http\Controllers\ValveController;
 use Illuminate\Http\Request;
@@ -153,7 +154,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
 #==========================
-#======= BOM Route ========
+#===== Standard Cost ======
 #==========================
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/bom/masterStandard', [BOMController::class, 'standardMaster'])
@@ -172,6 +173,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/bom/update/SC', [BOMController::class, 'updateStandardCost'])->middleware('permission:Update_Report')->name('bom.updateSC');
     Route::post('/bom/update/AC', [BOMController::class, 'updateActualCost'])->middleware('permission:Update_Report')->name('bom.updateAC');
     Route::post('/bom/update/DC', [BOMController::class, 'updateDifferenceCost'])->middleware('permission:Update_Report')->name('bom.updateDC');
+    Route::post('/bom/update/DCxSQ', [BOMController::class, 'updateDCxSQ'])->middleware('permission:Update_Report')->name('bom.updateDCxSQ');
 
     Route::get('/bom/previewSC/{item_code}', action: [BOMController::class, 'previewSC'])->name('preview.sc');
     Route::get('/bom/previewAC/{item_code}', action: [BOMController::class, 'previewAC'])->name('preview.ac');
@@ -231,6 +233,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/valve/import-progress', function () {
         return response()->json([
             'progress' => Cache::get('import-progress-valve', 0),
+        ]);
+    });
+});
+
+#=============================
+#=======> Act. SlsQty ========
+#=============================
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/acsqty/import', [actualSalesQuantityController::class, 'import'])->middleware('permission:Update_MasterData')->name('acsqty.import');
+    Route::put('/acsqty/update/{id}', [actualSalesQuantityController::class, 'update'])->name('acsqty.update');
+    Route::delete('/acsqty/destroy/{id}', [actualSalesQuantityController::class, 'destroy'])->name('acsqty.destroy');
+    Route::get('/acsqty/import-progress', function () {
+        return response()->json([
+            'progress' => Cache::get('import-progress-acsqty', 0),
         ]);
     });
 });
