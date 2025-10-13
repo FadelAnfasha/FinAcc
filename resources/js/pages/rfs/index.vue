@@ -528,6 +528,7 @@ const resetForm = () => {
                 removableSort
                 paginator
                 :rows="10"
+                :rowsPerPageOptions="[5, 10, 15, 20]"
                 dataKey="id"
                 filterDisplay="row"
                 :loading="loading"
