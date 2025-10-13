@@ -831,12 +831,12 @@ const maxDate = ref(new Date());
 </script>
 
 <template>
-    <Head title="Bill of Material" />
+    <Head title="Standard Cost" />
     <AppLayout>
         <div class="p-6">
             <div class="flex flex-col gap-1">
-                <h2 class="mb-2 text-start text-3xl font-bold text-gray-900 dark:text-white">Bill of Material</h2>
-                <p class="text-start text-gray-600 dark:text-gray-400">Calculating Bill of Material</p>
+                <h2 class="mb-2 text-start text-3xl font-bold text-gray-900 dark:text-white">Standard Cost</h2>
+                <p class="text-start text-gray-600 dark:text-gray-400">Generate Standard Cost & Calculate Difference Cost</p>
             </div>
 
             <div class="mb-8">
