@@ -116,29 +116,29 @@ interface ComponentItem {
 }
 
 const lastUpdate = computed(() => {
-    const stamat_update = ((page.props.standardMaterial as any[]) ?? []).map((stamat) => new Date(stamat.updated_at));
-    const Max_stamatUpdate = stamat_update.length ? new Date(Math.max(...stamat_update.map((d) => d.getTime()))) : null;
-
-    const acmat_update = ((page.props.standardMaterial as any[]) ?? []).map((acmat) => new Date(acmat.updated_at));
-    const Max_acmatUpdate = acmat_update.length ? new Date(Math.max(...acmat_update.map((d) => d.getTime()))) : null;
+    const bom_update = ((page.props.billOfMaterials as any[]) ?? []).map((bom) => new Date(bom.updated_at));
+    const Max_bomUpdate = bom_update.length ? new Date(Math.max(...bom_update.map((d) => d.getTime()))) : null;
 
     const valve_update = ((page.props.valve as any[]) ?? []).map((valve) => new Date(valve.updated_at));
     const Max_valveUpdate = valve_update.length ? new Date(Math.max(...valve_update.map((d) => d.getTime()))) : null;
 
+    const stamat_update = ((page.props.standardMaterial as any[]) ?? []).map((stamat) => new Date(stamat.updated_at));
+    const Max_stamatUpdate = stamat_update.length ? new Date(Math.max(...stamat_update.map((d) => d.getTime()))) : null;
+
+    const acmat_update = ((page.props.actualMaterial as any[]) ?? []).map((acmat) => new Date(acmat.updated_at));
+    const Max_acmatUpdate = acmat_update.length ? new Date(Math.max(...acmat_update.map((d) => d.getTime()))) : null;
+
     const actualSalesQty_update = ((page.props.actualSalesQty as any[]) ?? []).map((actualSalesQty) => new Date(actualSalesQty.updated_at));
     const Max_actualSalesQtyUpdate = actualSalesQty_update.length ? new Date(Math.max(...actualSalesQty_update.map((d) => d.getTime()))) : null;
 
-    const bom_update = ((page.props.billOfMaterials as any[]) ?? []).map((bom) => new Date(bom.updated_at));
-    const Max_bomUpdate = bom_update.length ? new Date(Math.max(...bom_update.map((d) => d.getTime()))) : null;
-
-    return [Max_stamatUpdate, Max_acmatUpdate, Max_valveUpdate, Max_bomUpdate, Max_actualSalesQtyUpdate];
+    return [Max_bomUpdate, Max_valveUpdate, Max_stamatUpdate, Max_acmatUpdate, Max_actualSalesQtyUpdate];
 });
 
 const dataSource = [
+    'Share Others/Finacc/Bill of Material/Bill of Material (BOM)/bom_master.csv',
+    'Share Others/Finacc/Bill of Material/Valve Price (VP)/vp_master.csv',
     'Share Others/Finacc/Bill of Material/Standard Material Price/standardMat_master.csv',
     'Share Others/Finacc/Bill of Material/Actual Material Price/actualMat_master.csv',
-    'Share Others/Finacc/Bill of Material/Valve Price (VP)/vp_master.csv',
-    'Share Others/Finacc/Bill of Material/Bill of Material (BOM)/bom_master.csv',
     'Share Others/Finacc/Bill of Material/Bill of Material (BOM)/actualSalesQty_master.csv',
 ];
 
@@ -811,12 +811,25 @@ const props = defineProps({
 <template>
     <Toast group="br" position="bottom-right" />
 
-    <Head title="Bill of Material" />
+    <Head v-if="type === 'bom'" title="Bill of Material" />
+    <Head v-if="type === 'standardMaterial'" title="Standard Master Data" />
+    <Head v-if="type === 'actualMaterial'" title="Actual Master Data" />
+    <Head v-if="type === 'valve'" title="Valve Master Data" />
+    <Head v-if="type === 'actualMaterial'" title="Actual Master Data" />
+
     <AppLayout>
         <div class="m-6">
-            <div class="flex flex-col gap-1">
-                <h2 class="mb-2 text-start text-3xl font-bold text-gray-900 dark:text-white">Bill of Material</h2>
-                <p class="text-start text-gray-600 dark:text-gray-400">Calculating Bill of Material</p>
+            <div v-if="type === 'bom'" class="flex flex-col gap-1">
+                <h2 class="mb-2 text-start text-3xl font-bold text-gray-900 dark:text-white">Bill of Material & Valve</h2>
+                <p class="text-start text-gray-600 dark:text-gray-400">Bill of Material & Valve Master Data</p>
+            </div>
+            <div v-if="type === 'standardMaterial'" class="flex flex-col gap-1">
+                <h2 class="mb-2 text-start text-3xl font-bold text-gray-900 dark:text-white">Standard Material Price</h2>
+                <p class="text-start text-gray-600 dark:text-gray-400">Material Master Data</p>
+            </div>
+            <div v-if="type === 'actualMaterial'" class="flex flex-col gap-1">
+                <h2 class="mb-2 text-start text-3xl font-bold text-gray-900 dark:text-white">Actual Material Price & Sales Quantity</h2>
+                <p class="text-start text-gray-600 dark:text-gray-400">Material & Sales Master Data</p>
             </div>
 
             <!-- Header Section -->
@@ -1291,11 +1304,11 @@ const props = defineProps({
                                     <div class="text-right text-gray-700 dark:text-gray-300">
                                         <div>
                                             Last Update :
-                                            <span class="text-red-300">{{ lastUpdate[3] ? formatlastUpdate(lastUpdate[3]) : '-' }}</span>
+                                            <span class="text-red-300">{{ lastUpdate[0] ? formatlastUpdate(lastUpdate[0]) : '-' }}</span>
                                         </div>
                                         <div>
                                             Data source From :
-                                            <span class="text-cyan-400">{{ dataSource[3] }}</span>
+                                            <span class="text-cyan-400">{{ dataSource[0] }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1427,11 +1440,11 @@ const props = defineProps({
                                     <div class="text-right text-gray-700 dark:text-gray-300">
                                         <div>
                                             Last Update :
-                                            <span class="text-red-300">{{ lastUpdate[0] ? formatlastUpdate(lastUpdate[0]) : '-' }}</span>
+                                            <span class="text-red-300">{{ lastUpdate[2] ? formatlastUpdate(lastUpdate[2]) : '-' }}</span>
                                         </div>
                                         <div>
                                             Data source From :
-                                            <span class="text-cyan-400">{{ dataSource[0] }}</span>
+                                            <span class="text-cyan-400">{{ dataSource[2] }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1558,11 +1571,11 @@ const props = defineProps({
                                     <div class="text-right text-gray-700 dark:text-gray-300">
                                         <div>
                                             Last Update :
-                                            <span class="text-red-300">{{ lastUpdate[1] ? formatlastUpdate(lastUpdate[1]) : '-' }}</span>
+                                            <span class="text-red-300">{{ lastUpdate[3] ? formatlastUpdate(lastUpdate[3]) : '-' }}</span>
                                         </div>
                                         <div>
                                             Data source From :
-                                            <span class="text-cyan-400">{{ dataSource[1] }}</span>
+                                            <span class="text-cyan-400">{{ dataSource[3] }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1665,11 +1678,11 @@ const props = defineProps({
                                     <div class="text-right text-gray-700 dark:text-gray-300">
                                         <div>
                                             Last Update :
-                                            <span class="text-red-300">{{ lastUpdate[2] ? formatlastUpdate(lastUpdate[2]) : '-' }}</span>
+                                            <span class="text-red-300">{{ lastUpdate[1] ? formatlastUpdate(lastUpdate[1]) : '-' }}</span>
                                         </div>
                                         <div>
                                             Data source From :
-                                            <span class="text-cyan-400">{{ dataSource[2] }}</span>
+                                            <span class="text-cyan-400">{{ dataSource[1] }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1786,11 +1799,11 @@ const props = defineProps({
                                     <div class="text-right text-gray-700 dark:text-gray-300">
                                         <div>
                                             Last Update :
-                                            <span class="text-red-300">{{ lastUpdate[4] ? formatlastUpdate(lastUpdate[4]) : '-' }}</span>
+                                            <span class="text-red-300">{{ lastUpdate[3] ? formatlastUpdate(lastUpdate[3]) : '-' }}</span>
                                         </div>
                                         <div>
                                             Data source From :
-                                            <span class="text-cyan-400">{{ dataSource[4] }}</span>
+                                            <span class="text-cyan-400">{{ dataSource[3] }}</span>
                                         </div>
                                     </div>
                                 </div>
