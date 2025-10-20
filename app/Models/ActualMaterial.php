@@ -12,8 +12,33 @@ class ActualMaterial extends Model
     protected $keyType = 'string'; // jika item_no bukan integer
     protected $fillable = [
         'item_code',
-        'price',
+        'jan_price',
+        'jan_qty',
+        'feb_price',
+        'feb_qty',
+        'mar_price',
+        'mar_qty',
+        'apr_price',
+        'apr_qty',
+        'may_price',
+        'may_qty',
+        'jun_price',
+        'jun_qty',
+        'jul_price',
+        'jul_qty',
+        'aug_price',
+        'aug_qty',
+        'sep_price',
+        'sep_qty',
+        'oct_price',
+        'oct_qty',
+        'nov_price',
+        'nov_qty',
+        'dec_price',
+        'dec_qty',
+
     ];
+
     public function bom()
     {
         return $this->hasOne(BillOfMaterial::class, 'item_code', 'item_code');

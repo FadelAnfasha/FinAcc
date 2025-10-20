@@ -10,7 +10,7 @@ class DiffCostXSalesQty extends Model
 
     protected $fillable = [
         'item_code',
-        'difference_period',
+        'period',
         'sales_month',
         'quantity',
         'total_raw_material',

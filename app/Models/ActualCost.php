@@ -12,8 +12,7 @@ class ActualCost extends Model
     protected $keyType = 'string';
     protected $fillable = [
         'item_code',
-        'report_year',
-        'report_month',
+        'period',
         'disc_qty',
         'disc_code',
         'disc_price',
@@ -60,7 +59,7 @@ class ActualCost extends Model
         'wip_valve_price',
         'total_raw_material',
         'total_process',
-        'total'
+        'total',
     ];
 
     public function bom()

@@ -21,9 +21,7 @@ use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Auth;
-
-
-
+use PhpOffice\PhpSpreadsheet\Calculation\LookupRef\Offset;
 
 class BOMController extends Controller
 {
@@ -382,11 +380,9 @@ class BOMController extends Controller
 
         $validatedData = $request->validate([
             'year' => 'required|integer',
-            'month' => 'required|integer|min:1|max:12',
         ]);
 
-        $reportYear = $validatedData['year'];
-        $reportMonth = $validatedData['month'];
+        $period = $validatedData['year'];
 
         // Group data berdasarkan depth = 1 sebagai main, sisanya sebagai komponennya
         $groups = collect();
@@ -721,8 +717,7 @@ class BOMController extends Controller
             StandardCost::updateOrCreate(
                 [
                     'item_code' => $main->item_code,
-                    'report_year' => $reportYear,
-                    'report_month' => $reportMonth,
+                    'period' => $period,
                 ],
                 $data
             );
@@ -732,18 +727,104 @@ class BOMController extends Controller
 
     public function updateActualCost(Request $request)
     {
-        // Ambil semua data BOM yang sudah terurut
-        $bomData = BillOfMaterial::all();
-
         $validatedData = $request->validate([
+            'startMonth' => 'required|integer|min:1|max:12', // Angka bulan
+            'endMonth' => 'required|integer|min:1|max:12',   // Angka bulan
             'year' => 'required|integer',
-            'month' => 'required|integer|min:1|max:12',
         ]);
 
-        $reportYear = $validatedData['year'];
-        $reportMonth = $validatedData['month'];
+        $year = $validatedData['year'];
+        $month = $validatedData['endMonth'];
 
-        // Group data berdasarkan depth = 1 sebagai main, sisanya sebagai komponennya
+        $startMonthNumber = $validatedData['startMonth'];
+        $endMonthNumber = $validatedData['endMonth'];
+
+        $monthOrder = [
+            'jan',
+            'feb',
+            'mar',
+            'apr',
+            'may',
+            'jun',
+            'jul',
+            'aug',
+            'sep',
+            'oct',
+            'nov',
+            'dec',
+        ];
+
+        $convertToMMM = function ($monthNumber) {
+            $dateObj = \DateTime::createFromFormat('!m', $monthNumber);
+            return strtolower($dateObj->format('M'));
+        };
+
+        // Terapkan konversi ke format MMM
+        $startMonth = $convertToMMM($startMonthNumber);
+        $endMonth = $convertToMMM($endMonthNumber);
+
+        // Tentukan kolom yang akan di-select secara dinamis
+        $startIndex = array_search($startMonth, $monthOrder);
+        $endIndex = array_search($endMonth, $monthOrder);
+        $monthSlice = array_slice($monthOrder, $startIndex, $endIndex - $startIndex + 1);
+
+        if ($startMonth !== $endMonth) {
+            $period = "YTM-" . ucfirst($endMonth) . "'" . $year;
+        } else {
+            $period = ucfirst($startMonth) . "'" . $year;
+        }
+
+        $monthlyColumns = [];
+        foreach ($monthSlice as $month) {
+            $monthlyColumns[] = $month . '_price';
+            $monthlyColumns[] = $month . '_qty';
+        }
+
+        // Pastikan item_code dan foreign key ada di selectColumns
+        $selectColumns = array_merge(['item_code'], $monthlyColumns);
+
+        $materialPrices = ActualMaterial::select($selectColumns)->get();
+        $calculatedPrices = collect();
+        foreach ($materialPrices as $material) {
+            $totalAmount = 0; // Total Harga
+            $totalQuantity = 0; // Total Kuantitas (penyebut)
+
+            // 3. Iterasi dinamis pada pasangan kolom bulan
+            foreach ($monthSlice as $month) {
+                $priceKey = $month . '_price';
+                $qtyKey = $month . '_qty';
+                // dump($priceKey, $qtyKey);
+
+                // Ambil nilai harga dan kuantitas. Gunakan null-coalescing untuk menghindari error jika data null.
+                // Konversi ke float/int untuk memastikan perhitungan yang benar.
+                $price = (float)($material->{$priceKey} ?? 0);
+                $qty = (float)($material->{$qtyKey} ?? 0);
+
+                // Tambahkan ke total
+                $totalAmount += $price;
+                $totalQuantity += $qty;
+            }
+            // dump($totalAmount, $totalQuantity);
+
+
+            $weightedAveragePrice = 0;
+
+            // 4. Hitung Rata-Rata Harga Tertimbang
+            if ($totalQuantity > 0) {
+                $weightedAveragePrice = $totalAmount / $totalQuantity;
+            }
+            $priceMap = $calculatedPrices->keyBy('item_code');
+            // Masukkan hasil perhitungan ke koleksi baru
+            $calculatedPrices->push([
+                'item_code' => $material->item_code,
+                'avg_price' => round($weightedAveragePrice, 4), // Bulatkan untuk kerapihan
+            ]);
+        }
+
+        // Ambil data BOM
+        $bomData = BillOfMaterial::all();
+
+        // Grouping Logika (Disimpan sama)
         $groups = collect();
         $currentGroup = collect();
 
@@ -762,7 +843,6 @@ class BOMController extends Controller
             $groups->push($currentGroup);
         }
 
-        // Tambahkan properti type_name pada main item & cari komponennya berdasarkan tipe
         foreach ($groups as $group) {
             $main = $group->first();
             $typeChar = substr($main->item_code, 3, 1);
@@ -887,9 +967,22 @@ class BOMController extends Controller
             $main = $group->first(); // FG
             $main->load(['processCost', 'actualMaterial']);
 
-            $disc_price = ceil((($group->disc->actualMaterial->price ?? 0) * $group->disc?->quantity ?? 0) * 100) / 100;
-            $rim_price = ceil((($group->rim->actualMaterial->price ?? 0) * $group->rim?->quantity ?? 0) * 100) / 100;
-            $sidering_price = ceil((($group->sidering->actualMaterial->price ?? 0) * $group->sidering?->quantity ?? 0) * 100) / 100;
+            $disc_item_code = $group->disc?->actualMaterial?->item_code;
+            $disc_avg_price = $disc_item_code ? ($priceMap[$disc_item_code]['avg_price'] ?? 0) : 0;
+            $disc_price = ceil(($disc_avg_price * ($group->disc?->quantity ?? 0)) * 100) / 100;
+
+            $rim_item_code = $group->rim?->actualMaterial?->item_code;
+            $rim_avg_price = $rim_item_code ? ($priceMap[$rim_item_code]['avg_price'] ?? 0) : 0;
+            $rim_price = ceil(($rim_avg_price * ($group->rim?->quantity ?? 0)) * 100) / 100;
+
+            $sidering_item_code = $group->sidering?->actualMaterial?->item_code;
+            $sidering_avg_price = $sidering_item_code ? ($priceMap[$sidering_item_code]['avg_price'] ?? 0) : 0;
+            $sidering_price = ceil(($sidering_avg_price * ($group->sidering?->quantity ?? 0)) * 100) / 100;
+
+
+            // $disc_price = ceil((($group->disc->actualMaterial->price ?? 0) * $group->disc?->quantity ?? 0) * 100) / 100;
+            // $rim_price = ceil((($group->rim->actualMaterial->price ?? 0) * $group->rim?->quantity ?? 0) * 100) / 100;
+            // $sidering_price = ceil((($group->sidering->actualMaterial->price ?? 0) * $group->sidering?->quantity ?? 0) * 100) / 100;
 
             // $disc_price = $group->disc->materialInfo->standardPrice ?? 0;
             // $rim_price = $group->rim->materialInfo->standardPrice ?? 0;
@@ -1072,30 +1165,29 @@ class BOMController extends Controller
             ActualCost::updateOrCreate(
                 [
                     'item_code' => $main->item_code,
-                    'report_year' => $reportYear,
-                    'report_month' => $reportMonth,
+                    'period' => $period,
                 ],
                 $data
             );
         }
+
         return redirect()->route('bom.report');
     }
 
     public function updateDifferenceCost(Request $request)
     {
         $validatedData = $request->validate([
-            'standard_year' => 'required',
-            'standard_month' => 'required|min:1|max:12',
-            'actual_year' => 'required',
-            'actual_month' => 'required|min:1|max:12',
+            'standard_period' => 'required',
+            'actual_period' => 'required',
         ]);
-        $standardCost = StandardCost::where('report_year', $validatedData['standard_year'])
-            ->where('report_month', $validatedData['standard_month'])
+        $standardCost = StandardCost::where('period', $validatedData['standard_period'])
+            // ->take(10)
             ->get();
 
-        $actualCost = ActualCost::where('report_year', $validatedData['actual_year'])
-            ->where('report_month', $validatedData['actual_month'])
+        $actualCost = ActualCost::where('period', $validatedData['actual_period'])
+            // ->take(10)
             ->get();
+
 
         $differenceCosts = [];
         $processedItemCodes = [];
@@ -1106,10 +1198,7 @@ class BOMController extends Controller
             if ($ac) {
                 $differenceCosts[] = [
                     'item_code' => $sc->item_code,
-                    'standard_year' => $validatedData['standard_year'],
-                    'standard_month' => $validatedData['standard_month'],
-                    'actual_year' => $validatedData['actual_year'],
-                    'actual_month' => $validatedData['actual_month'],
+                    'period' => $validatedData['actual_period'],
                     'total_raw_material' => $sc->total_raw_material - $ac->total_raw_material,
                     'total_process' => $sc->total_process - $ac->total_process,
                     'total' => $sc->total - $ac->total,
@@ -1120,10 +1209,7 @@ class BOMController extends Controller
             } else {
                 $differenceCosts[] = [
                     'item_code' => $sc->item_code,
-                    'standard_year' => $validatedData['standard_year'],
-                    'standard_month' => $validatedData['standard_month'],
-                    'actual_year' => $validatedData['actual_year'],
-                    'actual_month' => $validatedData['actual_month'],
+                    'period' => $validatedData['actual_period'],
                     'total_raw_material' => $sc->total_raw_material,
                     'total_process' => $sc->total_process,
                     'total' => $sc->total,
@@ -1138,10 +1224,7 @@ class BOMController extends Controller
         foreach ($onlyActualCost as $ac) {
             $differenceCosts[] = [
                 'item_code' => $ac->item_code,
-                'standard_year' => $validatedData['standard_year'],
-                'standard_month' => $validatedData['standard_month'],
-                'actual_year' => $validatedData['actual_year'],
-                'actual_month' => $validatedData['actual_month'],
+                'period' => $validatedData['actual_period'],
                 'total_raw_material' => 0 - $ac->total_raw_material,
                 'total_process' => 0 - $ac->total_process,
                 'total' => 0 - $ac->total,
@@ -1151,23 +1234,20 @@ class BOMController extends Controller
         }
 
         // Simpan ke database menggunakan upsert
-        DifferenceCost::upsert($differenceCosts, ['item_code', 'standard_year', 'standard_month', 'actual_year', 'actual_month'], ['total_raw_material', 'total_process', 'total']);
+        DifferenceCost::upsert($differenceCosts, ['item_code', 'period'], ['total_raw_material', 'total_process', 'total']);
     }
 
     public function updateDCxSQ(Request $request)
     {
+        // dd($request->all());
         $now = Carbon::now();
         $validatedData = $request->validate([
-            'standard_year' => 'required',
-            'standard_month' => 'required|min:1|max:12',
-            'actual_year' => 'required',
-            'actual_month' => 'required|min:1|max:12',
+            'period' => 'required',
             'sales_period' => 'required',
         ]);
 
         $salesPeriodColumn = $validatedData['sales_period'];
 
-        // --- 1. Ambil Data dan Kalkulasi ---
         $dc = DifferenceCost::select(
             'difference_cost.item_code',
             'difference_cost.total_raw_material',
@@ -1175,54 +1255,34 @@ class BOMController extends Controller
             'difference_cost.total',
             DB::raw("COALESCE(acs.{$salesPeriodColumn}, 0) as month_qty")
         )
-            ->where('difference_cost.standard_year', $validatedData['standard_year'])
-            ->where('difference_cost.standard_month', $validatedData['standard_month'])
-            ->where('difference_cost.actual_year', $validatedData['actual_year'])
-            ->where('difference_cost.actual_month', $validatedData['actual_month'])
+            ->where('difference_cost.period', $validatedData['period'])
             ->leftJoin('actual_salesquantities as acs', 'difference_cost.item_code', '=', 'acs.item_code')
             ->get();
 
-        // --- 2. Format Periode ---
-        $standardMonthAbbr = \DateTime::createFromFormat('m', $validatedData['standard_month'])->format('M');
-        $standardPeriod = $standardMonthAbbr . "'" . $validatedData['standard_year'];
-
-        $actualMonthAbbr = \DateTime::createFromFormat('m', $validatedData['actual_month'])->format('M');
-        $actualPeriod = $actualMonthAbbr . "'" . $validatedData['actual_year'];
-
-        $difference_period = $standardPeriod . ' - ' . $actualPeriod;
-
         $salesPeriodTemp = str_replace('_qty', '', $salesPeriodColumn);
-        $salesMonth = ucfirst($salesPeriodTemp); // Mengambil nilai kolom Sales Month
+        $salesMonth = ucfirst($salesPeriodTemp);
+        $period = $validatedData['period'] . ' / ' . $salesMonth;
 
-        // --- 3. Perhitungan dan Persiapan Array untuk Insert/Update ---
-        $dataToInsert = $dc->map(function ($item) use ($difference_period, $salesMonth, $now) {
+        $dataToInsert = $dc->map(function ($item) use ($validatedData, $salesMonth, $period, $now) {
             $data = $item->toArray();
             $qty = $data['month_qty'];
 
-            // Lakukan Perkalian
             $data['total_raw_material'] = $data['total_raw_material'] * $qty;
             $data['total_process']      = $data['total_process'] * $qty;
             $data['total']              = $data['total'] * $qty;
 
             // Tambahkan kolom KUNCI UNIK dan data lain
-            $data['difference_period'] = $difference_period;
-            $data['sales_month'] = $salesMonth;
-            $data['quantity'] = $qty; // Ini juga perlu diupdate
+            $data['period'] = $period;
+            $data['quantity'] = $qty;
             $data['created_at'] = $now;
             $data['updated_at'] = $now;
 
             unset($data['month_qty']);
-
             return $data;
         })->toArray();
 
         if (!empty($dataToInsert)) {
-            // ✅ PERUBAHAN UTAMA: Menggunakan upsert()
-
-            // Kunci Unik (uniqueBy): Item Code, Difference Period, Sales Month
-            $uniqueKeys = ['item_code', 'difference_period', 'sales_month'];
-
-            // Kolom yang akan diupdate jika duplikat ditemukan
+            $uniqueKeys = ['item_code', 'period', 'sales_month'];
             $updateColumns = ['total_raw_material', 'total_process', 'total', 'quantity', 'updated_at'];
 
             DiffCostXSalesQty::upsert(

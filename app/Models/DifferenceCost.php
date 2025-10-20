@@ -9,10 +9,7 @@ class DifferenceCost extends Model
     protected $table = 'difference_cost';
     protected $fillable = [
         'item_code',
-        'standard_year',
-        'standard_month',
-        'actual_year',
-        'actual_month',
+        'period',
         'total_raw_material',
         'total_process',
         'total'
