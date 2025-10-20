@@ -8,35 +8,71 @@ use Illuminate\Support\Facades\Cache;
 
 class actualMaterialController extends Controller
 {
+
+    private function cleanValue($value)
+    {
+        $cleaned = trim($value);
+        $cleaned = str_replace(',', '.', $cleaned);
+
+        return is_numeric($cleaned) ? (float)$cleaned : 0;
+    }
+
+    private function getInvalidItemData($itemCode, $row, $reason)
+    {
+        return [
+            'item_code' => $itemCode,
+            'jan_price' => $row[2],
+            'jan_qty' => $row[3],
+            'feb_price' => $row[4],
+            'feb_qty' => $row[5],
+            'mar_price' => $row[6],
+            'mar_qty' => $row[7],
+            'apr_price' => $row[8],
+            'apr_qty' => $row[9],
+            'may_price' => $row[10],
+            'may_qty' => $row[11],
+            'jun_price' => $row[12],
+            'jun_qty' => $row[13],
+            'jul_price' => $row[14],
+            'jul_qty' => $row[15],
+            'aug_price' => $row[16],
+            'aug_qty' => $row[17],
+            'sep_price' => $row[18],
+            'sep_qty' => $row[19],
+            'oct_price' => $row[20],
+            'oct_qty' => $row[21],
+            'nov_price' => $row[22],
+            'nov_qty' => $row[23],
+            'dec_price' => $row[24],
+            'dec_qty' => $row[25],
+            'reason' => $reason
+        ];
+    }
+
     public function import(Request $request)
     {
-        // --- Langkah 1: Validasi File yang Diunggah ---
         $request->validate([
             'file' => 'required|mimes:csv,txt'
         ]);
 
         $file = $request->file('file');
 
-        // --- Langkah 2: Inisialisasi Variabel untuk Hasil Impor ---
+        $itemsToUpsert = [];
         $addedItems = [];
         $invalidItems = [];
         $codeCounts = [];
-        // Variabel $nameCounts tidak digunakan, jadi dihapus
 
-        // --- Langkah 3: Membaca File CSV ---
         $csvData = [];
         if (($handle = fopen($file->getRealPath(), 'r')) !== FALSE) {
             $delimiter = ';';
 
-            // Lewati header
             $header = fgetcsv($handle, 1000, $delimiter);
 
             while (($row = fgetcsv($handle, 1000, $delimiter)) !== FALSE) {
-                // Asumsi file CSV memiliki 2 kolom data: 'item_code' dan 'description'
-                if (count($row) >= 3) {
+                if (count($row) >= 26) {
                     $csvData[] = $row;
                 } else {
-                    $invalidItems[] = implode(';', $row) . ' (Invalid row format)';
+                    $invalidItems[] = implode(';', $row) . ' (Invalid row format. Expected 26 columns.)';
                 }
             }
             fclose($handle);
@@ -44,73 +80,107 @@ class actualMaterialController extends Controller
             return redirect()->route('bom.masterActual')->withErrors(['file' => 'Failed to open the CSV file.']);
         }
 
-        // --- Langkah 4: Validasi Awal Jumlah Data ---
         $total = count($csvData);
         if ($total === 0) {
             return redirect()->route('bom.masterActual')->withErrors(['file' => 'The CSV file is empty.']);
         }
 
-        // --- Langkah 5: Mengosongkan tabel Material sebelum impor ---
-        actualMaterial::truncate();
-
-        // --- Langkah 6: Validasi duplikasi dalam file ---
         foreach ($csvData as $row) {
-            $itemCode = trim($row[1]); // Asumsi item_code di kolom pertama
+            $itemCode = trim($row[1]);
             if (!empty($itemCode)) {
                 $codeCounts[$itemCode] = ($codeCounts[$itemCode] ?? 0) + 1;
             }
         }
 
-        // --- Langkah 7: Proses Impor dan Validasi Item Code ---
+        $updateColumns = [
+            'jan_price',
+            'jan_qty',
+            'feb_price',
+            'feb_qty',
+            'mar_price',
+            'mar_qty',
+            'apr_price',
+            'apr_qty',
+            'may_price',
+            'may_qty',
+            'jun_price',
+            'jun_qty',
+            'jul_price',
+            'jul_qty',
+            'aug_price',
+            'aug_qty',
+            'sep_price',
+            'sep_qty',
+            'oct_price',
+            'oct_qty',
+            'nov_price',
+            'nov_qty',
+            'dec_price',
+            'dec_qty',
+            'updated_at'
+        ];
+
         foreach ($csvData as $index => $row) {
             $itemCode = trim($row[1]);
-            $price = trim($row[2]);
 
-            // Regex untuk validasi format item_code
-            // Kriteria:
-            // 1. Terdiri dari 6 digit
-            // 2. Dimulai dengan huruf 'F'
-            // 3. Digit ke-2 & ke-3 adalah angka 15-24
-            // 4. Digit ke-4 adalah huruf 'D', 'N', 'W', 'R', atau 'T'
-            // 5. Digit ke-5 & ke-6 adalah angka 00-99 (running number)
             if (!preg_match('/^RF[DRS]\d{3}$/', $itemCode)) {
-                $invalidItems[] = [
-                    'item_code' => $itemCode,
-                    'price' => $price,
-                    'reason' => 'Invalid item code format.'
-                ];
+                $invalidItems[] = $this->getInvalidItemData($itemCode, $row, 'Invalid item code format.');
                 continue;
             }
 
-            // Pengecekan duplikasi dalam file
             if (($codeCounts[$itemCode] ?? 0) > 1) {
-                $invalidItems[] = [
-                    'item_code' => $itemCode,
-                    'price' => $price,
-                    'reason' => 'Duplicate in file.'
-                ];
-                // Lanjutkan ke baris berikutnya, jangan simpan duplikat
+                $invalidItems[] = $this->getInvalidItemData($itemCode, $row, 'Duplicate in file.');
                 continue;
             }
 
-            // --- Langkah 8: Menyimpan data yang valid ke database ---
-            actualMaterial::create([
+            $itemsToUpsert[] = [
                 'item_code' => $itemCode,
-                'price' => $price,
-            ]);
-            $addedItems[] = $itemCode;
+                'jan_price' => $this->cleanValue($row[2]),
+                'jan_qty' => $this->cleanValue($row[3]),
+                'feb_price' => $this->cleanValue($row[4]),
+                'feb_qty' => $this->cleanValue($row[5]),
+                'mar_price' => $this->cleanValue($row[6]),
+                'mar_qty' => $this->cleanValue($row[7]),
+                'apr_price' => $this->cleanValue($row[8]),
+                'apr_qty' => $this->cleanValue($row[9]),
+                'may_price' => $this->cleanValue($row[10]),
+                'may_qty' => $this->cleanValue($row[11]),
+                'jun_price' => $this->cleanValue($row[12]),
+                'jun_qty' => $this->cleanValue($row[13]),
+                'jul_price' => $this->cleanValue($row[14]),
+                'jul_qty' => $this->cleanValue($row[15]),
+                'aug_price' => $this->cleanValue($row[16]),
+                'aug_qty' => $this->cleanValue($row[17]),
+                'sep_price' => $this->cleanValue($row[18]),
+                'sep_qty' => $this->cleanValue($row[19]),
+                'oct_price' => $this->cleanValue($row[20]),
+                'oct_qty' => $this->cleanValue($row[21]),
+                'nov_price' => $this->cleanValue($row[22]),
+                'nov_qty' => $this->cleanValue($row[23]),
+                'dec_price' => $this->cleanValue($row[24]),
+                'dec_qty' => $this->cleanValue($row[25]),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
 
-            // --- Langkah 9: Memperbarui progres impor ---
             $progress = intval(($index + 1) / $total * 100);
             Cache::put('import-progress-actualMat', $progress, now()->addMinutes(5));
         }
 
-        // Setelah loop selesai, set progres ke 100%.
+        if (!empty($itemsToUpsert)) {
+            actualMaterial::upsert(
+                $itemsToUpsert,
+                ['item_code'],
+                $updateColumns
+            );
+
+            $addedItems = array_column($itemsToUpsert, 'item_code');
+        }
+
         Cache::put('import-progress-actualMat', 100, now()->addMinutes(5));
 
-        // --- Langkah 10: Mengalihkan (Redirect) dengan hasil impor ---
         return redirect()->route('bom.masterActual')->with([
-            'success' => 'CSV import process completed!',
+            'success' => 'CSV import process completed! ' . count($addedItems) . ' records processed.',
             'addedItems' => $addedItems,
             'invalidItems' => $invalidItems
         ]);
@@ -118,9 +188,7 @@ class actualMaterialController extends Controller
 
     public function update(Request $request, $item_code)
     {
-        // Validasi input
         $request->validate([
-            // 'item_desc' => 'required',
             'in_stock' => 'required',
             'item_group' => 'required',
             'price' => 'required'
@@ -129,14 +197,12 @@ class actualMaterialController extends Controller
         $in_stock = $request->input('in_stock');
         $price = $request->input('price');
 
-        // Temukan material berdasarkan item_code dan perbarui
         $material = actualMaterial::findOrFail($item_code);
 
         $material->update([
-            // 'item_desc' => $request->input('item_desc'),
             'in_stock' => $in_stock,
             'item_group' => $request->input('item_group'),
-            'price' => $price, // Menggunakan nilai price yang sudah diolah
+            'price' => $price,
         ]);
 
         redirect()->route(route: 'pc.master');
@@ -161,7 +227,6 @@ class actualMaterialController extends Controller
         ]);
 
 
-        // Generate item_code
         $type = $request->input('type');
         $prefix = 'RF' . strtoupper(substr($type, 0, 1));
         $materials = actualMaterial::where('item_code', 'like', $prefix . '%')->orderBy('item_code', 'asc')->get();
@@ -183,11 +248,8 @@ class actualMaterialController extends Controller
 
         $item_code = $prefix . $newNumber;
 
-        // dd($item_code, $in_stock, $price);
-        // Create new material
         actualMaterial::create([
             'item_code' => $item_code,
-            // 'item_desc' => $request->input('item_desc'),
             'in_stock' => $in_stock,
             'item_group' => $request->input('item_group'),
             'price' => $price,

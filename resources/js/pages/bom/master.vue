@@ -33,6 +33,7 @@ const page = usePage();
 const filters = ref({
     item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
     description: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    'bom.description': { value: null, matchMode: FilterMatchMode.CONTAINS },
 });
 const loading = ref(false);
 
@@ -754,7 +755,6 @@ function viewComponents(bom: any) {
         },
     );
 }
-
 const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('id-ID', {
         style: 'currency',
@@ -1541,7 +1541,7 @@ const props = defineProps({
                         <TabPanel v-if="type === 'actualMaterial'" value="2">
                             <section ref="matSection" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
-                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Actual Material Price</h2>
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Actual Material Used</h2>
 
                                     <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
                                         <FileUpload
@@ -1612,33 +1612,156 @@ const props = defineProps({
                                                 class="w-full"
                                             /> </template
                                     ></Column>
-                                    <Column field="description" sortable header="Description" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
-                                        <template #body="{ data }">
-                                            {{ data?.bom?.description ?? '-' }}
-                                        </template>
-                                    </Column>
-
-                                    <Column field="price" header="Actual Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
-                                        <template #body="{ data }">
-                                            {{ formatCurrency(data.price) }}
-                                        </template>
-                                    </Column>
-
-                                    <Column field="created_at_formatted" sortable header="Added at" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
-                                        <template #body="slotProps">
-                                            {{ formatDate(slotProps.data.created_at) }}
-                                        </template>
-                                    </Column>
-
                                     <Column
-                                        field="updated_at_formatted"
+                                        field="bom.description"
+                                        header="Name"
+                                        :showFilterMenu="false"
                                         sortable
-                                        header="Updated at"
                                         :headerStyle="headerStyle"
                                         :bodyStyle="bodyStyle"
                                     >
-                                        <template #body="slotProps">
-                                            {{ formatDate(slotProps.data.updated_at) }}
+                                        <template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search description"
+                                                class="w-full"
+                                            />
+                                        </template>
+                                        <template #body="{ data }">
+                                            {{ data.bom ? data.bom.description : 'N/A' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="jan_price" header="January Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.jan_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="jan_qty" header="January (pcs)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.jan_qty).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="feb_price" header="February Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.feb_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="feb_qty" header="February (pcs)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.feb_qty).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="mar_price" header="March Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.mar_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="mar_qty" header="March (pcs)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.mar_qty).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="apr_price" header="April Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.apr_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="apr_qty" header="April (pcs)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.apr_qty).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="may_price" header="May Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.may_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="may_qty" header="May (pcs)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.may_qty).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="jun_price" header="June Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.jun_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="jun_qty" header="June (pcs)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.jun_qty).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="jul_price" header="July Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.jul_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="jul_qty" header="July (pcs)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.jul_qty).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="aug_price" header="August Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.aug_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="aug_qty" header="August (pcs)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.aug_qty).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="sep_price" header="September Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.sep_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="sep_qty" header="September (pcs)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.sep_qty).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="oct_price" header="October Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.oct_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="oct_qty" header="October (pcs)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.oct_qty).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="nov_price" header="November Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.nov_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="nov_qty" header="November (pcs)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.nov_qty).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="dec_price" header="December Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.dec_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="dec_qty" header="December (pcs)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.dec_qty).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
                                 </DataTable>
@@ -1769,7 +1892,7 @@ const props = defineProps({
                         <TabPanel v-if="type === 'actualMaterial'" value="4">
                             <section ref="matSection" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
-                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Actual Sales Quantity</h2>
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Actual Material Quantity</h2>
 
                                     <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
                                         <FileUpload
@@ -1849,32 +1972,21 @@ const props = defineProps({
 
                                     <Column field="jan_qty" sortable header="January (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                     </Column>
-
                                     <Column field="feb_qty" sortable header="February (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                     </Column>
-
                                     <Column field="mar_qty" sortable header="March (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle"> </Column>
-
                                     <Column field="apr_qty" sortable header="April (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle"> </Column>
-
                                     <Column field="may_qty" sortable header="May (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle"> </Column>
-
                                     <Column field="jun_qty" sortable header="June (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle"> </Column>
-
                                     <Column field="jul_qty" sortable header="July (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle"> </Column>
-
                                     <Column field="aug_qty" sortable header="August (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                     </Column>
-
                                     <Column field="sep_qty" sortable header="September (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                     </Column>
-
                                     <Column field="oct_qty" sortable header="October (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                     </Column>
-
                                     <Column field="nov_qty" sortable header="November (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                     </Column>
-
                                     <Column field="dec_qty" sortable header="December (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                     </Column>
                                 </DataTable>
