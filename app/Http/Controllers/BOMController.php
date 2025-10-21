@@ -375,7 +375,6 @@ class BOMController extends Controller
 
     public function updateStandardCost(Request $request)
     {
-        // Ambil semua data BOM yang sudah terurut
         $bomData = BillOfMaterial::all();
 
         $validatedData = $request->validate([

@@ -680,7 +680,7 @@ function confirmUpdate() {
         // Validasi: Pastikan nilai tidak kosong
         if (!monthRange.value) {
             // Hapus month.value yang tidak lagi digunakan
-            validationErrors.value.sac = 'Year selection cannot be empty.';
+            validationErrors.value.sac = 'Period selection cannot be empty.';
             return;
         }
 
@@ -889,6 +889,16 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                         :selectionMode="currentSelectionMode"
                                         :maxDate="maxDate"
                                         :placeholder="selectionModeType === 'range' ? 'Start Month - End Month' : 'Single Month'"
+                                    />
+                                </div>
+                                <div v-if="updateType === 'standardCost'" class="flex-1">
+                                    <DatePicker
+                                        v-model="year"
+                                        view="year"
+                                        dateFormat="yy"
+                                        :selectionMode="currentSelectionMode"
+                                        :maxDate="maxDate"
+                                        placeholder="Select year"
                                     />
                                 </div>
                             </div>
