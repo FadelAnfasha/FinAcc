@@ -2250,8 +2250,6 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                         </template>
                                     </Column>
 
-                                    <Column field="timeRange" sortable header="Time Range" v-bind="tbStyle('fg')" />
-
                                     <Column field="action" header="Action" :exportable="false" v-bind="tbStyle('fg')">
                                         <template #body="data">
                                             <div class="flex gap-2">
