@@ -261,9 +261,42 @@ const listActualPeriod = computed(() => {
     const allPeriods = ((page.props.ac as any[]) ?? []).map((item) => item.period);
 
     const uniquePeriods = Array.from(new Set(allPeriods)).filter((p) => p !== null && p !== undefined) as string[];
+
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    const parsePeriodToDate = (periodString: string) => {
+        // Hapus 'YTM-' jika ada, dan bersihkan spasi
+        const cleanedPeriod = periodString.replace('YTM-', '').trim();
+
+        // Pisahkan menjadi [Bulan, Tahun] (ex: "Sep'2025" -> ['Sep', '2025'])
+        const parts = cleanedPeriod.split("'");
+
+        if (parts.length < 2) {
+            // Tangani string yang tidak valid
+            return new Date(0);
+        }
+
+        const monthYearPart = parts[0].trim();
+        const yearPart = parts[1].trim();
+
+        const monthIndex = monthNames.findIndex((m) => m === monthYearPart);
+        const year = parseInt(yearPart, 10);
+
+        if (monthIndex === -1 || isNaN(year)) {
+            // Jika parsing gagal, kembalikan nilai tanggal default
+            return new Date(0);
+        }
+
+        // Kembalikan objek Date (tanggal 1 bulan tersebut)
+        return new Date(year, monthIndex, 1);
+    };
+
     uniquePeriods.sort((a, b) => {
-        if (a < b) return 1;
-        if (a > b) return -1;
+        const dateA = parsePeriodToDate(a);
+        const dateB = parsePeriodToDate(b);
+
+        if (dateA > dateB) return 1;
+        if (dateA < dateB) return -1;
         return 0;
     });
 

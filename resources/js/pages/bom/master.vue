@@ -24,6 +24,7 @@ import { computed, nextTick, ref, Ref, watch } from 'vue';
 
 const dtSTAMAT = ref();
 const dtACMAT = ref();
+const dtACSQTY = ref();
 const dtBOM = ref();
 const dtPACK = ref();
 const dtPROC = ref();
@@ -385,7 +386,7 @@ function startPollingProgress(type: 'stamat' | 'acmat' | 'pack' | 'proc' | 'valv
     }, 1000);
 }
 
-function exportCSV(type: 'stamat' | 'acmat' | 'bom' | 'pack' | 'proc' | 'valve') {
+function exportCSV(type: 'stamat' | 'acmat' | 'bom' | 'pack' | 'proc' | 'valve' | 'acsqty') {
     let $type = null;
     let $filename = null;
     if (type === 'stamat') {
@@ -402,17 +403,19 @@ function exportCSV(type: 'stamat' | 'acmat' | 'bom' | 'pack' | 'proc' | 'valve')
         $filename = 'proc';
     } else if (type === 'bom') {
         $type = dtBOM.value;
-        $filename = 'cycle-times';
-
-        if (!$type) return;
-
-        const exportFilename = `${$filename}-${new Date().toISOString().slice(0, 10)}.csv`;
-
-        $type.exportCSV({
-            selectionOnly: false,
-            filename: exportFilename,
-        });
+        $filename = 'bom_raw';
+    } else if (type === 'acsqty') {
+        $type = dtACSQTY.value;
+        $filename = 'Actual Sales Quantity';
     }
+    if (!$type) return;
+
+    const exportFilename = `${$filename}-${new Date().toISOString().slice(0, 10)}.csv`;
+
+    $type.exportCSV({
+        selectionOnly: false,
+        filename: exportFilename,
+    });
 }
 
 function formatDate(dateStr: string): string {
@@ -1464,7 +1467,7 @@ const props = defineProps({
                                     :loading="loading"
                                     :globalFilterFields="['item_code']"
                                     class="text-md"
-                                    ref="dtMAT"
+                                    ref="dtSTAMAT"
                                 >
                                     <Column
                                         field="item_code"
@@ -1595,7 +1598,7 @@ const props = defineProps({
                                     :loading="loading"
                                     :globalFilterFields="['item_code']"
                                     class="text-md"
-                                    ref="dtMAT"
+                                    ref="dtACMAT"
                                 >
                                     <Column
                                         field="item_code"
@@ -1786,16 +1789,6 @@ const props = defineProps({
                                             @select="(event) => handleCSVImport(event, 'valve')"
                                             class="w-full sm:w-auto"
                                         />
-
-                                        <div class="flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row">
-                                            <Button
-                                                icon="pi pi-download"
-                                                label=" Export"
-                                                unstyled
-                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 sm:w-28"
-                                                @click="exportCSV('valve')"
-                                            />
-                                        </div>
                                     </div>
 
                                     <div class="text-right text-gray-700 dark:text-gray-300">
@@ -1914,7 +1907,7 @@ const props = defineProps({
                                                 label=" Export"
                                                 unstyled
                                                 class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 sm:w-28"
-                                                @click="exportCSV('acmat')"
+                                                @click="exportCSV('acsqty')"
                                             />
                                         </div>
                                     </div>
@@ -1946,7 +1939,7 @@ const props = defineProps({
                                     :loading="loading"
                                     :globalFilterFields="['item_code']"
                                     class="text-md"
-                                    ref="dtMAT"
+                                    ref="dtACSQTY"
                                 >
                                     <Column
                                         field="item_code"
