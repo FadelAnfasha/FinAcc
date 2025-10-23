@@ -42,8 +42,7 @@ const selectActualPeriod = ref<ActualPeriod | null>(null);
 const selectDifferencePeriod = ref<DifferencePeriod | null>(null);
 const selectSalesPeriod = ref<SalesPeriod | null>(null);
 const selectDCxSQPeriod = ref<DCxSQPeriod | null>(null);
-const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const type = ['All', 'Disc', 'Sidering', 'Wheel'];
+const type = ['Disc', 'Sidering', 'Wheel'];
 const updateReportDialog = ref(false);
 const updateConstDialog = ref(false);
 type UpdateStatus = 'idle' | 'updating' | 'done';
@@ -149,6 +148,153 @@ const dcxsq = computed(() =>
         no: index + 1,
     })),
 );
+
+const totalRawMaterial = computed(() => {
+    const periodFilter = filtersDCxSQ.value?.period;
+    const selectedPeriod = periodFilter ? periodFilter.value : '';
+
+    // =======================================================
+    // ⭐️ PEMERIKSAAN UTAMA: JIKA FILTER KOSONG, KEMBALIKAN PESAN
+    // =======================================================
+    if (!selectedPeriod || selectedPeriod === '') {
+        return {
+            value: 'Select Period First', // Pesan khusus
+            class: { 'text-gray-500': true }, // Warna abu-abu untuk pesan
+            isPlaceholder: true, // Flag untuk digunakan di template
+        };
+    }
+    // =======================================================
+
+    const rawData = dcxsq.value || [];
+    let filteredData = rawData;
+    let total = 0;
+
+    // 1. Logika Pemfilteran: (Sekarang hanya berjalan jika selectedPeriod sudah terisi)
+    // Filter data mentah berdasarkan periode yang dipilih
+    filteredData = rawData.filter((item) => item.period === selectedPeriod);
+
+    // 2. Logika Penjumlahan:
+    filteredData.forEach((item) => {
+        const value = Number(item.total_raw_material || 0);
+        total += value;
+    });
+
+    // 3. Format dan Klasifikasi Warna
+    const formattedTotal = Number(total).toLocaleString('id-ID', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+    });
+
+    const textColorClass = {
+        'text-red-500': total < 0,
+        'text-green-500': total > 0,
+        'text-orange-900': total === 0,
+    };
+
+    return {
+        value: formattedTotal,
+        class: textColorClass,
+        isPlaceholder: false,
+    };
+});
+
+const totalProcess = computed(() => {
+    const periodFilter = filtersDCxSQ.value?.period;
+    const selectedPeriod = periodFilter ? periodFilter.value : '';
+
+    // =======================================================
+    // ⭐️ PEMERIKSAAN UTAMA: JIKA FILTER KOSONG, KEMBALIKAN PESAN
+    // =======================================================
+    if (!selectedPeriod || selectedPeriod === '') {
+        return {
+            value: 'Select Period First', // Pesan khusus
+            class: { 'text-gray-500': true }, // Warna abu-abu untuk pesan
+            isPlaceholder: true, // Flag untuk digunakan di template
+        };
+    }
+    // =======================================================
+
+    const rawData = dcxsq.value || [];
+    let filteredData = rawData;
+    let total = 0;
+
+    // 1. Logika Pemfilteran: (Sekarang hanya berjalan jika selectedPeriod sudah terisi)
+    // Filter data mentah berdasarkan periode yang dipilih
+    filteredData = rawData.filter((item) => item.period === selectedPeriod);
+
+    // 2. Logika Penjumlahan:
+    filteredData.forEach((item) => {
+        const value = Number(item.total_process || 0);
+        total += value;
+    });
+
+    // 3. Format dan Klasifikasi Warna
+    const formattedTotal = Number(total).toLocaleString('id-ID', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+    });
+
+    const textColorClass = {
+        'text-red-500': total < 0,
+        'text-green-500': total > 0,
+        'text-orange-500': total === 0,
+    };
+
+    return {
+        value: formattedTotal,
+        class: textColorClass,
+        isPlaceholder: false,
+    };
+});
+
+const totalOfTotal = computed(() => {
+    const periodFilter = filtersDCxSQ.value?.period;
+    const selectedPeriod = periodFilter ? periodFilter.value : '';
+
+    // =======================================================
+    // ⭐️ PEMERIKSAAN UTAMA: JIKA FILTER KOSONG, KEMBALIKAN PESAN
+    // =======================================================
+    if (!selectedPeriod || selectedPeriod === '') {
+        return {
+            value: 'Select Period First', // Pesan khusus
+            class: { 'text-gray-500': true }, // Warna abu-abu untuk pesan
+            isPlaceholder: true, // Flag untuk digunakan di template
+        };
+    }
+    // =======================================================
+
+    const rawData = dcxsq.value || [];
+    let filteredData = rawData;
+    let total = 0;
+
+    // 1. Logika Pemfilteran: (Sekarang hanya berjalan jika selectedPeriod sudah terisi)
+    // Filter data mentah berdasarkan periode yang dipilih
+    filteredData = rawData.filter((item) => item.period === selectedPeriod);
+
+    // 2. Logika Penjumlahan:
+    filteredData.forEach((item) => {
+        const value = Number(item.total || 0);
+        total += value;
+    });
+
+    // 3. Format dan Klasifikasi Warna
+    const formattedTotal = Number(total).toLocaleString('id-ID', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+    });
+
+    const textColorClass = {
+        'text-red-500': total < 0,
+        'text-green-500': total > 0,
+        'text-orange-500': total === 0,
+    };
+
+    return {
+        value: formattedTotal,
+        class: textColorClass,
+        isPlaceholder: false,
+    };
+});
 
 const bom = computed(() =>
     (page.props.bom as any[]).map((bom, index) => {
@@ -471,36 +617,15 @@ const listSalesMonth = computed(() => {
     return result;
 });
 
-const listSalesMonths = computed(() => {
-    const data = (page.props.dcxsq as any[]) || [];
-    if (data.length === 0) return ['All'];
-
-    const uniqueMonths = new Set<string>();
-
-    // Asumsikan kolom sales_month sudah berisi string bulan (misal: "Jan")
-    data.forEach((item) => {
-        if (item.sales_month) {
-            uniqueMonths.add(item.sales_month);
-        }
-    });
-
-    // Tambahkan opsi 'All' dan sorting standar (alfabetis)
-    const sortedMonths = Array.from(uniqueMonths).sort();
-    return ['All', ...sortedMonths];
-});
-
 const listDCxSQ = computed(() => {
     const data = (page.props.dcxsq as any[]) || [];
     if (data.length === 0) {
         return [];
     }
-
     const uniqueNames = new Set<string>();
     const result: { name: string; code: string }[] = [];
-
     data.forEach((item) => {
         const name = item.period;
-
         if (name && !uniqueNames.has(name)) {
             uniqueNames.add(name);
             result.push({
@@ -512,7 +637,6 @@ const listDCxSQ = computed(() => {
     result.sort((a, b) => {
         return a.name.localeCompare(b.name);
     });
-
     return result;
 });
 
@@ -1200,6 +1324,7 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                                     :options="type"
                                                     placeholder="Select priority"
                                                     class="w-40"
+                                                    :showClear="true"
                                                     @change="
                                                         () => {
                                                             if (filterModel.value === 'All') {
@@ -1456,7 +1581,11 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                     :globalFilterFields="['item_code', 'type_name', 'description', 'period']"
                                     class="text-md"
                                     ref="dtSC"
+                                    scrollable
+                                    scrollDirection="both"
+                                    scrollWidth="max-content"
                                 >
+                                    >
                                     <Column field="no" sortable header="#" :showFilterMenu="true" v-bind="tbStyle('main')"></Column>
                                     <Column field="period" header="Period" sortable v-bind="tbStyle('main')" :showFilterMenu="false">
                                         <template #filter="{ filterModel, filterCallback }">
@@ -1467,6 +1596,7 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                                     optionLabel="name"
                                                     placeholder="Select a period"
                                                     class="w-full"
+                                                    :showClear="true"
                                                 />
                                             </div>
                                         </template>
@@ -1490,6 +1620,7 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                                     :options="type"
                                                     placeholder="Select priority"
                                                     class="w-40"
+                                                    :showClear="true"
                                                     @change="
                                                         () => {
                                                             if (filterModel.value === 'All') {
@@ -1534,7 +1665,7 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                         </template></Column
                                     >
 
-                                    <Column field="bom.description" header="Name" :showFilterMenu="false" sortable v-bind="tbStyle('main')">
+                                    <Column field="bom.description" header="Name" :showFilterMenu="false" sortable v-bind="tbStyle('main')" frozen>
                                         <template #filter="{ filterModel, filterCallback }">
                                             <InputText
                                                 v-model="filterModel.value"
@@ -1545,11 +1676,6 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                         </template>
                                         <template #body="{ data }">
                                             {{ data.bom ? data.bom.description : 'N/A' }}
-                                        </template>
-                                    </Column>
-                                    <Column field="period" sortable header="Period" v-bind="tbStyle('main')">
-                                        <template #body="slotProps">
-                                            {{ slotProps.data.period || '-' }}
                                         </template>
                                     </Column>
 
@@ -1921,6 +2047,7 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                                     optionLabel="name"
                                                     placeholder="Select a period"
                                                     class="w-full"
+                                                    :showClear="true"
                                                 />
                                             </div>
                                         </template>
@@ -1944,6 +2071,7 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                                     :options="type"
                                                     placeholder="Select priority"
                                                     class="w-40"
+                                                    :showClear="true"
                                                     @change="
                                                         () => {
                                                             if (filterModel.value === 'All') {
@@ -2395,6 +2523,7 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                                     optionValue="name"
                                                     placeholder="Difference Period"
                                                     class="w-full"
+                                                    :showClear="true"
                                                     @change="filterCallback()"
                                                 />
                                             </div>
@@ -2512,7 +2641,7 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                     v-model:filters="filtersDCxSQ"
                                     filterDisplay="row"
                                     :loading="loading"
-                                    :globalFilterFields="['item_code', 'difference_period']"
+                                    :globalFilterFields="['item_code', 'period']"
                                     class="text-md"
                                     ref="dtDCxSQ"
                                 >
@@ -2527,7 +2656,7 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                             />
                                         </template>
                                     </Column>
-                                    <Column field="bom.description" header="Name" :showFilterMenu="false" sortable v-bind="tbStyle('main')">
+                                    <Column field="bom.description" header="Name" :showFilterMenu="false" sortable v-bind="tbStyle('main')" frozen>
                                         <template #filter="{ filterModel, filterCallback }">
                                             <InputText
                                                 v-model="filterModel.value"
@@ -2556,6 +2685,7 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                                     optionLabel="name"
                                                     optionValue="code"
                                                     placeholder="Select a period"
+                                                    :showClear="true"
                                                     class="w-full"
                                                     @change="filterCallback()"
                                                 >
@@ -2575,6 +2705,12 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                                 {{ Number(data.total_raw_material).toLocaleString('id-ID') }}
                                             </span>
                                         </template>
+
+                                        <template #footer>
+                                            <span :class="totalRawMaterial.class">
+                                                <strong>{{ totalRawMaterial.value }}</strong>
+                                            </span>
+                                        </template>
                                     </Column>
                                     <Column field="total_process" header="Total Process" sortable v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
@@ -2587,6 +2723,12 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                                 {{ Number(data.total_process).toLocaleString('id-ID') }}
                                             </span>
                                         </template>
+
+                                        <template #footer>
+                                            <span :class="totalProcess.class">
+                                                <strong>{{ totalProcess.value }}</strong>
+                                            </span>
+                                        </template>
                                     </Column>
                                     <Column field="total" header="Total" sortable v-bind="tbStyle('fg')">
                                         <template #body="{ data }">
@@ -2597,6 +2739,12 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                                 }"
                                             >
                                                 {{ Number(data.total).toLocaleString('id-ID') }}
+                                            </span>
+                                        </template>
+
+                                        <template #footer>
+                                            <span :class="totalOfTotal.class">
+                                                <strong>{{ totalOfTotal.value }}</strong>
                                             </span>
                                         </template>
                                     </Column>

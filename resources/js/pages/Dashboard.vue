@@ -7,7 +7,6 @@ import { Head, Link, usePage } from '@inertiajs/vue3';
 import { Position, VueFlow } from '@vue-flow/core';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
-import Panel from 'primevue/panel';
 import { computed, shallowRef } from 'vue';
 
 // Import CSS Vue Flow
@@ -40,8 +39,6 @@ const topDifferenceCost = computed(() =>
 
 const lastMonth = computed(() => page.props.lastMonth);
 
-console.log(topActualCost.value, topQuantity.value, topDifferenceCost.value, lastMonth.value);
-
 const breadcrumbs: BreadcrumbItem[] = mainNavItems
     .filter((item) => route().current(item.href))
     .map((item) => ({
@@ -57,9 +54,9 @@ const nodes = [
     {
         id: '1',
         type: 'customPerson',
-        position: { x: 100, y: 300 },
-        sourcePosition: Position.Right,
-        targetPosition: Position.Left,
+        position: { x: 500, y: 0 },
+        sourcePosition: Position.Bottom,
+        targetPosition: Position.Top,
         data: {
             name: 'Tuti Pustikasari',
             title: 'Finance Director',
@@ -70,9 +67,9 @@ const nodes = [
     {
         id: '2',
         type: 'customPerson',
-        position: { x: 400, y: 300 },
-        sourcePosition: Position.Right,
-        targetPosition: Position.Left,
+        position: { x: 500, y: 200 },
+        sourcePosition: Position.Bottom,
+        targetPosition: Position.Top,
         data: {
             name: 'Akinori Matsuyama',
             title: 'Deputy Division',
@@ -83,9 +80,9 @@ const nodes = [
     {
         id: '3',
         type: 'customPerson',
-        position: { x: 700, y: 300 },
-        sourcePosition: Position.Right,
-        targetPosition: Position.Left,
+        position: { x: 500, y: 400 },
+        sourcePosition: Position.Bottom,
+        targetPosition: Position.Top,
         data: {
             name: 'Inge William',
             title: 'Deputy Department',
@@ -96,12 +93,12 @@ const nodes = [
     {
         id: '4',
         type: 'customPerson',
-        position: { x: 1000, y: 0 },
-        sourcePosition: Position.Right,
-        targetPosition: Position.Left,
+        position: { x: 250, y: 600 },
+        sourcePosition: Position.Bottom,
+        targetPosition: Position.Top,
         data: {
             name: 'Rudi Juniarto',
-            title: 'Staff',
+            title: 'Supervisor',
             npk: '140023',
             image: '/storage/profilepic/Rudi.png',
         },
@@ -109,9 +106,9 @@ const nodes = [
     {
         id: '5',
         type: 'customPerson',
-        position: { x: 1000, y: 200 },
-        sourcePosition: Position.Right,
-        targetPosition: Position.Left,
+        position: { x: 100, y: 800 },
+        sourcePosition: Position.Bottom,
+        targetPosition: Position.Top,
         data: {
             name: 'Setyaningsih',
             title: 'Staff',
@@ -122,9 +119,9 @@ const nodes = [
     {
         id: '6',
         type: 'customPerson',
-        position: { x: 1000, y: 400 },
-        sourcePosition: Position.Right,
-        targetPosition: Position.Left,
+        position: { x: 400, y: 800 },
+        sourcePosition: Position.Bottom,
+        targetPosition: Position.Top,
         data: {
             name: 'Ayu Lestari',
             title: 'Staff',
@@ -135,12 +132,12 @@ const nodes = [
     {
         id: '7',
         type: 'customPerson',
-        position: { x: 1000, y: 600 },
+        position: { x: 750, y: 600 },
         sourcePosition: Position.Right,
         targetPosition: Position.Left,
         data: {
             name: 'Fadel Anfasha',
-            title: 'Staff',
+            title: 'Supervisor',
             npk: '240473',
             image: '/storage/profilepic/Fadel.png',
         },
@@ -164,19 +161,19 @@ const edges = [
         target: '4',
     },
     {
-        id: 'e3-5',
-        source: '3',
-        target: '5',
-    },
-    {
-        id: 'e3-6',
-        source: '3',
-        target: '6',
-    },
-    {
         id: 'e3-7',
         source: '3',
         target: '7',
+    },
+    {
+        id: 'e4-5',
+        source: '4',
+        target: '5',
+    },
+    {
+        id: 'e4-6',
+        source: '4',
+        target: '6',
     },
 ];
 
@@ -413,24 +410,18 @@ body {
                     </Card>
                 </div>
 
-                <section id="orgChart" class="scroll-mt-16">
-                    <Panel
-                        header="Finance & Accounting Structure"
-                        class="mx-auto my-32 max-w-full text-gray-100 lg:max-w-7xl dark:text-gray-100"
-                        style="background-color: rgba(0, 0, 0, 0.9)"
-                    >
-                        <div style="height: 800px; width: 100%">
-                            <VueFlow
-                                :nodes="nodes"
-                                :edges="edges"
-                                :node-types="customNodeTypes"
-                                :zoom-on-scroll="false"
-                                :zoom-on-pinch="false"
-                                :zoom-on-double-click="false"
-                                fit-view
-                            />
-                        </div>
-                    </Panel>
+                <section id="orgChart" class="scroll-mt-12">
+                    <div class="mx-auto my-32 max-w-full text-gray-100 lg:max-w-7xl dark:text-gray-100" style="height: 1200px; width: 100%">
+                        <VueFlow
+                            :nodes="nodes"
+                            :edges="edges"
+                            :node-types="customNodeTypes"
+                            :zoom-on-scroll="false"
+                            :zoom-on-pinch="false"
+                            :zoom-on-double-click="false"
+                            fit-view
+                        />
+                    </div>
                 </section>
 
                 <section id="processCost" class="scroll-mt-12">
@@ -1103,9 +1094,8 @@ body {
                                 <div class="rounded-lg bg-gray-800/50 p-4">
                                     <h4 class="mb-2 text-lg font-semibold text-blue-300">Types of Standards:</h4>
                                     <ul class="space-y-1 text-gray-200">
-                                        <li>• <span class="text-green-400">Ideal Standards</span> - Perfect conditions</li>
-                                        <li>• <span class="text-yellow-400">Normal Standards</span> - Realistic expectations</li>
-                                        <li>• <span class="text-orange-400">Current Standards</span> - Present conditions</li>
+                                        <li>• <span class="text-green-400">Ideal Standards</span> - Based on ideal conditions</li>
+                                        <li>• <span class="text-orange-400">Current Standards</span> - Based on actual conditions</li>
                                     </ul>
                                 </div>
                             </div>
