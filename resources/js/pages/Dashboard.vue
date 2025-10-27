@@ -7,6 +7,7 @@ import { Head, Link, usePage } from '@inertiajs/vue3';
 import { Position, VueFlow } from '@vue-flow/core';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
+import Panel from 'primevue/panel';
 import { computed, shallowRef } from 'vue';
 
 // Import CSS Vue Flow
@@ -411,23 +412,40 @@ body {
                 </div>
 
                 <section id="orgChart" class="scroll-mt-12">
-                    <div class="mx-auto my-32 max-w-full text-gray-100 lg:max-w-7xl dark:text-gray-100" style="height: 1200px; width: 100%">
-                        <VueFlow
-                            :nodes="nodes"
-                            :edges="edges"
-                            :node-types="customNodeTypes"
-                            :zoom-on-scroll="false"
-                            :zoom-on-pinch="false"
-                            :zoom-on-double-click="false"
-                            fit-view
-                        />
-                    </div>
+                    <Panel
+                        header="Organization Structure"
+                        toggleable
+                        class="mx-auto my-32 max-w-6xl opacity-90"
+                        style="
+                            background-color: var(--card);
+                            --p-panel-header-color: var(--secondary); /* Warna Teks Header */
+                            --p-panel-header-background: var(--card); /* Warna Background Header */
+                        "
+                    >
+                        <div style="height: 1000px; width: 100%">
+                            <VueFlow
+                                :nodes="nodes"
+                                :edges="edges"
+                                :node-types="customNodeTypes"
+                                :zoom-on-scroll="false"
+                                :zoom-on-pinch="false"
+                                :zoom-on-double-click="false"
+                                fit-view
+                            />
+                        </div>
+                    </Panel>
                 </section>
 
                 <section id="processCost" class="scroll-mt-12">
-                    <div
-                        class="mx-auto my-32 max-w-full px-6 text-gray-100 lg:max-w-7xl"
-                        style="background-color: rgba(0, 0, 0, 0.9); border-radius: 12px; padding: 3rem"
+                    <Panel
+                        header="Process Cost"
+                        toggleable
+                        class="mx-auto my-32 max-w-6xl opacity-90"
+                        style="
+                            background-color: var(--card);
+                            --p-panel-header-color: var(--secondary); /* Warna Teks Header */
+                            --p-panel-header-background: var(--card); /* Warna Background Header */
+                        "
                     >
                         <!-- Header Section -->
                         <div class="mb-16 text-center">
@@ -836,10 +854,7 @@ body {
                                             <h5 class="font-semibold text-red-200">Material Grade</h5>
                                         </div>
                                         <div class="rounded-lg bg-gray-800/50 p-4">
-                                            <h5 class="font-semibold text-red-200">Waste Factor: 8%</h5>
-                                        </div>
-                                        <div class="rounded-lg bg-gray-800/50 p-4">
-                                            <p class="text-md font-bold text-red-400">Cost: $X (example)</p>
+                                            <h5 class="font-semibold text-red-200">Scrap % / Material used</h5>
                                         </div>
                                     </div>
                                 </div>
@@ -870,9 +885,6 @@ body {
                                         <div class="rounded-lg bg-gray-800/50 p-4">
                                             <h5 class="font-semibold text-orange-200">Welding / Assembly</h5>
                                         </div>
-                                        <div class="rounded-lg bg-gray-800/50 p-4">
-                                            <p class="text-md font-bold text-orange-400">Total Cost: $Y (example)</p>
-                                        </div>
                                     </div>
                                 </div>
 
@@ -901,9 +913,6 @@ body {
                                         </div>
                                         <div class="rounded-lg bg-gray-800/50 p-4">
                                             <h5 class="font-semibold text-green-200">Delivery</h5>
-                                        </div>
-                                        <div class="rounded-lg bg-gray-800/50 p-4">
-                                            <p class="text-md font-bold text-green-400">Final Cost: $Z (example)</p>
                                         </div>
                                     </div>
                                 </div>
@@ -1041,13 +1050,19 @@ body {
                                 />
                             </Link>
                         </div>
-                    </div>
+                    </Panel>
                 </section>
 
                 <section id="standardCost" class="scroll-mt-12">
-                    <div
-                        class="mx-auto my-32 max-w-full px-6 text-gray-100 lg:max-w-7xl"
-                        style="background-color: rgba(0, 0, 0, 0.9); border-radius: 12px; padding: 3rem"
+                    <Panel
+                        header="Standard Cost"
+                        toggleable
+                        class="mx-auto my-32 max-w-6xl opacity-90"
+                        style="
+                            background-color: var(--card);
+                            --p-panel-header-color: var(--secondary); /* Warna Teks Header */
+                            --p-panel-header-background: var(--card); /* Warna Background Header */
+                        "
                     >
                         <!-- Header Section -->
                         <div class="mb-16 text-center">
@@ -1256,7 +1271,7 @@ body {
                                 />
                             </Link>
                         </div>
-                    </div>
+                    </Panel>
                 </section>
             </div>
         </div>
