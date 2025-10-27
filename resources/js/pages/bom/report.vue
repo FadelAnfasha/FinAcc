@@ -1585,7 +1585,6 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                     scrollDirection="both"
                                     scrollWidth="max-content"
                                 >
-                                    >
                                     <Column field="no" sortable header="#" :showFilterMenu="true" v-bind="tbStyle('main')"></Column>
                                     <Column field="period" header="Period" sortable v-bind="tbStyle('main')" :showFilterMenu="false">
                                         <template #filter="{ filterModel, filterCallback }">
