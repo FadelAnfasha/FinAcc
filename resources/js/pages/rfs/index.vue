@@ -916,7 +916,7 @@ const resetForm = () => {
 
                             <!-- Lampiran -->
                             <div class="space-y-2">
-                                <label class="text-sm font-medium text-card-foreground">Attachment :</label>
+                                <label class="text-sm font-medium text-primary">Attachment :</label>
                                 <div class="flex items-center space-x-3">
                                     <input
                                         type="file"
@@ -932,10 +932,10 @@ const resetForm = () => {
                                     >
                                         Choose File
                                     </button>
-                                    <span v-if="selectedFileName" class="text-sm text-muted-foreground">{{ selectedFileName }}</span>
-                                    <span v-else class="text-sm text-muted-foreground">No files selected</span>
+                                    <span v-if="selectedFileName" class="text-sm text-primary">{{ selectedFileName }}</span>
+                                    <span v-else class="text-sm text-primary">No files selected</span>
                                 </div>
-                                <p class="text-xs text-muted-foreground">Supported formats: PDF, DOC, DOCX, JPG, PNG, XLSX, XLS (Max: 10MB)</p>
+                                <p class="text-xs text-primary">Supported formats: PDF, DOC, DOCX, JPG, PNG, XLSX, XLS (Max: 10MB)</p>
                                 <div v-if="form.errors.attachment" class="text-sm text-red-500">{{ form.errors.attachment }}</div>
                             </div>
 

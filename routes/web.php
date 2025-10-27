@@ -18,6 +18,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\BillOfMaterialController;
 use App\Http\Controllers\BusinessPartnerController;
 use App\Http\Controllers\CycleTimeController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PackingController;
 use App\Http\Controllers\ProcessController;
 use App\Http\Controllers\ReportController;
@@ -25,6 +26,7 @@ use App\Http\Controllers\WagesDistributionController;
 use App\Models\SalesQuantity;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\DashboardControllerController;
 
 
 #===========================
@@ -43,10 +45,9 @@ Route::get('/', function (Request $request) {
     ]);
 })->name('home');
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
-
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 #==========================
 #======= RFS Route ========

@@ -88,7 +88,7 @@ function isExpanded(key: string) {
                             <SidebarMenuButton size="lg" :is-active="route(child.href ?? '') === page.url" :tooltip="isCollapsed ? child.title : ''">
                                 <Link
                                     :href="route(child.href ?? '')"
-                                    class="flex items-center"
+                                    class="flex w-full items-center"
                                     :class="[isCollapsed ? 'w-full justify-center' : 'gap-2']"
                                 >
                                     <i :class="['pi', child.icon, isCollapsed ? 'text-xl' : 'h-4 w-4']" />
@@ -101,7 +101,11 @@ function isExpanded(key: string) {
 
                 <SidebarMenuItem v-else>
                     <SidebarMenuButton size="lg" :is-active="route(item.href ?? '') === page.url" :tooltip="item.title">
-                        <Link :href="route(item.href ?? '')" class="flex items-center" :class="[isCollapsed ? 'w-full justify-center' : 'gap-2']">
+                        <Link
+                            :href="route(item.href ?? '')"
+                            class="flex w-full items-center"
+                            :class="[isCollapsed ? 'w-full justify-center' : 'gap-2']"
+                        >
                             <i :class="['pi h-5 w-5', item.icon]" />
                             <span v-if="!isCollapsed" class="text-sm">{{ item.title }}</span>
                         </Link>
