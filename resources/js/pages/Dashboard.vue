@@ -354,7 +354,7 @@ body {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="relative min-h-screen">
             <!-- Gambar sebagai latar belakang -->
-            <div
+            <!-- <div
                 class="absolute inset-0 z-0 bg-center bg-no-repeat opacity-70"
                 style="
                     background-image: url('/storage/images/topy.png');
@@ -362,7 +362,7 @@ body {
                     background-attachment: fixed;
                     background-size: 50%;
                 "
-            ></div>
+            ></div> -->
 
             <!-- Konten di atas gambar -->
             <div class="relative z-10 px-6 py-2">
@@ -448,7 +448,7 @@ body {
                         "
                     >
                         <!-- Header Section -->
-                        <div class="mb-16 text-center">
+                        <div class="mb-12 text-center">
                             <h2
                                 class="mb-6 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-600 bg-clip-text text-4xl font-bold text-transparent"
                             >
@@ -809,10 +809,6 @@ body {
                                     </svg>
                                 </div>
                             </div>
-                            <p class="mx-auto max-w-3xl text-xl text-gray-300">
-                                Understanding Process Cost in Wheel Manufacturing Industry - An accounting system that tracks production costs through
-                                each stage of the manufacturing process
-                            </p>
                         </div>
 
                         <!-- Process Cost Definition -->
@@ -821,9 +817,8 @@ body {
                         >
                             <h3 class="mb-4 text-2xl font-semibold text-gray-300">What is Process Cost?</h3>
                             <p class="text-lg leading-relaxed text-gray-200">
-                                Process Cost is a cost accounting method used to allocate production costs to products that are manufactured in mass
-                                and continuous production. In the wheel industry, each production stage has costs that must be calculated and
-                                allocated accurately.
+                                Process Cost is the cost incurred from each process needed to produce a product. This system was created to make it
+                                easier to track the actual costs spent in each process and to simplify the calculation process.
                             </p>
                         </div>
 
@@ -848,7 +843,7 @@ body {
                                     </div>
                                     <div class="space-y-4">
                                         <div class="rounded-lg bg-gray-800/50 p-4">
-                                            <h5 class="font-semibold text-red-200">Steel Plate/Sheet</h5>
+                                            <h5 class="font-semibold text-red-200">Steel Plate</h5>
                                         </div>
                                         <div class="rounded-lg bg-gray-800/50 p-4">
                                             <h5 class="font-semibold text-red-200">Material Grade</h5>
@@ -877,10 +872,10 @@ body {
                                     </div>
                                     <div class="space-y-4">
                                         <div class="rounded-lg bg-gray-800/50 p-4">
-                                            <h5 class="font-semibold text-orange-200">Steel Forming,Shaping, & Bending</h5>
+                                            <h5 class="font-semibold text-orange-200">Steel Forming</h5>
                                         </div>
                                         <div class="rounded-lg bg-gray-800/50 p-4">
-                                            <h5 class="font-semibold text-orange-200">Precision Cutting</h5>
+                                            <h5 class="font-semibold text-orange-200">Cutting</h5>
                                         </div>
                                         <div class="rounded-lg bg-gray-800/50 p-4">
                                             <h5 class="font-semibold text-orange-200">Welding / Assembly</h5>
@@ -1003,22 +998,26 @@ body {
                                 <ul class="space-y-2 text-gray-200">
                                     <li class="flex items-start">
                                         <span class="mr-2 text-green-400">✓</span>
-                                        Process Cost to produce 1 product.
-                                    </li>
-                                    <li class="flex items-start">
-                                        <span class="mr-2 text-green-400">✓</span>
-                                        Monitor and controlling each departmet each line.
+                                        Monitor and controlling each each process line.
                                     </li>
                                     <li class="flex items-start">
                                         <span class="mr-2 text-green-400">✓</span>
                                         Evaluation line of process.
                                     </li>
+                                    <li class="flex items-start">
+                                        <span class="mr-2 text-green-400">✓</span>
+                                        Improve process efficiency.
+                                    </li>
                                 </ul>
                             </div>
 
                             <div class="rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-900/50 to-purple-800/50 p-6">
-                                <h4 class="mb-4 text-xl font-semibold text-purple-300">Application in Wheel Industry</h4>
+                                <h4 class="mb-4 text-xl font-semibold text-purple-300">Application in our Industry</h4>
                                 <ul class="space-y-2 text-gray-200">
+                                    <li class="flex items-start">
+                                        <span class="mr-2 text-yellow-400">⚙️</span>
+                                        Cost allocation per line
+                                    </li>
                                     <li class="flex items-start">
                                         <span class="mr-2 text-yellow-400">⚙️</span>
                                         Mass and continuous production
@@ -1030,10 +1029,6 @@ body {
                                     <li class="flex items-start">
                                         <span class="mr-2 text-yellow-400">⚙️</span>
                                         Sequential production process
-                                    </li>
-                                    <li class="flex items-start">
-                                        <span class="mr-2 text-yellow-400">⚙️</span>
-                                        Cost allocation per line
                                     </li>
                                 </ul>
                             </div>
@@ -1065,7 +1060,7 @@ body {
                         "
                     >
                         <!-- Header Section -->
-                        <div class="mb-16 text-center">
+                        <div class="mb-12 text-center">
                             <h2 class="mb-6 bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-4xl font-bold text-transparent">
                                 Standard Cost System
                             </h2>
@@ -1083,34 +1078,34 @@ body {
                                     </svg>
                                 </div>
                             </div>
-                            <p class="mx-auto max-w-3xl text-xl text-gray-300">
+                            <!-- <p class="mx-auto max-w-3xl text-xl text-gray-300">
                                 Standard Cost System - A predetermined cost system that establishes standard costs for materials, labor, and overhead
                                 to measure performance and control costs
-                            </p>
+                            </p> -->
                         </div>
 
                         <!-- Standard Cost Definition -->
                         <div class="mb-12 rounded-xl border border-green-500/30 bg-gradient-to-r from-green-900/50 to-blue-900/50 p-8">
                             <h3 class="mb-4 text-2xl font-semibold text-green-300">What is Standard Cost?</h3>
                             <p class="mb-4 text-lg leading-relaxed text-gray-200">
-                                Standard Cost is a predetermined cost that serves as a benchmark for measuring actual performance. It represents what
-                                costs should be under normal operating conditions and efficient performance levels.
+                                Standard Cost is the cost set at the beginning of a period as a reference for the expenses during that time. Its
+                                purpose is to compare the actual costs with the standard costs by calculating the difference between them.
                             </p>
                             <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div class="rounded-lg bg-gray-800/50 p-4">
                                     <h4 class="mb-2 text-lg font-semibold text-green-300">Key Purposes:</h4>
                                     <ul class="space-y-1 text-gray-200">
-                                        <li>• Cost control and performance measurement</li>
                                         <li>• Budget preparation and planning</li>
+                                        <li>• Cost control and performance measurement</li>
                                         <li>• Variance analysis and investigation</li>
-                                        <li>• Pricing decisions and profitability analysis</li>
+                                        <li>• Improvement planning</li>
                                     </ul>
                                 </div>
                                 <div class="rounded-lg bg-gray-800/50 p-4">
-                                    <h4 class="mb-2 text-lg font-semibold text-blue-300">Types of Standards:</h4>
+                                    <h4 class="mb-2 text-lg font-semibold text-blue-300">Types of Cost:</h4>
                                     <ul class="space-y-1 text-gray-200">
-                                        <li>• <span class="text-green-400">Ideal Standards</span> - Based on ideal conditions</li>
-                                        <li>• <span class="text-orange-400">Current Standards</span> - Based on actual conditions</li>
+                                        <li>• <span class="text-green-400">Standard Cost</span> - Based on ideal conditions</li>
+                                        <li>• <span class="text-orange-400">Actual Cost</span> - Based on actual conditions</li>
                                     </ul>
                                 </div>
                             </div>

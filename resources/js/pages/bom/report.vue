@@ -42,15 +42,16 @@ const selectActualPeriod = ref<ActualPeriod | null>(null);
 const selectDifferencePeriod = ref<DifferencePeriod | null>(null);
 const selectSalesPeriod = ref<SalesPeriod | null>(null);
 const selectDCxSQPeriod = ref<DCxSQPeriod | null>(null);
-const type = ['Disc', 'Sidering', 'Wheel'];
 const updateReportDialog = ref(false);
 const updateConstDialog = ref(false);
 type UpdateStatus = 'idle' | 'updating' | 'done';
 const updateStatus = ref<UpdateStatus>('idle');
-const userName = computed(() => page.props.auth?.user?.name ?? '');
 const updateType = ref<'standardCost' | 'actualCost' | 'diffCost' | 'opgin' | 'dcXsq' | null>(null);
 const maxDate = ref(new Date());
 const selectionModeType = ref('single');
+
+const type = ['Disc', 'Sidering', 'Wheel'];
+const userName = computed(() => page.props.auth?.user?.name ?? '');
 
 function tbStyle(section: 'main' | 'rm' | 'pr' | 'wip' | 'fg') {
     const styles = {
@@ -135,9 +136,9 @@ const dc = computed(() =>
     })),
 );
 
-const acxsq = computed(() =>
-    (page.props.actual_sales as any[]).map((acxsq, index) => ({
-        ...acxsq,
+const actSQ = computed(() =>
+    (page.props.actual_sales as any[]).map((actSQ, index) => ({
+        ...actSQ,
         no: index + 1,
     })),
 );
@@ -149,37 +150,30 @@ const dcxsq = computed(() =>
     })),
 );
 
-const totalRawMaterial = computed(() => {
-    const periodFilter = filtersDCxSQ.value?.period;
+const dcTotalRawMaterial = computed(() => {
+    const periodFilter = filtersDifference.value?.period;
     const selectedPeriod = periodFilter ? periodFilter.value : '';
 
-    // =======================================================
-    // ⭐️ PEMERIKSAAN UTAMA: JIKA FILTER KOSONG, KEMBALIKAN PESAN
-    // =======================================================
     if (!selectedPeriod || selectedPeriod === '') {
         return {
-            value: 'Select Period First', // Pesan khusus
-            class: { 'text-gray-500': true }, // Warna abu-abu untuk pesan
-            isPlaceholder: true, // Flag untuk digunakan di template
+            value: 'Select Period First',
+            class: { 'text-gray-500': true },
+            isPlaceholder: true,
         };
     }
     // =======================================================
 
-    const rawData = dcxsq.value || [];
+    const rawData = dc.value || [];
     let filteredData = rawData;
     let total = 0;
 
-    // 1. Logika Pemfilteran: (Sekarang hanya berjalan jika selectedPeriod sudah terisi)
-    // Filter data mentah berdasarkan periode yang dipilih
     filteredData = rawData.filter((item) => item.period === selectedPeriod);
 
-    // 2. Logika Penjumlahan:
     filteredData.forEach((item) => {
         const value = Number(item.total_raw_material || 0);
         total += value;
     });
 
-    // 3. Format dan Klasifikasi Warna
     const formattedTotal = Number(total).toLocaleString('id-ID', {
         minimumFractionDigits: 0,
         maximumFractionDigits: 2,
@@ -198,7 +192,147 @@ const totalRawMaterial = computed(() => {
     };
 });
 
-const totalProcess = computed(() => {
+const dcTotalProcess = computed(() => {
+    const periodFilter = filtersDifference.value?.period;
+    const selectedPeriod = periodFilter ? periodFilter.value : '';
+
+    // =======================================================
+    // ⭐️ PEMERIKSAAN UTAMA: JIKA FILTER KOSONG, KEMBALIKAN PESAN
+    // =======================================================
+    if (!selectedPeriod || selectedPeriod === '') {
+        return {
+            value: 'Select Period First', // Pesan khusus
+            class: { 'text-gray-500': true }, // Warna abu-abu untuk pesan
+            isPlaceholder: true, // Flag untuk digunakan di template
+        };
+    }
+    // =======================================================
+
+    const rawData = dc.value || [];
+    let filteredData = rawData;
+    let total = 0;
+
+    // 1. Logika Pemfilteran: (Sekarang hanya berjalan jika selectedPeriod sudah terisi)
+    // Filter data mentah berdasarkan periode yang dipilih
+    filteredData = rawData.filter((item) => item.period === selectedPeriod);
+
+    // 2. Logika Penjumlahan:
+    filteredData.forEach((item) => {
+        const value = Number(item.total_process || 0);
+        total += value;
+    });
+
+    // 3. Format dan Klasifikasi Warna
+    const formattedTotal = Number(total).toLocaleString('id-ID', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+    });
+
+    const textColorClass = {
+        'text-red-500': total < 0,
+        'text-green-500': total > 0,
+        'text-orange-500': total === 0,
+    };
+
+    return {
+        value: formattedTotal,
+        class: textColorClass,
+        isPlaceholder: false,
+    };
+});
+
+const dcTotalofTotal = computed(() => {
+    const periodFilter = filtersDifference.value?.period;
+    const selectedPeriod = periodFilter ? periodFilter.value : '';
+
+    // =======================================================
+    // ⭐️ PEMERIKSAAN UTAMA: JIKA FILTER KOSONG, KEMBALIKAN PESAN
+    // =======================================================
+    if (!selectedPeriod || selectedPeriod === '') {
+        return {
+            value: 'Select Period First', // Pesan khusus
+            class: { 'text-gray-500': true }, // Warna abu-abu untuk pesan
+            isPlaceholder: true, // Flag untuk digunakan di template
+        };
+    }
+    // =======================================================
+
+    const rawData = dc.value || [];
+    let filteredData = rawData;
+    let total = 0;
+
+    // 1. Logika Pemfilteran: (Sekarang hanya berjalan jika selectedPeriod sudah terisi)
+    // Filter data mentah berdasarkan periode yang dipilih
+    filteredData = rawData.filter((item) => item.period === selectedPeriod);
+
+    // 2. Logika Penjumlahan:
+    filteredData.forEach((item) => {
+        const value = Number(item.total || 0);
+        total += value;
+    });
+
+    // 3. Format dan Klasifikasi Warna
+    const formattedTotal = Number(total).toLocaleString('id-ID', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+    });
+
+    const textColorClass = {
+        'text-red-500': total < 0,
+        'text-green-500': total > 0,
+        'text-orange-500': total === 0,
+    };
+
+    return {
+        value: formattedTotal,
+        class: textColorClass,
+        isPlaceholder: false,
+    };
+});
+
+const dcxsqTotalRawMaterial = computed(() => {
+    const periodFilter = filtersDCxSQ.value?.period;
+    const selectedPeriod = periodFilter ? periodFilter.value : '';
+
+    if (!selectedPeriod || selectedPeriod === '') {
+        return {
+            value: 'Select Period First',
+            class: { 'text-gray-500': true },
+            isPlaceholder: true,
+        };
+    }
+    // =======================================================
+
+    const rawData = dcxsq.value || [];
+    let filteredData = rawData;
+    let total = 0;
+
+    filteredData = rawData.filter((item) => item.period === selectedPeriod);
+
+    filteredData.forEach((item) => {
+        const value = Number(item.total_raw_material || 0);
+        total += value;
+    });
+
+    const formattedTotal = Number(total).toLocaleString('id-ID', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+    });
+
+    const textColorClass = {
+        'text-red-500': total < 0,
+        'text-green-500': total > 0,
+        'text-orange-900': total === 0,
+    };
+
+    return {
+        value: formattedTotal,
+        class: textColorClass,
+        isPlaceholder: false,
+    };
+});
+
+const dcxsqTotalProcess = computed(() => {
     const periodFilter = filtersDCxSQ.value?.period;
     const selectedPeriod = periodFilter ? periodFilter.value : '';
 
@@ -247,7 +381,7 @@ const totalProcess = computed(() => {
     };
 });
 
-const totalOfTotal = computed(() => {
+const dcxsqTotalofTotal = computed(() => {
     const periodFilter = filtersDCxSQ.value?.period;
     const selectedPeriod = periodFilter ? periodFilter.value : '';
 
@@ -1043,9 +1177,11 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                         v-model="monthRange"
                                         view="month"
                                         dateFormat="mm/yy"
+                                        showClear
                                         :selectionMode="currentSelectionMode"
                                         :maxDate="maxDate"
                                         :placeholder="selectionModeType === 'range' ? 'Start Month - End Month' : 'Single Month'"
+                                        :manualInput="false"
                                     />
                                 </div>
                                 <div v-if="updateType === 'standardCost'" class="flex-1">
@@ -1053,6 +1189,7 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                         v-model="year"
                                         view="year"
                                         dateFormat="yy"
+                                        :showClear="true"
                                         :selectionMode="currentSelectionMode"
                                         :maxDate="maxDate"
                                         placeholder="Select year"
@@ -2558,6 +2695,7 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                             {{ Number(data.actual_cost.total).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
+
                                     <Column field="difference_cost.total_raw_material" sortable v-bind="tbStyle('fg')">
                                         <template #body="{ data }">
                                             <span
@@ -2567,6 +2705,11 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                                 }"
                                             >
                                                 {{ Number(data.difference_cost.total_raw_material).toLocaleString('id-ID') }}
+                                            </span>
+                                        </template>
+                                        <template #footer>
+                                            <span :class="dcTotalRawMaterial.class">
+                                                <strong>{{ dcTotalRawMaterial.value }}</strong>
                                             </span>
                                         </template>
                                     </Column>
@@ -2581,6 +2724,11 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                                 {{ Number(data.difference_cost.total_process).toLocaleString('id-ID') }}
                                             </span>
                                         </template>
+                                        <template #footer>
+                                            <span :class="dcTotalProcess.class">
+                                                <strong>{{ dcTotalProcess.value }}</strong>
+                                            </span>
+                                        </template>
                                     </Column>
                                     <Column field="difference_cost.total" sortable v-bind="tbStyle('fg')">
                                         <template #body="{ data }">
@@ -2591,6 +2739,11 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                                 }"
                                             >
                                                 {{ Number(data.difference_cost.total).toLocaleString('id-ID') }}
+                                            </span>
+                                        </template>
+                                        <template #footer>
+                                            <span :class="dcTotalofTotal.class">
+                                                <strong>{{ dcTotalofTotal.value }}</strong>
                                             </span>
                                         </template>
                                     </Column>
@@ -2706,8 +2859,8 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                         </template>
 
                                         <template #footer>
-                                            <span :class="totalRawMaterial.class">
-                                                <strong>{{ totalRawMaterial.value }}</strong>
+                                            <span :class="dcxsqTotalRawMaterial.class">
+                                                <strong>{{ dcxsqTotalRawMaterial.value }}</strong>
                                             </span>
                                         </template>
                                     </Column>
@@ -2724,8 +2877,8 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                         </template>
 
                                         <template #footer>
-                                            <span :class="totalProcess.class">
-                                                <strong>{{ totalProcess.value }}</strong>
+                                            <span :class="dcxsqTotalProcess.class">
+                                                <strong>{{ dcxsqTotalProcess.value }}</strong>
                                             </span>
                                         </template>
                                     </Column>
@@ -2742,8 +2895,8 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                         </template>
 
                                         <template #footer>
-                                            <span :class="totalOfTotal.class">
-                                                <strong>{{ totalOfTotal.value }}</strong>
+                                            <span :class="dcxsqTotalofTotal.class">
+                                                <strong>{{ dcxsqTotalofTotal.value }}</strong>
                                             </span>
                                         </template>
                                     </Column>
