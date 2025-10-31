@@ -13,7 +13,7 @@ const props = defineProps<{
     role="link"
     aria-disabled="true"
     aria-current="page"
-    :class="cn('text-foreground font-bold text-xl', props.class)"
+    :class="cn('text-foreground font-bold text-4xl', props.class)"
   >
     <slot />
   </span>
