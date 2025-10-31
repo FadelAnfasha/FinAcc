@@ -13,7 +13,7 @@ class DashboardController extends Controller
     public function index()
     {
         $lastMonth = Carbon::now()->subMonthNoOverflow()->format('M');
-        $Month = Carbon::now()->subMonth()->format('F');
+        $Month = Carbon::now()->subMonthNoOverflow()->format('F');
         $lastYear = Carbon::now()->format('Y');
         $columnTopQuantity = strtolower($lastMonth) . '_qty';
 
