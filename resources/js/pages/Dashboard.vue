@@ -1212,6 +1212,7 @@ body {
                                         </ul>
                                     </div>
                                 </div>
+
                                 <div class="text-center">
                                     <div class="mb-2 rounded-lg bg-orange-500/20 p-4">
                                         <p class="font-semibold text-orange-300">Top 5 Highest Sales Quantity</p>
@@ -1229,6 +1230,7 @@ body {
                                         </ul>
                                     </div>
                                 </div>
+
                                 <div class="text-center">
                                     <div class="mb-2 rounded-lg bg-purple-500/20 p-4">
                                         <p class="font-semibold text-purple-300">Top 5 Highest Difference Cost</p>
