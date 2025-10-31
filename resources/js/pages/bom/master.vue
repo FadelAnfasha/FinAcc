@@ -30,6 +30,28 @@ const dtPACK = ref();
 const dtPROC = ref();
 const toast = useToast();
 const page = usePage();
+const headerStyle = { backgroundColor: '#758596', color: 'white' };
+const bodyStyle = { backgroundColor: '#c8cccc', color: 'black' };
+const showDialog = ref(false);
+const dialogWidth = ref('40rem');
+const editType = ref<'stamat' | 'acmat' | 'pack' | 'proc' | 'valve' | null>(null);
+const destroyType = ref<'stamat' | 'acmat' | 'pack' | 'proc' | 'bom' | 'valve' | null>(null);
+const headerType = ref<any>({});
+const editedData = ref<any>({});
+const destroyedData = ref<any>({});
+const showImportDialog: Ref<boolean> = ref(false);
+const importName = ref<any>({});
+const selectedFile = ref<File | null>(null);
+const importType = ref<'stamat' | 'acmat' | 'pack' | 'proc' | 'valve' | 'bom' | 'acsqty' | null>(null);
+const notImported = ref(true);
+const fileUploaderSTAMAT = ref<any>(null);
+const fileUploaderACMAT = ref<any>(null);
+const fileUploaderPACK = ref<any>(null);
+const fileUploaderVALVE = ref<any>(null);
+const fileUploaderPROC = ref<any>(null);
+const fileUploaderBOM = ref<any>(null);
+const uploadProgress = ref(0);
+const isUploading = ref(false);
 
 const filters = ref({
     item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -104,11 +126,12 @@ const getDefaultActiveTab = (): string | null => {
 
         default:
             // Jika 'type' tidak terdefinisi atau tidak cocok dengan kasus di atas
-            return null;
+            return '0';
     }
 };
 
 const activeTab = ref<string | null>(getDefaultActiveTab());
+const activeTabValue = ref('0');
 const userName = computed(() => page.props.auth?.user?.name ?? '');
 
 interface ComponentItem {
@@ -175,17 +198,6 @@ function closeComponentDialog() {
     finishGood.value = {}; // ✅ kosongkan dengan objek kosong
 }
 
-const headerStyle = { backgroundColor: '#758596', color: 'white' };
-const bodyStyle = { backgroundColor: '#c8cccc', color: 'black' };
-
-const showDialog = ref(false);
-const dialogWidth = ref('40rem');
-const editType = ref<'stamat' | 'acmat' | 'pack' | 'proc' | 'valve' | null>(null);
-const destroyType = ref<'stamat' | 'acmat' | 'pack' | 'proc' | 'bom' | 'valve' | null>(null);
-const headerType = ref<any>({});
-const editedData = ref<any>({});
-const destroyedData = ref<any>({});
-
 const groups = ref([
     { name: 'Raw Material', code: 'RAW MATERIAL' },
     { name: 'Sparepart & Tools', code: 'SPAREPARTS AND TOOLS' },
@@ -198,20 +210,6 @@ const manufacturer = ref([
     { name: 'L WT', code: 'L WT' },
     { name: '- No Manufacturer -', code: '- No Manufacturer -' },
 ]);
-
-const showImportDialog: Ref<boolean> = ref(false);
-const importName = ref<any>({});
-const selectedFile = ref<File | null>(null);
-const importType = ref<'stamat' | 'acmat' | 'pack' | 'proc' | 'valve' | 'bom' | 'acsqty' | null>(null);
-const notImported = ref(true);
-const fileUploaderSTAMAT = ref<any>(null);
-const fileUploaderACMAT = ref<any>(null);
-const fileUploaderPACK = ref<any>(null);
-const fileUploaderVALVE = ref<any>(null);
-const fileUploaderPROC = ref<any>(null);
-const fileUploaderBOM = ref<any>(null);
-const uploadProgress = ref(0);
-const isUploading = ref(false);
 
 function handleCSVImport(event: FileUploadUploaderEvent, type: 'stamat' | 'acmat' | 'pack' | 'proc' | 'valve' | 'bom' | 'acsqty') {
     let file: File | undefined;
@@ -1274,7 +1272,7 @@ const props = defineProps({
             </div>
 
             <div class="mx-26 mb-26">
-                <Tabs :value="activeTab ?? '0'">
+                <Tabs v-model="activeTab">
                     <TabList>
                         <Tab v-if="type === 'bom'" value="0">Bill of Material</Tab>
                         <Tab v-if="type === 'standardMaterial'" value="1">Standard Material Price</Tab>
@@ -1636,133 +1634,133 @@ const props = defineProps({
                                         </template>
                                     </Column>
 
-                                    <Column field="jan_price" header="January Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="jan_price" header="January Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.jan_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
-                                    <Column field="jan_qty" header="January (pcs)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="jan_qty" header="January (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.jan_qty).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="feb_price" header="February Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="feb_price" header="February Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.feb_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
-                                    <Column field="feb_qty" header="February (pcs)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="feb_qty" header="February (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.feb_qty).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="mar_price" header="March Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="mar_price" header="March Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.mar_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
-                                    <Column field="mar_qty" header="March (pcs)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="mar_qty" header="March (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.mar_qty).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="apr_price" header="April Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="apr_price" header="April Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.apr_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
-                                    <Column field="apr_qty" header="April (pcs)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="apr_qty" header="April (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.apr_qty).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="may_price" header="May Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="may_price" header="May Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.may_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
-                                    <Column field="may_qty" header="May (pcs)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="may_qty" header="May (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.may_qty).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="jun_price" header="June Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="jun_price" header="June Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.jun_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
-                                    <Column field="jun_qty" header="June (pcs)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="jun_qty" header="June (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.jun_qty).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="jul_price" header="July Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="jul_price" header="July Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.jul_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
-                                    <Column field="jul_qty" header="July (pcs)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="jul_qty" header="July (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.jul_qty).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="aug_price" header="August Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="aug_price" header="August Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.aug_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
-                                    <Column field="aug_qty" header="August (pcs)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="aug_qty" header="August (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.aug_qty).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="sep_price" header="September Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="sep_price" header="September Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.sep_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
-                                    <Column field="sep_qty" header="September (pcs)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="sep_qty" header="September (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.sep_qty).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="oct_price" header="October Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="oct_price" header="October Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.oct_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
-                                    <Column field="oct_qty" header="October (pcs)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="oct_qty" header="October (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.oct_qty).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="nov_price" header="November Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="nov_price" header="November Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.nov_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
-                                    <Column field="nov_qty" header="November (pcs)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="nov_qty" header="November (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.nov_qty).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
 
-                                    <Column field="dec_price" header="December Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="dec_price" header="December Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.dec_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
-                                    <Column field="dec_qty" header="December (pcs)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="dec_qty" header="December (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.dec_qty).toLocaleString('id-ID') }}
                                         </template>
@@ -1956,31 +1954,30 @@ const props = defineProps({
                                                 class="w-full"
                                             /> </template
                                     ></Column>
-
                                     <Column field="description" sortable header="Description" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ data?.bom?.description ?? '-' }}
                                         </template>
                                     </Column>
 
-                                    <Column field="jan_qty" sortable header="January (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="jan_qty" sortable header="January (Qty)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                     </Column>
-                                    <Column field="feb_qty" sortable header="February (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="feb_qty" sortable header="February (Qty)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                     </Column>
-                                    <Column field="mar_qty" sortable header="March (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle"> </Column>
-                                    <Column field="apr_qty" sortable header="April (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle"> </Column>
-                                    <Column field="may_qty" sortable header="May (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle"> </Column>
-                                    <Column field="jun_qty" sortable header="June (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle"> </Column>
-                                    <Column field="jul_qty" sortable header="July (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle"> </Column>
-                                    <Column field="aug_qty" sortable header="August (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="mar_qty" sortable header="March (Qty)" :headerStyle="headerStyle" :bodyStyle="bodyStyle"> </Column>
+                                    <Column field="apr_qty" sortable header="April (Qty)" :headerStyle="headerStyle" :bodyStyle="bodyStyle"> </Column>
+                                    <Column field="may_qty" sortable header="May (Qty)" :headerStyle="headerStyle" :bodyStyle="bodyStyle"> </Column>
+                                    <Column field="jun_qty" sortable header="June (Qty)" :headerStyle="headerStyle" :bodyStyle="bodyStyle"> </Column>
+                                    <Column field="jul_qty" sortable header="July (Qty)" :headerStyle="headerStyle" :bodyStyle="bodyStyle"> </Column>
+                                    <Column field="aug_qty" sortable header="August (Qty)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                     </Column>
-                                    <Column field="sep_qty" sortable header="September (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="sep_qty" sortable header="September (Qty)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                     </Column>
-                                    <Column field="oct_qty" sortable header="October (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="oct_qty" sortable header="October (Qty)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                     </Column>
-                                    <Column field="nov_qty" sortable header="November (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="nov_qty" sortable header="November (Qty)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                     </Column>
-                                    <Column field="dec_qty" sortable header="December (pcs)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="dec_qty" sortable header="December (Qty)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                     </Column>
                                 </DataTable>
                             </section>

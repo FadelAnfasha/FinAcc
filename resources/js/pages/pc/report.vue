@@ -25,6 +25,7 @@ const dtCTXSQ = ref();
 const dtBASE = ref();
 const dtCPP = ref();
 const dtPC = ref();
+const activeTabValue = ref('0');
 
 const filters = ref({
     bp_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -429,7 +430,7 @@ function closeDialog(type: 'pc' | null) {
 
             <!-- Process Items Grid -->
             <div class="mx-26 mb-26">
-                <Tabs value="0">
+                <Tabs v-model="activeTabValue">
                     <TabList>
                         <Tab value="0">Activity Quantity</Tab>
                         <Tab value="1">Convertion Cost</Tab>

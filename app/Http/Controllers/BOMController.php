@@ -768,7 +768,7 @@ class BOMController extends Controller
         $monthSlice = array_slice($monthOrder, $startIndex, $endIndex - $startIndex + 1);
 
         if ($startMonth !== $endMonth) {
-            $period = "YTM-" . ucfirst($endMonth) . "'" . $year;
+            $period = "YTD-" . ucfirst($endMonth) . "'" . $year;
         } else {
             $period = ucfirst($startMonth) . "'" . $year;
         }
@@ -1179,6 +1179,7 @@ class BOMController extends Controller
             'standard_period' => 'required',
             'actual_period' => 'required',
         ]);
+
         $standardCost = StandardCost::where('period', $validatedData['standard_period'])
             // ->take(10)
             ->get();
@@ -1234,6 +1235,7 @@ class BOMController extends Controller
 
         // Simpan ke database menggunakan upsert
         DifferenceCost::upsert($differenceCosts, ['item_code', 'period'], ['total_raw_material', 'total_process', 'total']);
+        return redirect()->route('bom.report');
     }
 
     public function updateDCxSQ(Request $request)

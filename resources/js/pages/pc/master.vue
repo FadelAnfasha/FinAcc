@@ -41,6 +41,7 @@ const dtSQ = ref();
 const dtWD = ref();
 const toast = useToast();
 const page = usePage();
+const activeTabValue = ref('0');
 
 const businessPartners = computed(() =>
     (page.props.businessPartners as any[]).map((bp, index) => ({
@@ -1335,7 +1336,7 @@ const props = defineProps({
             </div>
 
             <div class="mx-26 mb-26">
-                <Tabs value="0">
+                <Tabs v-model="activeTabValue">
                     <TabList>
                         <Tab value="0">Business Partner</Tab>
                         <Tab value="1">Cycle Time</Tab>
