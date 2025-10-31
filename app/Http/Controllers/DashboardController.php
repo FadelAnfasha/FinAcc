@@ -3,20 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActualCost;
-use App\Models\ActualMaterial;
 use App\Models\ActualSalesQuantity;
 use App\Models\DiffCostXSalesQty;
-use App\Models\DifferenceCost;
 use Inertia\Inertia;
 use Carbon\Carbon;
-
-use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        $lastMonth = Carbon::now()->subMonth()->format('M');
+        $lastMonth = Carbon::now()->subMonthNoOverflow()->format('M');
         $Month = Carbon::now()->subMonth()->format('F');
         $lastYear = Carbon::now()->format('Y');
         $columnTopQuantity = strtolower($lastMonth) . '_qty';
@@ -37,12 +33,6 @@ class DashboardController extends Controller
             ->limit(5)
             ->select('item_code', 'quantity', 'total', 'period')
             ->get();
-
-        // $topDifferenceCost = DiffCostXSalesQty::orderBy('total', 'asc')
-        //     ->where('period', 'like',  'YTM-' . $lastMonth . '%')
-        //     ->limit(5)
-        //     ->select('item_code', 'quantity', 'total', 'period')
-        //     ->get();
 
         return Inertia::render('Dashboard', [
             'topActualCost' => $topActualCost,
