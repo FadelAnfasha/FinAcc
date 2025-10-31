@@ -365,7 +365,7 @@ body {
             ></div> -->
 
             <!-- Konten di atas gambar -->
-            <div class="relative z-10 px-6 py-2">
+            <div class="relative px-6 py-2">
                 <h1 class="mb-10 text-3xl font-bold text-gray-900 dark:text-white">Feature :</h1>
                 <div class="grid grid-cols-1 justify-items-center gap-8 md:grid-cols-2 lg:grid-cols-3">
                     <Card
