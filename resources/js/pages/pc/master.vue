@@ -25,14 +25,23 @@ import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
 import { computed, nextTick, onMounted, reactive, ref } from 'vue';
 
-const filters = ref({
+const filterBP = ref({
     bp_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
     bp_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    'bp.bp_name': { value: null, matchMode: FilterMatchMode.CONTAINS },
+});
+
+const filterCT = ref({
     item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
     type: { value: null, matchMode: FilterMatchMode.CONTAINS },
+});
+
+const filterSQ = ref({
+    bp_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    'bp.bp_name': { value: null, matchMode: FilterMatchMode.CONTAINS },
+    item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
     'item.type': { value: null, matchMode: FilterMatchMode.CONTAINS },
 });
+
 const loading = ref(false);
 
 const dtBP = ref();
@@ -372,7 +381,7 @@ const bodyStyle = { backgroundColor: '#c8cccc', color: 'black' };
 
 const showDialog = ref(false);
 const dialogWidth = ref('40rem');
-const editType = ref<'ct' | 'sq' | 'wd' | null>(null);
+const editType = ref<'sq' | 'wd' | null>(null);
 const addType = ref<'bp' | null>(null);
 
 const destroyType = ref<'ct' | 'sq' | 'bp' | null>(null);
@@ -971,7 +980,7 @@ const props = defineProps({
                                 @click="
                                     () => {
                                         showDialog = false;
-                                        editType = null;
+                                        addType = null;
                                     }
                                 "
                             ></Button>
@@ -1404,7 +1413,7 @@ const props = defineProps({
                                     columnResizeMode="expand"
                                     showGridlines
                                     removableSort
-                                    v-model:filters="filters"
+                                    v-model:filters="filterBP"
                                     filterDisplay="row"
                                     :loading="loading"
                                     :globalFilterFields="['bp_code', 'bp_name']"
@@ -1517,10 +1526,10 @@ const props = defineProps({
                                     columnResizeMode="expand"
                                     showGridlines
                                     removableSort
-                                    v-model:filters="filters"
+                                    v-model:filters="filterCT"
                                     filterDisplay="row"
                                     :loading="loading"
-                                    :globalFilterFields="['bp_code']"
+                                    :globalFilterFields="['bp_code', 'type']"
                                     class="text-md"
                                     ref="dtCT"
                                 >
@@ -2193,7 +2202,7 @@ const props = defineProps({
                                     columnResizeMode="expand"
                                     showGridlines
                                     removableSort
-                                    v-model:filters="filters"
+                                    v-model:filters="filterSQ"
                                     filterDisplay="row"
                                     :loading="loading"
                                     :globalFilterFields="['bp_code', 'bp.bp_name', 'item_code', 'item.type']"
@@ -2332,7 +2341,7 @@ const props = defineProps({
                                             class="w-full sm:w-auto"
                                         />
 
-                                        <div class="flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row">
+                                        <!-- <div class="flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row">
                                             <Button
                                                 icon="pi pi-download"
                                                 label=" Export"
@@ -2340,7 +2349,7 @@ const props = defineProps({
                                                 class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 sm:w-28"
                                                 @click="exportCSV('wd')"
                                             />
-                                        </div>
+                                        </div> -->
                                     </div>
 
                                     <div class="text-right text-gray-700 dark:text-gray-300">

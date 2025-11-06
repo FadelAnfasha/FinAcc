@@ -1,26 +1,32 @@
 <?php
 
+use App\Http\Controllers\Auth\RegisteredUserController;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+
+use App\Models\SalesQuantity;
+use App\Http\Controllers\ActualCostController;
 use App\Http\Controllers\standardMaterialController;
 use App\Http\Controllers\actualMaterialController;
 use App\Http\Controllers\actualSalesQuantityController;
 use App\Http\Controllers\SalesQuantityController;
 use App\Http\Controllers\ValveController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Cache;
 use App\Http\Controllers\RequestForServiceController;
-use Inertia\Inertia;
 use App\Http\Controllers\BOMController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ProcessCostController;
-use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\BillOfMaterialController;
 use App\Http\Controllers\BusinessPartnerController;
 use App\Http\Controllers\CycleTimeController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DifferenceCostController;
+use App\Http\Controllers\MenuController;
+use App\Http\Controllers\StandardCostController;
 use App\Http\Controllers\WagesDistributionController;
-use App\Models\SalesQuantity;
+use PhpOffice\PhpSpreadsheet\Calculation\DateTimeExcel\Difference;
 
 #===========================
 #======  Main Route  =======
@@ -38,17 +44,47 @@ Route::get('/', function (Request $request) {
     ]);
 })->name('home');
 
-Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/dashboard', [MenuController::class, 'Dashboard'])
+        ->name('dashboard');
+
+    Route::get('/rfs', [MenuController::class, 'RFS'])
+        ->name('rfs.index');
+
+    Route::get('/admin', [MenuController::class, 'Admin'])
+        ->name('admin.index');
+
+    Route::get('/pc/master', [MenuController::class, 'ProcessCost_Master'])
+        // ->middleware('role:Process Cost - Full Access')
+        ->name('pc.master');
+
+    Route::get('/bom/master', [MenuController::class, 'BOM_Master'])
+        ->name('bom.master');
+
+    Route::get('/sc/masterStandard', [MenuController::class, 'Standard_Master'])
+        ->name('sc.master');
+
+    Route::get('/ac/masterActual', [MenuController::class, 'Actual_Master'])
+        ->name('ac.master');
+
+    Route::get('/pc/report', [MenuController::class, 'ProcessCost_Report'])
+        // ->middleware(['role:Process Cost - View|Process Cost - Full Access'])
+        ->name('pc.report');
+
+    Route::get('/bom/report', [MenuController::class, 'BOM_Report'])
+        ->name('bom.report');
+
+    Route::get('/sc/report', [MenuController::class, 'Standard_Report'])
+        ->name('sc.report');
+
+    Route::get('/dc/report', [MenuController::class, 'DiffCost_Report'])
+        ->name('dc.report');
+});
 
 #==========================
 #======= RFS Route ========
 #==========================
 Route::middleware(['auth', 'verified'])->group(function () {
-
-    // RFS Routes
-    Route::resource('rfs', RequestForServiceController::class);
 
     Route::post('/rfs/{id}/accept', [RequestForServiceController::class, 'accept'])
         ->middleware('permission:Approve');
@@ -70,18 +106,45 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 #==========================
+#====== Admin Route =======
+#==========================
+Route::middleware(['auth', 'verified', 'role:Admin'])->group(function () {
+
+    // Role Management Routes
+    Route::prefix('admin/roles')->middleware('role:Admin')->name('admin.roles.')->group(function () {
+        Route::post('/', [AdminController::class, 'storeRole'])->name('store');
+        Route::put('/{role}', [AdminController::class, 'updateRole'])->name('update');
+        Route::delete('/{role}', [AdminController::class, 'destroyRole'])->name('destroy');
+        Route::get('/list', [AdminController::class, 'getRoles'])->name('list');
+    });
+
+    // Permission Management Routes
+    Route::prefix('admin/permissions')->middleware('role:Admin')->name('admin.permissions.')->group(function () {
+        Route::post('/', [AdminController::class, 'storePermission'])->name('store');
+        Route::put('/{permission}', [AdminController::class, 'updatePermission'])->name('update');
+        Route::delete('/{permission}', [AdminController::class, 'destroyPermission'])->name('destroy');
+        Route::get('/list', [AdminController::class, 'getPermissions'])->name('list');
+    });
+
+    // User Role Assignment Routes
+    Route::prefix('admin/users')->middleware('role:Admin')->name('admin.users.')->group(function () {
+        Route::post('{selected_user}/assign-role', [AdminController::class, 'assignRole'])->name('assign-role');
+        Route::post('/remove-role', [AdminController::class, 'removeRole'])->name('remove-role');
+        Route::get('/list', [AdminController::class, 'getUsers'])->name('list');
+    });
+
+    // Register new user by Admin
+    Route::prefix('admin')->middleware('role:Admin')->name('admin.')->group(function () {
+        Route::post('register', [RegisteredUserController::class, 'store'])->name('register');
+    });
+});
+
+#==========================
 #======== PC Route ========
 #==========================
 Route::middleware(['auth', 'verified'])->group(function () {
-    // Master Data page
-    Route::get('/pc/master', [ProcessCostController::class, 'master'])
-        // ->middleware('role:Process Cost - Full Access')
-        ->name('pc.master');
-
     // Report page
-    Route::get('/pc/report', [ProcessCostController::class, 'report'])
-        // ->middleware(['role:Process Cost - View|Process Cost - Full Access'])
-        ->name('pc.report');
+
 
     Route::post('/pc/update/CTxSQ', [ProcessCostController::class, 'updateCTxSQ'])->middleware('permission:Update_Report')->name('pc.updateCTxSQ');
     Route::post('/pc/update/BaseCost', [ProcessCostController::class, 'updateBaseCost'])->middleware('permission:Update_Report')->name('pc.updateBaseCost');
@@ -145,61 +208,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 
-#==========================
-#===== Standard Cost ======
-#==========================
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/bom/masterStandard', [BOMController::class, 'standardMaster'])
-        ->name('bom.masterStandard');
-
-    Route::get('/bom/masterActual', [BOMController::class, 'actualMaster'])
-        ->name('bom.masterActual');
-
-    Route::get('/bom/master', [BOMController::class, 'BOMMaster'])
-        ->name('bom.master');
-
-    // Report page
-    Route::get('/bom/report', [BOMController::class, 'report'])
-        ->name('bom.report');
-
-    Route::post('/bom/update/SC', [BOMController::class, 'updateStandardCost'])->middleware('permission:Update_Report')->name('bom.updateSC');
-    Route::post('/bom/update/AC', [BOMController::class, 'updateActualCost'])->middleware('permission:Update_Report')->name('bom.updateAC');
-    Route::post('/bom/update/DC', [BOMController::class, 'updateDifferenceCost'])->middleware('permission:Update_Report')->name('bom.updateDC');
-    Route::post('/bom/update/DCxSQ', [BOMController::class, 'updateDCxSQ'])->middleware('permission:Update_Report')->name('bom.updateDCxSQ');
-
-    Route::get('/bom/previewSC/{item_code}', action: [BOMController::class, 'previewSC'])->name('preview.sc');
-    Route::get('/bom/previewAC/{item_code}', action: [BOMController::class, 'previewAC'])->name('preview.ac');
-    Route::get('/bom/download/{item_code}', [BOMController::class, 'downloadReport'])->name('report.download');
-});
-
-#=============================
-#=====> Materials Route <=====
-#=============================
-
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::post('/standardMat/import', [standardMaterialController::class, 'import'])->middleware('permission:Update_MasterData')->name('stamat.import');
-    Route::put('/standardMat/update/{id}', [standardMaterialController::class, 'update'])->name('stamat.update');
-    Route::delete('/standardMat/destroy/{id}', [standardMaterialController::class, 'destroy'])->name('stamat.destroy');
-    Route::get('/standardMat/import-progress', function () {
-        return response()->json([
-            'progress' => Cache::get('import-progress-standardMat', 0),
-        ]);
-    });
-
-    Route::post('/actualMat/import', [actualMaterialController::class, 'import'])->middleware('permission:Update_MasterData')->name('acmat.import');
-    Route::put('/actualMat/update/{id}', [actualMaterialController::class, 'update'])->name('acmat.update');
-    Route::delete('/actualMat/destroy/{id}', [actualMaterialController::class, 'destroy'])->name('acmat.destroy');
-    Route::get('/actualMat/import-progress', function () {
-        return response()->json([
-            'progress' => Cache::get('import-progress-actualMat', 0),
-        ]);
-    });
-});
-
 #=============================
 #====> Bill of Materials <====
 #=============================
 Route::middleware(['auth', 'verified'])->group(function () {
+
     Route::post('/bom/import', [BillOfMaterialController::class, 'import'])
         ->middleware('permission:Update_MasterData')
         ->name('bom.import');
@@ -229,11 +242,64 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 
-#=============================
-#=======> Act. SlsQty ========
-#=============================
-
+#==========================
+#====== Only Standard =====
+#==========================
 Route::middleware(['auth', 'verified'])->group(function () {
+    #==========================
+    #==== Standard Master =====
+    #==========================
+    Route::post('/standardMat/import', [standardMaterialController::class, 'import'])->middleware('permission:Update_MasterData')->name('stamat.import');
+    Route::put('/standardMat/update/{id}', [standardMaterialController::class, 'update'])->name('stamat.update');
+    Route::delete('/standardMat/destroy/{id}', [standardMaterialController::class, 'destroy'])->name('stamat.destroy');
+    Route::get('/standardMat/import-progress', function () {
+        return response()->json([
+            'progress' => Cache::get('import-progress-standardMat', 0),
+        ]);
+    });
+
+
+    #==========================
+    #==== Standard Report =====
+    #==========================
+
+    Route::post('/sc/update/SC', [StandardCostController::class, 'update'])->middleware('permission:Update_Report')->name('sc.update');
+    Route::get('/sc/previewSC/{item_code}', action: [StandardCostController::class, 'preview'])->name('sc.preview');
+
+    // Route::get('/sc/download/{item_code}', [BOMController::class, 'downloadReport'])->name('sc.download');
+
+});
+
+#==========================
+#====== Only Actual =======
+#==========================
+Route::middleware(['auth', 'verified'])->group(function () {
+    #==========================
+    #===== Actual Master ======
+    #==========================
+
+    Route::post('/actualMat/import', [actualMaterialController::class, 'import'])->middleware('permission:Update_MasterData')->name('acmat.import');
+    Route::put('/actualMat/update/{id}', [actualMaterialController::class, 'update'])->name('acmat.update');
+    Route::delete('/actualMat/destroy/{id}', [actualMaterialController::class, 'destroy'])->name('acmat.destroy');
+    Route::get('/actualMat/import-progress', function () {
+        return response()->json([
+            'progress' => Cache::get('import-progress-actualMat', 0),
+        ]);
+    });
+
+    #==========================
+    #===== Actual Report ======
+    #==========================
+    Route::get('/ac/report', [MenuController::class, 'reportActual'])
+        ->name('ac.report');
+    Route::post('/ac/update/AC', [ActualCostController::class, 'update'])->middleware('permission:Update_Report')->name('ac.update');
+    Route::get('/ac/previewSC/{item_code}', action: [ActualCostController::class, 'preview'])->name('ac.preview');
+    // Route::post('/sc/update/DC', [BOMController::class, 'updateDifferenceCost'])->middleware('permission:Update_Report')->name('sc.updateDC');
+    // Route::post('/sc/update/DCxSQ', [BOMController::class, 'updateDCxSQ'])->middleware('permission:Update_Report')->name('sc.updateDCxSQ');
+
+    #=============================
+    #====== Actual SalesQty ======
+    #=============================
     Route::post('/acsqty/import', [actualSalesQuantityController::class, 'import'])->middleware('permission:Update_MasterData')->name('acsqty.import');
     Route::put('/acsqty/update/{id}', [actualSalesQuantityController::class, 'update'])->name('acsqty.update');
     Route::delete('/acsqty/destroy/{id}', [actualSalesQuantityController::class, 'destroy'])->name('acsqty.destroy');
@@ -244,43 +310,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 
-#==========================
-#====== Admin Route =======
-#==========================
-Route::middleware(['auth', 'verified', 'role:Admin'])->group(function () {
 
-    // Admin Panel Main Route
-    Route::get('/admin', [AdminController::class, 'index'])
-        ->name('admin.index');
+#=============================
+#====== Difference Cost ======
+#=============================
 
-    // Role Management Routes
-    Route::prefix('admin/roles')->middleware('role:Admin')->name('admin.roles.')->group(function () {
-        Route::post('/', [AdminController::class, 'storeRole'])->name('store');
-        Route::put('/{role}', [AdminController::class, 'updateRole'])->name('update');
-        Route::delete('/{role}', [AdminController::class, 'destroyRole'])->name('destroy');
-        Route::get('/list', [AdminController::class, 'getRoles'])->name('list');
-    });
-
-    // Permission Management Routes
-    Route::prefix('admin/permissions')->middleware('role:Admin')->name('admin.permissions.')->group(function () {
-        Route::post('/', [AdminController::class, 'storePermission'])->name('store');
-        Route::put('/{permission}', [AdminController::class, 'updatePermission'])->name('update');
-        Route::delete('/{permission}', [AdminController::class, 'destroyPermission'])->name('destroy');
-        Route::get('/list', [AdminController::class, 'getPermissions'])->name('list');
-    });
-
-    // User Role Assignment Routes
-    Route::prefix('admin/users')->middleware('role:Admin')->name('admin.users.')->group(function () {
-        Route::post('{selected_user}/assign-role', [AdminController::class, 'assignRole'])->name('assign-role');
-        Route::post('/remove-role', [AdminController::class, 'removeRole'])->name('remove-role');
-        Route::get('/list', [AdminController::class, 'getUsers'])->name('list');
-    });
-
-    // Register new user by Admin
-    Route::prefix('admin')->middleware('role:Admin')->name('admin.')->group(function () {
-        Route::post('register', [RegisteredUserController::class, 'store'])->name('register');
-    });
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/dc/update/DC', [DifferenceCostController::class, 'updateDifferenceCost'])->middleware('permission:Update_Report')->name('dc.updateDC');
+    Route::post('/dc/update/DCxSQ', [DifferenceCostController::class, 'updateDCxSQ'])->middleware('permission:Update_Report')->name('dc.updateDCxSQ');
 });
+
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';

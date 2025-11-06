@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ActualSalesQuantity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
+use App\Models\ActualSalesQuantity;
 
 class actualSalesQuantityController extends Controller
 {

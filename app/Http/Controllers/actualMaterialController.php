@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\ActualMaterial;
 use Illuminate\Support\Facades\Cache;
+
+use App\Models\ActualMaterial;
 
 class actualMaterialController extends Controller
 {
+
 
     private function cleanValue($value)
     {
@@ -179,7 +181,7 @@ class actualMaterialController extends Controller
 
         Cache::put('import-progress-actualMat', 100, now()->addMinutes(5));
 
-        return redirect()->route('bom.masterActual')->with([
+        return redirect()->route('ac.master')->with([
             'success' => 'CSV import process completed! ' . count($addedItems) . ' records processed.',
             'addedItems' => $addedItems,
             'invalidItems' => $invalidItems

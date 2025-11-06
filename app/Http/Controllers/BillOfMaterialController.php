@@ -2,12 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\BillOfMaterial;
 use Illuminate\Http\Request;
-use Symfony\Component\String\TruncateMode;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Session;
+
+use App\Models\BillOfMaterial;
 
 
 class BillOfMaterialController extends Controller
@@ -82,6 +80,7 @@ class BillOfMaterialController extends Controller
             'invalidItems' => $invalidItems
         ]);
     }
+
     public function components($id)
     {
         $all = BillOfMaterial::orderBy('id')->get();

@@ -114,7 +114,7 @@ class standardMaterialController extends Controller
         Cache::put('import-progress-standardMat', 100, now()->addMinutes(5));
 
         // --- Langkah 10: Mengalihkan (Redirect) dengan hasil impor ---
-        return redirect()->route('bom.masterStandard')->with([
+        return redirect()->route('sc.master')->with([
             'success' => 'CSV import process completed!',
             'addedItems' => $addedItems,
             'invalidItems' => $invalidItems
@@ -153,51 +153,5 @@ class standardMaterialController extends Controller
         $material->delete();
 
         redirect()->route(route: 'pc.master');
-    }
-
-    public function store(Request $request)
-    {
-        $request->validate([
-            'type' => 'required',
-            // 'item_desc' => 'required',
-            'in_stock' => 'required',
-            'item_group' => 'required',
-            'price' => 'required',
-        ]);
-
-
-        // Generate item_code
-        $type = $request->input('type');
-        $prefix = 'RF' . strtoupper(substr($type, 0, 1));
-        $materials = StandardMaterial::where('item_code', 'like', $prefix . '%')->orderBy('item_code', 'asc')->get();
-
-        $existingNumbers = $materials->map(function ($material) use ($prefix) {
-            return intval(substr($material->item_code, strlen($prefix)));
-        })->toArray();
-
-        $newNumber = '001';
-        for ($i = 1; $i <= count($existingNumbers) + 1; $i++) {
-            if (!in_array($i, $existingNumbers)) {
-                $newNumber = str_pad($i, 3, '0', STR_PAD_LEFT);
-                break;
-            }
-        }
-
-        $in_stock = str_replace(',', '', $request->input('in_stock'));
-        $price = str_replace(',', '', $request->input('price'));
-
-        $item_code = $prefix . $newNumber;
-
-        // dd($item_code, $in_stock, $price);
-        // Create new material
-        StandardMaterial::create([
-            'item_code' => $item_code,
-            // 'item_desc' => $request->input('item_desc'),
-            'in_stock' => $in_stock,
-            'item_group' => $request->input('item_group'),
-            'price' => $price,
-        ]);
-
-        return redirect()->route('materials.index')->with('success', 'Material added successfully with code : ' . $item_code);
     }
 }

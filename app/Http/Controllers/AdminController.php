@@ -3,53 +3,16 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
-use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
+
+use App\Models\User;
+
 class AdminController extends Controller
 {
-    public function index()
-    {
-        $roles = Role::with('permissions')->get()->map(function ($role) {
-            return [
-                'id' => $role->id,
-                'name' => $role->name,
-                'permissions' => $role->permissions->pluck('name')->toArray()
-            ];
-        });
-
-        $permissions = Permission::all()->map(function ($permission) {
-            return [
-                'id' => $permission->id,
-                'name' => $permission->name
-            ];
-        });
-
-        $users = User::with('roles')->get()->map(function ($user) {
-            // Ambil semua nama role dan simpan sebagai array
-            $roleNames = $user->roles->pluck('name')->toArray();
-
-            return [
-                'id' => $user->id,
-                'name' => $user->name,
-                'npk' => $user->npk,
-                // Key diubah menjadi 'roles' (jamak) untuk menampung array
-                // Jika tidak ada role, akan menampilkan array kosong []
-                'roles' => $roleNames
-            ];
-        });
-
-        return Inertia::render('admin/index', [
-            'roles' => $roles,
-            'permissions' => $permissions,
-            'users' => $users
-        ]);
-    }
-
     public function storeRole(Request $request)
     {
         // dd($request->all());
