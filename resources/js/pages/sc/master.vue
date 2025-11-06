@@ -10,6 +10,9 @@ import DataTable from 'primevue/datatable';
 import Dialog from 'primevue/dialog';
 import FileUpload, { FileUploadUploaderEvent } from 'primevue/fileupload';
 import InputNumber from 'primevue/inputnumber';
+
+import Select from 'primevue/select';
+
 import InputText from 'primevue/inputtext';
 import ProgressBar from 'primevue/progressbar';
 import Tab from 'primevue/tab';
@@ -19,51 +22,46 @@ import TabPanels from 'primevue/tabpanels';
 import Tabs from 'primevue/tabs';
 import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
-import { computed, nextTick, ref, Ref, watch } from 'vue';
+import { computed, nextTick, ref, Ref } from 'vue';
 
-const dtBOM = ref();
+const dtSTAMAT = ref();
+
 const toast = useToast();
 const page = usePage();
 const headerStyle = { backgroundColor: '#758596', color: 'white' };
 const bodyStyle = { backgroundColor: '#c8cccc', color: 'black' };
 const showDialog = ref(false);
 const dialogWidth = ref('40rem');
-const editType = ref<'valve' | null>(null);
-const destroyType = ref<'bom' | 'valve' | null>(null);
+const editType = ref<'stamat' | null>(null);
+const destroyType = ref<'stamat' | null>(null);
 const headerType = ref<any>({});
 const editedData = ref<any>({});
 const destroyedData = ref<any>({});
 const showImportDialog: Ref<boolean> = ref(false);
 const importName = ref<any>({});
 const selectedFile = ref<File | null>(null);
-const importType = ref<'valve' | 'bom' | null>(null);
+const importType = ref<'stamat' | null>(null);
 const notImported = ref(true);
-const fileUploaderVALVE = ref<any>(null);
-const fileUploaderBOM = ref<any>(null);
+const fileUploaderSTAMAT = ref<any>(null);
 const uploadProgress = ref(0);
 const isUploading = ref(false);
+
+const filtersStandard = ref({
+    item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    'bom.description': { value: null, matchMode: FilterMatchMode.CONTAINS },
+});
 const loading = ref(false);
 
-const billOfMaterials = computed(() =>
-    ((page.props.billOfMaterials as any[]) ?? []).map((bom, index) => ({
-        ...bom,
+const standardMaterial = computed(() =>
+    ((page.props.standardMaterial as any[]) ?? []).map((standardmat, index) => ({
+        ...standardmat,
         no: index + 1,
-        created_at_formatted: formatDate(bom.created_at),
-        updated_at_formatted: formatDate(bom.updated_at),
-    })),
-);
-
-const valves = computed(() =>
-    ((page.props.valve as any[]) ?? []).map((valves, index) => ({
-        ...valves,
-        no: index + 1,
-        created_at_formatted: formatDate(valves.created_at),
-        updated_at_formatted: formatDate(valves.updated_at),
+        created_at_formatted: formatDate(standardmat.created_at),
+        updated_at_formatted: formatDate(standardmat.updated_at),
     })),
 );
 
 const type = computed(() => page.props.type as string | undefined);
-
 const getDefaultActiveTab = (): string | null => {
     // Ambil nilai dari computed property 'type'
     const currentType = type.value;
@@ -98,41 +96,14 @@ interface ComponentItem {
     // Tambahkan field lain jika diperlukan
 }
 
-const filterValve = ref({
-    item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
-});
-
-const filterBom = ref({
-    item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    description: { value: null, matchMode: FilterMatchMode.CONTAINS },
-});
-
 const lastUpdate = computed(() => {
-    const bom_update = ((page.props.billOfMaterials as any[]) ?? []).map((bom) => new Date(bom.updated_at));
-    const Max_bomUpdate = bom_update.length ? new Date(Math.max(...bom_update.map((d) => d.getTime()))) : null;
-
-    const valve_update = ((page.props.valve as any[]) ?? []).map((valve) => new Date(valve.updated_at));
-    const Max_valveUpdate = valve_update.length ? new Date(Math.max(...valve_update.map((d) => d.getTime()))) : null;
-
     const stamat_update = ((page.props.standardMaterial as any[]) ?? []).map((stamat) => new Date(stamat.updated_at));
     const Max_stamatUpdate = stamat_update.length ? new Date(Math.max(...stamat_update.map((d) => d.getTime()))) : null;
 
-    const acmat_update = ((page.props.actualMaterial as any[]) ?? []).map((acmat) => new Date(acmat.updated_at));
-    const Max_acmatUpdate = acmat_update.length ? new Date(Math.max(...acmat_update.map((d) => d.getTime()))) : null;
-
-    const actualSalesQty_update = ((page.props.actualSalesQty as any[]) ?? []).map((actualSalesQty) => new Date(actualSalesQty.updated_at));
-    const Max_actualSalesQtyUpdate = actualSalesQty_update.length ? new Date(Math.max(...actualSalesQty_update.map((d) => d.getTime()))) : null;
-
-    return [Max_bomUpdate, Max_valveUpdate, Max_stamatUpdate, Max_acmatUpdate, Max_actualSalesQtyUpdate];
+    return [Max_stamatUpdate];
 });
 
-const dataSource = [
-    'Share Others/Finacc/Bill of Material/Bill of Material (BOM)/bom_master.csv',
-    'Share Others/Finacc/Bill of Material/Valve Price (VP)/vp_master.csv',
-    'Share Others/Finacc/Bill of Material/Standard Material Price/standardMat_master.csv',
-    'Share Others/Finacc/Bill of Material/Actual Material Price/actualMat_master.csv',
-    'Share Others/Finacc/Bill of Material/Bill of Material (BOM)/actualSalesQty_master.csv',
-];
+const dataSource = ['Share Others/Finacc/Bill of Material/Standard Material Price/standardMat_master.csv'];
 
 function formatlastUpdate(date: Date | string) {
     return dayjs(date).format('DD MMM YYYY HH:mm:ss');
@@ -148,24 +119,13 @@ interface FinishGood {
 
 const finishGood = ref<FinishGood>(page.props.finish_good ?? {});
 
-watch(
-    () => page.props.component,
-    (newVal) => {
-        componentItems.value = (newVal as ComponentItem[]) ?? [];
-        showComponent.value = componentItems.value.length > 0;
-
-        finishGood.value = page.props.finish_good ?? {};
-    },
-    { immediate: true },
-);
-
 function closeComponentDialog() {
     showComponent.value = false;
     componentItems.value = [];
     finishGood.value = {}; // ✅ kosongkan dengan objek kosong
 }
 
-function handleCSVImport(event: FileUploadUploaderEvent, type: 'valve' | 'bom') {
+function handleCSVImport(event: FileUploadUploaderEvent, type: 'stamat') {
     let file: File | undefined;
 
     if (Array.isArray(event.files)) {
@@ -177,8 +137,7 @@ function handleCSVImport(event: FileUploadUploaderEvent, type: 'valve' | 'bom') 
     if (!file) return;
 
     const expectedNames = {
-        valve: 'valve_master.csv',
-        bom: 'bom_master.csv',
+        stamat: 'standardMat_master.csv',
     };
 
     const expectedFileName = expectedNames[type];
@@ -194,8 +153,7 @@ function handleCSVImport(event: FileUploadUploaderEvent, type: 'valve' | 'bom') 
         selectedFile.value = null;
 
         nextTick(() => {
-            if (type === 'valve') fileUploaderVALVE.value?.clear();
-            if (type === 'bom') fileUploaderBOM.value?.clear();
+            if (type === 'stamat') fileUploaderSTAMAT.value?.clear();
         });
         return;
     }
@@ -209,25 +167,23 @@ function handleCSVImport(event: FileUploadUploaderEvent, type: 'valve' | 'bom') 
     });
 }
 
-function cancelCSVimport(type: 'valve' | 'bom') {
+function cancelCSVimport(type: 'stamat') {
     showImportDialog.value = false;
     selectedFile.value = null;
 
     nextTick(() => {
-        if (type === 'valve') fileUploaderVALVE.value?.clear();
-        if (type === 'bom') fileUploaderBOM.value?.clear();
+        if (type === 'stamat') fileUploaderSTAMAT.value?.clear();
     });
 }
 
-function confirmUpload(type: 'valve' | 'bom') {
+function confirmUpload(type: 'stamat') {
     if (!selectedFile.value || !importType.value) return;
 
     const formData = new FormData();
     formData.append('file', selectedFile.value);
 
     const routes = {
-        valve: 'valve.import',
-        bom: 'bom.import',
+        stamat: 'stamat.import',
     };
 
     isUploading.value = true;
@@ -250,8 +206,7 @@ function confirmUpload(type: 'valve' | 'bom') {
             selectedFile.value = null;
 
             nextTick(() => {
-                if (type === 'valve') fileUploaderVALVE.value?.clear();
-                if (type === 'bom') fileUploaderBOM.value?.clear();
+                if (type === 'stamat') fileUploaderSTAMAT.value?.clear();
             });
         },
 
@@ -269,8 +224,7 @@ function confirmUpload(type: 'valve' | 'bom') {
 
             selectedFile.value = null;
             nextTick(() => {
-                if (type === 'valve') fileUploaderVALVE.value?.clear();
-                if (type === 'bom') fileUploaderBOM.value?.clear();
+                if (type === 'stamat') fileUploaderSTAMAT.value?.clear();
             });
         },
     });
@@ -282,12 +236,11 @@ function resetImportState() {
     notImported.value = true;
 }
 
-function startPollingProgress(type: 'valve' | 'bom') {
+function startPollingProgress(type: 'stamat') {
     uploadProgress.value = 0;
 
     const endpointMap = {
-        valve: '/finacc/valve/import-progress',
-        bom: '/finacc/bom/import-progress',
+        stamat: '/finacc/standardMat/import-progress',
     };
 
     const interval = setInterval(async () => {
@@ -306,6 +259,23 @@ function startPollingProgress(type: 'valve' | 'bom') {
     }, 1000);
 }
 
+function exportCSV(type: 'stamat') {
+    let $type = null;
+    let $filename = null;
+    if (type === 'stamat') {
+        $type = dtSTAMAT.value;
+        $filename = 'standard-mat';
+    }
+    if (!$type) return;
+
+    const exportFilename = `${$filename}-${new Date().toISOString().slice(0, 10)}.csv`;
+
+    $type.exportCSV({
+        selectionOnly: false,
+        filename: exportFilename,
+    });
+}
+
 function formatDate(dateStr: string): string {
     const date = new Date(dateStr);
     const yy = String(date.getFullYear());
@@ -314,24 +284,23 @@ function formatDate(dateStr: string): string {
     return `${yy}-${mm}-${dd}`;
 }
 
-function editData(data: any, type: 'valve') {
+function editData(data: any, type: 'stamat') {
     editedData.value = { ...data };
     editType.value = type;
     headerType.value = 'Edit data';
-
     // Atur lebar berdasarkan type
-    if (type === 'valve') {
+    if (type === 'stamat') {
         dialogWidth.value = '40rem';
     }
     showDialog.value = true;
 }
 
 function handleSave() {
-    if (editType.value === 'valve') {
+    if (editType.value === 'stamat') {
         const item_code = editedData.value.item_code;
         if (!item_code) return;
 
-        router.put(route('valve.update', item_code), editedData.value, {
+        router.put(route('stamat.update', item_code), editedData.value, {
             preserveScroll: true,
             preserveState: true,
             onSuccess: () => {
@@ -359,13 +328,11 @@ function handleSave() {
     }
 }
 
-function destroyData(data: any, type: 'bom' | 'valve') {
+function destroyData(data: any, type: 'stamat') {
     destroyedData.value = { ...data };
     destroyType.value = type;
     headerType.value = 'Delete data';
-    if (type === 'bom') {
-        dialogWidth.value = '40rem';
-    } else if (type === 'valve') {
+    if (type === 'stamat') {
         dialogWidth.value = '40rem';
     }
 
@@ -373,11 +340,11 @@ function destroyData(data: any, type: 'bom' | 'valve') {
 }
 
 function handleDestroy() {
-    if (destroyType.value === 'valve') {
+    if (destroyType.value === 'stamat') {
         const item_code = destroyedData.value.item_code;
         if (!item_code) return;
 
-        router.delete(route('valve.destroy', item_code), {
+        router.delete(route('stamat.destroy', item_code), {
             data: destroyedData.value,
             preserveScroll: true,
             preserveState: true,
@@ -406,17 +373,6 @@ function handleDestroy() {
     }
 }
 
-function viewComponents(bom: any) {
-    // buka dialog untuk melihat komponen BOM
-    router.get(
-        route('bom.components', bom.id),
-        {},
-        {
-            preserveScroll: true,
-            preserveState: true,
-        },
-    );
-}
 const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('id-ID', {
         style: 'currency',
@@ -473,13 +429,13 @@ const props = defineProps({
 <template>
     <Toast group="br" position="bottom-right" />
 
-    <Head title="Bill of Material & Valve Master Data" />
+    <Head v-if="type === 'standardMaterial'" title="Standard Master Data" />
 
     <AppLayout>
         <div class="m-6">
-            <div v-if="type === 'bom'" class="flex flex-col gap-1">
-                <h2 class="mb-2 text-start text-3xl font-bold text-gray-900 dark:text-white">Bill of Material & Valve</h2>
-                <p class="text-start text-gray-600 dark:text-gray-400">Bill of Material & Valve Master Data</p>
+            <div v-if="type === 'standardMaterial'" class="flex flex-col gap-1">
+                <h2 class="mb-2 text-start text-3xl font-bold text-gray-900 dark:text-white">Standard Material Price</h2>
+                <p class="text-start text-gray-600 dark:text-gray-400">Material Master Data</p>
             </div>
 
             <!-- Header Section -->
@@ -554,9 +510,8 @@ const props = defineProps({
                             <table class="w-full border-collapse text-left">
                                 <thead>
                                     <tr>
-                                        <th v-if="importType === 'valve'" class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">
-                                            Price
-                                        </th>
+                                        <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Item Code</th>
+                                        <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Description</th>
 
                                         <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Reason</th>
                                     </tr>
@@ -565,15 +520,13 @@ const props = defineProps({
                                     <!-- Menggunakan template v-if dan v-for -->
                                     <template v-if="importResult.invalidItems.length > 0">
                                         <tr v-for="item in importResult.invalidItems" :key="item.no">
-                                            <td v-if="importType === 'valve'" class="border-b border-gray-800 px-4 py-2">
+                                            <td class="border-b border-gray-800 px-4 py-2">
                                                 {{ item.item_code }}
                                             </td>
-                                            <td v-if="importType === 'valve'" class="border-b border-gray-800 px-4 py-2">
+                                            <td class="border-b border-gray-800 px-4 py-2">
                                                 {{ item.description }}
                                             </td>
-                                            <td v-if="importType === 'valve'" class="border-b border-gray-800 px-4 py-2">
-                                                {{ item.price }}
-                                            </td>
+
                                             <td class="border-b border-gray-800 px-4 py-2">
                                                 {{ item.reason }}
                                             </td>
@@ -605,31 +558,36 @@ const props = defineProps({
                     </div>
                 </Dialog>
 
-                <Dialog v-model:visible="showComponent" :header="`Components of ${finishGood.item_code}`" modal class="w-[60rem]" :closable="false">
-                    <DataTable :value="componentItems" responsiveLayout="scroll">
-                        <div class="mr-2 mb-2 flex justify-end">
-                            <Button label="Close" severity="warn" @click="closeComponentDialog" />
-                        </div>
-                        <Column header="#" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
-                            <template #body="{ index }">
-                                {{ index + 1 }}
-                            </template>
-                        </Column>
-                        <Column field="item_code" header="Item Code" style="white-space: nowrap" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                        <Column field="description" header="Description" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                        <Column field="uom" header="Unit of Material" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                        <Column field="quantity" header="Quantity" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                        <Column field="warehouse" header="Warehouse" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                        <Column field="depth" header="Depth" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                        <Column field="bom_type" header="Bom Type" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                    </DataTable>
-                </Dialog>
-
                 <Dialog v-model:visible="showDialog" :header="headerType" modal :style="{ width: dialogWidth }" :closable="false">
-                    <div v-if="editType === 'valve'" class="space-y-6">
+                    <div v-if="editType === 'stamat'" class="space-y-6">
                         <div class="mb-4 flex items-center gap-4">
-                            <label for="item_code" class="w-24 font-semibold">Item Code</label>
+                            <label for="item_code" class="w-24 font-semibold">Material Code</label>
                             <InputText id="item_code" class="flex-auto" v-model="editedData.item_code" autocomplete="off" :disabled="true" />
+                        </div>
+                        <div class="mb-4 flex items-center gap-4">
+                            <label for="description" class="w-24 font-semibold">Description</label>
+                            <InputText
+                                id="description"
+                                class="flex-auto"
+                                :value="editedData.bom?.description || '-'"
+                                autocomplete="off"
+                                :disabled="true"
+                            />
+                        </div>
+                        <div class="mb-4 flex items-center gap-4">
+                            <label for="in_stock" class="w-24 font-semibold">In Stock</label>
+                            <InputNumber
+                                id="in_stock"
+                                class="flex-auto"
+                                inputId="integeronly"
+                                :min="0"
+                                v-model="editedData.in_stock"
+                                autocomplete="off"
+                            />
+                        </div>
+                        <div class="mb-4 flex items-center gap-4">
+                            <label for="item_group" class="w-24 font-semibold">Group</label>
+                            <Select v-model="editedData.item_group" :options="groups" optionLabel="name" optionValue="code" class="w-full md:w-56" />
                         </div>
                         <div class="mb-4 flex items-center gap-4">
                             <label for="price" class="w-24 font-semibold">Price</label>
@@ -647,6 +605,7 @@ const props = defineProps({
                             />
                         </div>
 
+                        <!-- Action buttons -->
                         <div class="mt-6 flex justify-end gap-2">
                             <Button
                                 type="button"
@@ -663,9 +622,9 @@ const props = defineProps({
                         </div>
                     </div>
 
-                    <div v-if="destroyType === 'valve'" class="space-y-6">
+                    <div v-if="destroyType === 'stamat'" class="space-y-6">
                         <span>
-                            Are you sure want to delete Valve data with item code
+                            Are you sure want to delete Material data with item code
                             <span class="font-semibold text-red-600">{{ destroyedData.item_code }} </span> and description
                             <span class="font-semibold text-red-600">{{ destroyedData.bom?.description || '-' }}</span> ?
                         </span>
@@ -691,15 +650,14 @@ const props = defineProps({
             <div class="mx-26 mb-26">
                 <Tabs v-model="activeTab">
                     <TabList>
-                        <Tab value="0">Bill of Material</Tab>
-                        <Tab value="1">Valve</Tab>
+                        <Tab value="0">Standard Material Price</Tab>
                     </TabList>
 
                     <TabPanels>
-                        <TabPanel value="0">
-                            <section ref="bomSection" class="p-2">
+                        <TabPanel v-if="type === 'standardMaterial'" value="0">
+                            <section ref="matSection" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
-                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Bill of Material</h2>
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Standard Material Price</h2>
 
                                     <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
                                         <FileUpload
@@ -711,9 +669,19 @@ const props = defineProps({
                                             accept=".csv"
                                             chooseLabel="Import CSV"
                                             chooseIcon="pi pi-upload"
-                                            @select="(event) => handleCSVImport(event, 'bom')"
+                                            @select="(event) => handleCSVImport(event, 'stamat')"
                                             class="w-full sm:w-auto"
                                         />
+
+                                        <div class="flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row">
+                                            <Button
+                                                icon="pi pi-download"
+                                                label=" Export"
+                                                unstyled
+                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 sm:w-28"
+                                                @click="exportCSV('stamat')"
+                                            />
+                                        </div>
                                     </div>
 
                                     <div class="text-right text-gray-700 dark:text-gray-300">
@@ -727,25 +695,27 @@ const props = defineProps({
                                         </div>
                                     </div>
                                 </div>
+
                                 <DataTable
-                                    :value="billOfMaterials"
+                                    :value="standardMaterial"
                                     tableStyle="min-width: 50rem"
                                     paginator
                                     :rows="10"
+                                    :rowsPerPageOptions="[10, 20, 50, 100]"
                                     resizableColumns
                                     columnResizeMode="expand"
                                     showGridlines
                                     removableSort
-                                    v-model:filters="filterBom"
+                                    v-model:filters="filtersStandard"
                                     filterDisplay="row"
                                     :loading="loading"
                                     :globalFilterFields="['item_code', 'description']"
                                     class="text-md"
-                                    ref="dtBOM"
+                                    ref="dtSTAMAT"
                                 >
                                     <Column
                                         field="item_code"
-                                        header="Item Code"
+                                        header="Material Code"
                                         :showFilterMenu="false"
                                         sortable
                                         :headerStyle="headerStyle"
@@ -758,11 +728,12 @@ const props = defineProps({
                                                 class="w-full"
                                             /> </template
                                     ></Column>
+
                                     <Column
-                                        field="description"
-                                        header="Name"
-                                        :showFilterMenu="false"
+                                        field="bom.description"
                                         sortable
+                                        header="Description"
+                                        :showFilterMenu="false"
                                         :headerStyle="headerStyle"
                                         :bodyStyle="bodyStyle"
                                     >
@@ -775,118 +746,14 @@ const props = defineProps({
                                             />
                                         </template>
                                         <template #body="{ data }">
-                                            {{ data ? data.description : 'N/A' }}
-                                        </template>
-                                    </Column>
-                                    <Column field="uom" header="Unit of Material" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-
-                                    <Column field="quantity" header="Quantity" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="warehouse" header="Warehouse" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-
-                                    <Column field="depth" header="Depth" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                                    <Column field="bom_type" header="BOM Type" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-
-                                    <Column field="created_at_formatted" sortable header="Added at" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
-                                        <template #body="slotProps">
-                                            {{ formatDate(slotProps.data.created_at) }}
+                                            {{ data.bom ? data.bom.description : '-' }}
                                         </template>
                                     </Column>
 
-                                    <Column
-                                        field="updated_at_formatted"
-                                        sortable
-                                        header="Updated at"
-                                        :headerStyle="headerStyle"
-                                        :bodyStyle="bodyStyle"
-                                    >
-                                        <template #body="slotProps">
-                                            {{ formatDate(slotProps.data.updated_at) }}
-                                        </template>
-                                    </Column>
+                                    <Column field="in_stock" sortable header="In Stock" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
+                                    <Column field="item_group" sortable header="Group" :headerStyle="headerStyle" :bodyStyle="bodyStyle"></Column>
 
-                                    <Column field="action" header="Action" :exportable="false" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
-                                        <template #body="slotProps">
-                                            <div class="flex gap-2">
-                                                <Button
-                                                    v-tooltip="'View Component'"
-                                                    icon="pi pi-eye"
-                                                    severity="info"
-                                                    rounded
-                                                    text
-                                                    @click="viewComponents(slotProps.data)"
-                                                />
-                                            </div>
-                                        </template>
-                                    </Column>
-                                </DataTable>
-                            </section>
-                        </TabPanel>
-
-                        <TabPanel value="1">
-                            <section ref="packSection" class="p-2">
-                                <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
-                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Valve Price</h2>
-
-                                    <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
-                                        <FileUpload
-                                            v-if="auth?.user?.permissions?.includes('Update_MasterData')"
-                                            ref="fileUploaderBP"
-                                            mode="basic"
-                                            name="file"
-                                            :customUpload="true"
-                                            accept=".csv"
-                                            chooseLabel="Import CSV"
-                                            chooseIcon="pi pi-upload"
-                                            @select="(event) => handleCSVImport(event, 'valve')"
-                                            class="w-full sm:w-auto"
-                                        />
-                                    </div>
-
-                                    <div class="text-right text-gray-700 dark:text-gray-300">
-                                        <div>
-                                            Last Update :
-                                            <span class="text-red-300">{{ lastUpdate[1] ? formatlastUpdate(lastUpdate[1]) : '-' }}</span>
-                                        </div>
-                                        <div>
-                                            Data source From :
-                                            <span class="text-cyan-400">{{ dataSource[1] }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <DataTable
-                                    :value="valves"
-                                    tableStyle="min-width: 50rem"
-                                    paginator
-                                    :rows="10"
-                                    resizableColumns
-                                    columnResizeMode="expand"
-                                    showGridlines
-                                    removableSort
-                                    v-model:filters="filterValve"
-                                    filterDisplay="row"
-                                    :loading="loading"
-                                    :globalFilterFields="['item_code']"
-                                    class="text-md"
-                                    ref="dtVP"
-                                >
-                                    <Column
-                                        field="item_code"
-                                        header="Item Code"
-                                        :showFilterMenu="false"
-                                        sortable
-                                        :headerStyle="headerStyle"
-                                        :bodyStyle="bodyStyle"
-                                        ><template #filter="{ filterModel, filterCallback }">
-                                            <InputText
-                                                v-model="filterModel.value"
-                                                @input="filterCallback()"
-                                                placeholder="Search item code"
-                                                class="w-full"
-                                            /> </template
-                                    ></Column>
-
-                                    <Column field="price" header="Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="price" header="Standard Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ formatCurrency(data.price) }}
                                         </template>
@@ -918,14 +785,14 @@ const props = defineProps({
                                                     severity="warning"
                                                     rounded
                                                     text
-                                                    @click="editData(slotProps.data, 'valve')"
+                                                    @click="editData(slotProps.data, 'stamat')"
                                                 />
                                                 <Button
                                                     icon="pi pi-trash"
                                                     severity="danger"
                                                     rounded
                                                     text
-                                                    @click="destroyData(slotProps.data, 'valve')"
+                                                    @click="destroyData(slotProps.data, 'stamat')"
                                                 />
                                             </div> </template
                                     ></Column>

@@ -55,7 +55,7 @@ class WagesDistributionController extends Controller
         $addedItems = [];
         $updatedItems = [];
         // Cek data lama
-        $existing = DB::table('wages_distribution')->first();
+        $existing = WagesDistribution::first();
 
         if ($existing) {
             foreach ($importedData as $field => $newValue) {
@@ -65,7 +65,7 @@ class WagesDistributionController extends Controller
             }
 
             // Update saja tanpa truncate
-            DB::table('wages_distribution')->update($importedData);
+            $existing->update($importedData);
         } else {
             // Kalau belum ada data, buat baru
             WagesDistribution::create($importedData);

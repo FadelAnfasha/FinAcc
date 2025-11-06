@@ -7,10 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 class WagesDistribution extends Model
 {
 
-    public $incrementing = false; // ID tidak auto increment
-    protected $primaryKey = null; // tidak ada primary key
+    public $incrementing = false;
+    protected $primaryKey = null;
 
-    protected $table = 'wages_distribution'; // pastikan nama tabel
+    protected $table = 'wages_distribution';
 
     protected $fillable = [
         'blanking',
@@ -31,7 +31,5 @@ class WagesDistribution extends Model
         'topcoat',
         'packing_dom',
         'packing_exp',
-        'created_at',
-        'updated_at',
     ];
 }

@@ -2,34 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\HistoryRFS;
-use App\Models\Priority;
-use App\Models\RequestForService;
 use Illuminate\Http\Request;
-use App\Models\Status;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
-use Spatie\Permission\Traits\HasRoles;
+
+use App\Models\HistoryRFS;
+use App\Models\RequestForService;
 
 class RequestForServiceController extends Controller
 {
-
-    public function index()
-    {
-        $services = RequestForService::with('priority', 'status')->get();
-        return Inertia::render('rfs/index', [
-            'services' => $services,
-            'auth' => [
-                'user' => Auth::check() ? [
-                    'name' => Auth::user()->name,
-                    'npk' => Auth::user()->npk,
-                    'roles' => Auth::user()->getRoleNames()->toArray(), // Pastikan ini diubah ke array
-                    'permissions' => Auth::user()->getAllPermissions()->pluck('name')->toArray(), // Juga pastikan ini dikirim
-                ] : null,
-            ],
-        ]);
-    }
-
     public function store(Request $request)
     {
         $validated = $request->validate([

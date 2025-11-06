@@ -32,6 +32,11 @@ const filters = ref({
     item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
 });
 
+const filterPC = ref({
+    item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    'bom.description': { value: null, matchMode: FilterMatchMode.CONTAINS },
+});
+
 const props = defineProps({
     auth: Object,
 });
@@ -1479,7 +1484,7 @@ function closeDialog(type: 'pc' | null) {
                                     columnResizeMode="expand"
                                     showGridlines
                                     removableSort
-                                    v-model:filters="filters"
+                                    v-model:filters="filterPC"
                                     filterDisplay="row"
                                     :loading="loading"
                                     :globalFilterFields="['item_code']"
@@ -1500,6 +1505,27 @@ function closeDialog(type: 'pc' | null) {
                                                 placeholder="Search Item code"
                                                 class="w-full"
                                             />
+                                        </template>
+                                    </Column>
+
+                                    <Column
+                                        field="bom.description"
+                                        header="Name"
+                                        sortable
+                                        :showFilterMenu="false"
+                                        :headerStyle="headerStyle"
+                                        :bodyStyle="bodyStyle"
+                                    >
+                                        <template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search description"
+                                                class="w-full"
+                                            />
+                                        </template>
+                                        <template #body="{ data }">
+                                            {{ data.bom ? data.bom.description : 'N/A' }}
                                         </template>
                                     </Column>
 
