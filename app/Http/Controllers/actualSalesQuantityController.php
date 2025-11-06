@@ -117,7 +117,7 @@ class actualSalesQuantityController extends Controller
         Cache::put('import-progress-acsqty', 100, now()->addMinutes(5));
 
         // --- Langkah 10: Mengalihkan (Redirect) dengan hasil impor ---
-        return redirect()->route('bom.masterActual')->with([
+        return redirect()->route('ac.master')->with([
             'success' => 'CSV import process completed!',
             'addedItems' => $addedItems,
             'invalidItems' => $invalidItems
