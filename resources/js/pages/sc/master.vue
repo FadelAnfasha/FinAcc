@@ -441,7 +441,7 @@ const props = defineProps({
             <!-- Header Section -->
             <div class="mt-4 mb-8">
                 <div class="relative mb-6 text-center">
-                    <h1 class="relative z-10 inline-block bg-white px-4 text-2xl font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                    <h1 class="relative z-1 inline-block bg-white px-4 text-2xl font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
                         Master Data Section
                     </h1>
                     <hr class="absolute top-1/2 left-0 z-0 w-full -translate-y-1/2 border-gray-300 dark:border-gray-600" />

@@ -96,8 +96,6 @@ class MenuController extends Controller
 
     public function RFS()
     {
-        dd(Auth::user()->getRoleNames()->toArray());
-
         $services = RequestForService::with('priority', 'status')->get();
         return Inertia::render('rfs/index', [
             'services' => $services,
