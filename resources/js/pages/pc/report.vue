@@ -247,7 +247,7 @@ function confirmUpdate() {
 function closeDialog(type: 'pc' | null) {
     // Sesuaikan tipe data 'type'
     if (type === 'pc') {
-        router.visit(route('bom.report')); // Mengarahkan ke rute 'bom.route'
+        router.visit(route('bom.master')); // Mengarahkan ke rute 'bom.route'
         // Atau router.get(route('bom.route'));
     }
     // Logika untuk menutup dialog tetap dijalankan setelah (atau jika bukan 'pc')
@@ -414,7 +414,7 @@ function closeDialog(type: 'pc' | null) {
                             />
                             <Button
                                 v-if="updateType === 'pc'"
-                                label=" Explode BOM"
+                                label=" Update BOM?"
                                 icon="pi pi-map"
                                 @click="closeDialog('pc')"
                                 unstyled

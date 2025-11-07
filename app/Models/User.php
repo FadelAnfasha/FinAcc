@@ -9,6 +9,9 @@ use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
 
+/** 👈 Diawali dengan slash dan dua asterisk
+ *     @mixin \Spatie\Permission\Traits\HasRoles 👈 Setiap baris di dalamnya boleh diawali asterisk
+ */ // 👈 Diakhiri dengan asterisk dan slash
 
 class User extends Authenticatable
 {
