@@ -708,8 +708,18 @@ class MenuController extends Controller
 
     public function DiffCost_Report()
     {
-        $sc = StandardCost::distinct()->pluck('period');
-        $ac = ActualCost::distinct()->pluck('period');
+        $scPeriod = StandardCost::distinct()->pluck('period');
+        $acPeriod = ActualCost::distinct()->pluck('period');
+
+        $sc = StandardCost::with(['bom' => function ($query) {
+            $query->select('item_code', 'description');
+        }])->get();
+
+        $ac = ActualCost::with(['bom' => function ($query) {
+            $query->select('item_code', 'description');
+        }])->get();
+
+
 
         // Definisikan urutan bulan
         $monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -749,6 +759,8 @@ class MenuController extends Controller
         return Inertia::render("dc/report", [
             'sc' => $sc,
             'ac' => $ac,
+            'scPeriod' => $scPeriod,
+            'acPeriod' => $acPeriod,
             'dc' => $dc,
             'dcxsq' => $dcxsq,
             'actual_sales' => $actual_sales,

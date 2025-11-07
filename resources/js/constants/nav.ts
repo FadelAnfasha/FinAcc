@@ -83,20 +83,20 @@ export const mainNavItems: NavItem[] = [
         key: 'sc',
         title: 'Standard Cost Calculation',
         href: 'sc.report',
-        icon: 'pi-clipboard',
+        icon: 'pi-dollar',
     },
 
     {
         key: 'ac',
         title: 'Actual Cost Calculation',
         href: 'ac.report', // Ubah jadi menu sendiri
-        icon: 'pi-clipboard',
+        icon: 'pi-dollar',
     },
 
     {
         key: 'dc',
         title: 'Difference Cost Calculation',
         href: 'dc.report', // Ubah jadi menu sendiri
-        icon: 'pi-clipboard',
+        icon: 'pi-dollar',
     },
 ];
