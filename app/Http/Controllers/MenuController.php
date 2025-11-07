@@ -740,10 +740,12 @@ class MenuController extends Controller
         $scPeriod = StandardCost::distinct()->pluck('period');
         $acPeriod = ActualCost::distinct()->pluck('period');
         $dcPeriod = DifferenceCost::distinct()->pluck('period');
+        $dcxsqPeriod = DiffCostXSalesQty::distinct()->pluck('period');
 
         $scPeriod = $this->sortPeriods($scPeriod);
         $acPeriod = $this->sortPeriods($acPeriod);
         $dcPeriod = $this->sortPeriods($dcPeriod);
+        $dcxsqPeriod = $this->sortPeriods($dcxsqPeriod);
 
         $sc = StandardCost::with(['bom' => function ($query) {
             $query->select('item_code', 'description');
@@ -771,6 +773,7 @@ class MenuController extends Controller
             'scPeriod' => $scPeriod,
             'acPeriod' => $acPeriod,
             'dcPeriod' => $dcPeriod,
+            'dcxsqPeriod' => $dcxsqPeriod,
             'dc' => $dc,
             'dcxsq' => $dcxsq,
             'actual_sales' => $actual_sales,

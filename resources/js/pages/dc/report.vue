@@ -560,28 +560,13 @@ const listSalesMonth = computed(() => {
     return result;
 });
 
-const listDCxSQ = computed(() => {
-    const data = (page.props.dcxsq as any[]) || [];
-    if (data.length === 0) {
-        return [];
-    }
-    const uniqueNames = new Set<string>();
-    const result: { name: string; code: string }[] = [];
-    data.forEach((item) => {
-        const name = item.period;
-        if (name && !uniqueNames.has(name)) {
-            uniqueNames.add(name);
-            result.push({
-                name: name,
-                code: name,
-            });
-        }
-    });
-    result.sort((a, b) => {
-        return a.name.localeCompare(b.name);
-    });
-    return result;
-});
+const listDCxSQ = computed(() =>
+    (page.props.dcxsqPeriod as string[]).map((period, index) => ({
+        code: period,
+        name: period,
+        no: index + 1,
+    })),
+);
 
 interface StandardPeriod {
     name: string;
