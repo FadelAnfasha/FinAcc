@@ -687,6 +687,11 @@ class MenuController extends Controller
             $query->select('item_code', 'description');
         }])->get();
 
+        $acPeriod = ActualCost::distinct()->pluck('period');
+        $acPeriod = $this->sortPeriods($acPeriod);
+
+
+
         $lastUpdate = [];
         $latestActualMat = ActualMaterial::latest('updated_at')->first();
         $latestValve = Valve::latest('updated_at')->first();
@@ -719,6 +724,7 @@ class MenuController extends Controller
 
         return Inertia::render("ac/report", [
             'ac' => $ac,
+            'acPeriod' => $acPeriod,
             'lastMaster' => $lastUpdate,
             'auth' => [
                 'user' => Auth::check() ? [
