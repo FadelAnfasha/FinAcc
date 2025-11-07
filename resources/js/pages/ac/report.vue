@@ -38,11 +38,15 @@ type UpdateStatus = 'idle' | 'updating' | 'done';
 const updateStatus = ref<UpdateStatus>('idle');
 const updateType = ref<'actualCost' | 'opgin' | null>(null);
 const maxDate = ref(new Date());
+const currentDate = new Date();
 const minDate = ref(new Date(new Date().getFullYear(), 0, 1));
 const selectionModeType = ref('single');
 const activeTabValue = ref('0');
 const type = ['Disc', 'Sidering', 'Wheel'];
 const userName = computed(() => page.props.auth?.user?.name ?? '');
+currentDate.setDate(1);
+currentDate.setDate(currentDate.getDate() - 1);
+maxDate.value = currentDate;
 
 function tbStyle(section: 'main' | 'rm' | 'pr' | 'wip' | 'fg') {
     const styles = {
@@ -294,7 +298,7 @@ function confirmUpdate() {
     const type = updateType.value;
 
     const routes = {
-        actualCost: 'ac.updateAC',
+        actualCost: 'ac.update',
         opgin: 'ac.updateOpGin',
     };
 

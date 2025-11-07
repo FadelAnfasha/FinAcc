@@ -433,7 +433,7 @@ const dcxsqTotalofTotal = computed(() => {
 });
 
 const listStandardPeriod = computed(() =>
-    (page.props.sc as string[]).map((period, index) => ({
+    (page.props.scPeriod as string[]).map((period, index) => ({
         code: period,
         name: period,
         no: index + 1,
@@ -441,7 +441,7 @@ const listStandardPeriod = computed(() =>
 );
 
 const listActualPeriod = computed(() =>
-    (page.props.ac as string[]).map((period, index) => ({
+    (page.props.acPeriod as string[]).map((period, index) => ({
         code: period,
         name: period,
         no: index + 1,
@@ -769,7 +769,6 @@ function confirmUpdate() {
 
         const standardPeriod = selectStandardPeriod.value.code;
         const actualPeriod = selectActualPeriod.value.code;
-        console.log(standardPeriod, actualPeriod);
         DCupdatePeriod = selectActualPeriod.value.code.toString();
 
         payload = {
