@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 //Helpers
+use Illuminate\Support\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Auth;
@@ -14,6 +15,7 @@ use Carbon\Carbon;
 //Spatie
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+
 
 //Models
 use App\Models\ActualCost;
@@ -39,6 +41,27 @@ use App\Models\WagesDistribution;
 
 class MenuController extends Controller
 {
+    protected function sortPeriods(Collection $periods): Collection
+    {
+        $monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        return $periods->sort(function ($a, $b) use ($monthOrder) {
+            $isYtdA = str_starts_with($a, 'YTD-');
+            $isYtdB = str_starts_with($b, 'YTD-');
+
+            if ($isYtdA && !$isYtdB) return 1;
+            if (!$isYtdA && $isYtdB) return -1;
+
+            $monthA = substr(str_replace('YTD-', '', $a), 0, 3);
+            $monthB = substr(str_replace('YTD-', '', $b), 0, 3);
+
+            $indexA = array_search($monthA, $monthOrder);
+            $indexB = array_search($monthB, $monthOrder);
+
+            return $indexA <=> $indexB;
+        })->values();
+    }
+
     public function Dashboard()
     {
         $lastMonth = Carbon::now()->subMonthNoOverflow()->format('M');
@@ -73,6 +96,8 @@ class MenuController extends Controller
 
     public function RFS()
     {
+        dd(Auth::user()->getRoleNames()->toArray());
+
         $services = RequestForService::with('priority', 'status')->get();
         return Inertia::render('rfs/index', [
             'services' => $services,
@@ -710,6 +735,11 @@ class MenuController extends Controller
     {
         $scPeriod = StandardCost::distinct()->pluck('period');
         $acPeriod = ActualCost::distinct()->pluck('period');
+        $dcPeriod = DifferenceCost::distinct()->pluck('period');
+
+        $scPeriod = $this->sortPeriods($scPeriod);
+        $acPeriod = $this->sortPeriods($acPeriod);
+        $dcPeriod = $this->sortPeriods($dcPeriod);
 
         $sc = StandardCost::with(['bom' => function ($query) {
             $query->select('item_code', 'description');
@@ -718,31 +748,6 @@ class MenuController extends Controller
         $ac = ActualCost::with(['bom' => function ($query) {
             $query->select('item_code', 'description');
         }])->get();
-
-
-
-        // Definisikan urutan bulan
-        $monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-        // Gunakan fungsi sort() pada Collection
-        $ac = $ac->sort(function ($a, $b) use ($monthOrder) {
-            $isYtdA = str_starts_with($a, 'YTD-');
-            $isYtdB = str_starts_with($b, 'YTD-');
-
-            // Logic 1: Pindahkan semua item YTD ke bawah (1 = pindah ke belakang)
-            if ($isYtdA && !$isYtdB) return 1;
-            if (!$isYtdA && $isYtdB) return -1;
-
-            // Ambil bagian bulan dari string dan hapus 'YTD-' jika ada
-            $monthA = substr(str_replace('YTD-', '', $a), 0, 3);
-            $monthB = substr(str_replace('YTD-', '', $b), 0, 3);
-
-            $indexA = array_search($monthA, $monthOrder);
-            $indexB = array_search($monthB, $monthOrder);
-
-            // Logic 2: Urutkan berdasarkan indeks bulan (Jan=0, Feb=1, dst.)
-            return $indexA <=> $indexB;
-        })->values();
 
         $dc = DifferenceCost::with(['bom' => function ($query) {
             $query->select('item_code', 'description');
@@ -761,6 +766,7 @@ class MenuController extends Controller
             'ac' => $ac,
             'scPeriod' => $scPeriod,
             'acPeriod' => $acPeriod,
+            'dcPeriod' => $dcPeriod,
             'dc' => $dc,
             'dcxsq' => $dcxsq,
             'actual_sales' => $actual_sales,

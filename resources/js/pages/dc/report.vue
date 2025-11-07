@@ -448,63 +448,13 @@ const listActualPeriod = computed(() =>
     })),
 );
 
-const listDifferencePeriod = computed(() => {
-    const allPeriods = ((page.props.dc as any[]) ?? []).map((item) => item.period);
-    const uniquePeriods = Array.from(new Set(allPeriods)).filter((p) => p !== null && p !== undefined) as string[];
-
-    // Pindahkan monthNames ke sini agar dideklarasikan di scope yang sama dengan parsePeriodToDate
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-    const parsePeriodToDate = (periodString: string) => {
-        // Hapus 'YTD-' jika ada, dan bersihkan spasi awal/akhir
-        const cleanedPeriod = periodString.replace('YTD-', '').trim();
-
-        // Pemecahan string menjadi [Bulan (ex: 'Sep'), Tahun (ex: '2025')]
-        const parts = cleanedPeriod.split("'");
-
-        if (parts.length < 2) {
-            // Tangani kasus di mana string bukan format MM'YYYY
-            return new Date(0);
-        }
-
-        // --- Perbaikan Kritis: Trim setiap bagian ---
-        const monthYearPart = parts[0].trim(); // Ambil 'Sep' dan pastikan tidak ada spasi
-        const yearPart = parts[1].trim(); // Ambil '2025'
-
-        const monthIndex = monthNames.findIndex((m) => m === monthYearPart);
-        const year = parseInt(yearPart, 10);
-
-        if (monthIndex === -1 || isNaN(year)) {
-            console.warn(`Gagal mengurai periode: ${periodString} | Month Part: ${monthYearPart} | Year: ${year}`);
-            return new Date(0);
-        }
-
-        return new Date(year, monthIndex, 1);
-    };
-
-    uniquePeriods.sort((a, b) => {
-        const dateA = parsePeriodToDate(a);
-        const dateB = parsePeriodToDate(b);
-
-        // Debugging: Cek apakah Date berhasil diuraikan
-        if (dateA.getTime() === 0 || dateB.getTime() === 0) {
-            console.error(`Pengurutan gagal untuk: ${a} atau ${b}`);
-        }
-
-        // === PERUBAHAN: Pengurutan Ascending (Terlama di atas) ===
-        if (dateA > dateB) return 1; // Jika A lebih BARU, letakkan A setelah B (+1)
-        if (dateA < dateB) return -1; // Jika A lebih LAMA, letakkan A sebelum B (-1)
-        return 0;
-    });
-
-    // Petakan ke format Select options
-    return uniquePeriods.map((periodName) => {
-        return {
-            name: periodName,
-            code: periodName,
-        };
-    });
-});
+const listDifferencePeriod = computed(() =>
+    (page.props.dcPeriod as string[]).map((period, index) => ({
+        code: period,
+        name: period,
+        no: index + 1,
+    })),
+);
 
 const listSalesMonth = computed(() => {
     const data = (page.props.actual_sales as any[]) || [];
