@@ -620,7 +620,7 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                                         </template></Column
                                     >
 
-                                    <Column field="bom.description" header="Name" :showFilterMenu="false" sortable v-bind="tbStyle('main')" frozen>
+                                    <Column field="bom.description" header="Name" :showFilterMenu="false" sortable v-bind="tbStyle('main')">
                                         <template #filter="{ filterModel, filterCallback }">
                                             <InputText
                                                 v-model="filterModel.value"
