@@ -692,7 +692,7 @@ const props = defineProps({
                 <Tabs v-model="activeTab">
                     <TabList>
                         <Tab value="0">Bill of Material</Tab>
-                        <Tab value="1">Valve</Tab>
+                        <Tab value="1">Consumables</Tab>
                     </TabList>
 
                     <TabPanels>
@@ -825,7 +825,7 @@ const props = defineProps({
                         <TabPanel value="1">
                             <section ref="packSection" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
-                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Valve Price</h2>
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Valve & Tyre Price</h2>
 
                                     <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
                                         <FileUpload
