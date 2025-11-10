@@ -86,32 +86,16 @@ const filtersBOM = ref({
     description: { value: null, matchMode: FilterMatchMode.CONTAINS },
 });
 
-function exportCSV(type: 'BOM' | 'standardCost' | 'actualCost' | 'diffCost' | 'dcXsq') {
+function exportCSV(type: 'BOM') {
     if (type === 'BOM' && dtBOM.value) {
         const exportFilename = `Bill-of-Material-${new Date().toISOString().slice(0, 10)}.csv`;
         dtBOM.value.exportCSV({ selectionOnly: false, filename: exportFilename });
-    } else if (type === 'standardCost' && dtSC.value) {
-        const exportFilename = `StandardCost-${new Date().toISOString().slice(0, 10)}.csv`;
-        dtSC.value.exportCSV({ selectionOnly: false, filename: exportFilename });
-    } else if (type === 'actualCost' && dtAC.value) {
-        const exportFilename = `ActualCost-${new Date().toISOString().slice(0, 10)}.csv`;
-        dtAC.value.exportCSV({ selectionOnly: false, filename: exportFilename });
-    } else if (type === 'diffCost' && dtDIFF.value) {
-        const exportFilename = `DiffCost-${new Date().toISOString().slice(0, 10)}.csv`;
-        dtDIFF.value.exportCSV({ selectionOnly: false, filename: exportFilename });
-    } else if (type === 'dcXsq' && dtDCxSQ.value) {
-        const exportFilename = `DiffCost x Sales Quantity-${new Date().toISOString().slice(0, 10)}.csv`;
-        dtDCxSQ.value.exportCSV({ selectionOnly: false, filename: exportFilename });
     }
 }
 
 function formatlastUpdate(date: Date | string) {
     return dayjs(date).format('DD MMM YYYY HH:mm:ss');
 }
-
-const getMonthShortName = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', { month: 'short' }).format(date);
-};
 </script>
 
 <template>
@@ -170,7 +154,7 @@ const getMonthShortName = (date: Date) => {
 
                                 <DataTable
                                     :value="bom"
-                                    tableStyle="min-width: 50rem"
+                                    tableStyle="min-width: 10rem"
                                     paginator
                                     :rows="10"
                                     :rowsPerPageOptions="[5, 10, 20, 50]"
@@ -334,6 +318,12 @@ const getMonthShortName = (date: Date) => {
                                         </template>
                                     </Column>
 
+                                    <Column field="pr_TA" sortable header="Pr TA" v-bind="tbStyle('pr')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.pr_TA || '-' }}
+                                        </template>
+                                    </Column>
+
                                     <Column field="wip_disc" sortable header="WiP Disc" v-bind="tbStyle('wip')">
                                         <template #body="slotProps">
                                             {{ slotProps.data.wip_disc || '-' }}
@@ -385,6 +375,12 @@ const getMonthShortName = (date: Date) => {
                                     <Column field="wip_valve" sortable header="WiP Valve" v-bind="tbStyle('wip')">
                                         <template #body="slotProps">
                                             {{ slotProps.data.wip_valve || '-' }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="wip_tyre" sortable header="WiP Tyre" v-bind="tbStyle('wip')">
+                                        <template #body="slotProps">
+                                            {{ slotProps.data.wip_tyre || '-' }}
                                         </template>
                                     </Column>
                                 </DataTable>

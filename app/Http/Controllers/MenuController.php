@@ -378,38 +378,10 @@ class MenuController extends Controller
         }])->get();
 
         $lastUpdate = [];
-        $latestStandardMat = StandardMaterial::latest('updated_at')->first();
-        $latestActualMat = ActualMaterial::latest('updated_at')->first();
-        $latestValve = Valve::latest('updated_at')->first();
-        $latestProcessCost = ProcessCost::latest('updated_at')->first();
         $latestBOM = BillOfMaterial::latest('updated_at')->first();
-
-        if ($latestStandardMat) {
-            $lastUpdate[] = $latestStandardMat->created_at;
-        } else {
-            $lastUpdate[] = null;
-        }
-
-        if ($latestActualMat) {
-            $lastUpdate[] = $latestActualMat->created_at;
-        } else {
-            $lastUpdate[] = null;
-        }
-
-        if ($latestValve) {
-            $lastUpdate[] = $latestValve->created_at;
-        } else {
-            $lastUpdate[] = null;
-        }
 
         if ($latestBOM) {
             $lastUpdate[] = $latestBOM->created_at;
-        } else {
-            $lastUpdate[] = null;
-        }
-
-        if ($latestProcessCost) {
-            $lastUpdate[] = $latestProcessCost->created_at;
         } else {
             $lastUpdate[] = null;
         }
@@ -514,6 +486,10 @@ class MenuController extends Controller
                 $group->tcSR = null;
             }
 
+            $group->pr_ta = $group->first(function ($item) {
+                return substr($item->item_code, 0, 5) === 'RS-TA';
+            });
+
             // Logika filter WIP
             $group->wip_disc = $group->first(function ($item) {
                 return substr($item->item_code, 0, 2) === 'WB' && substr($item->item_code, 3, 2) === 'D-';
@@ -555,6 +531,14 @@ class MenuController extends Controller
                     );
             });
 
+            $group->wip_tyre = $group->first(function ($item) {
+                return substr($item->item_code, 0, 3) === 'CGP'
+                    && (
+                        stripos($item->description, 'TYRE') !== false
+                        || stripos($item->description, 'tyre') !== false
+                    );
+            });
+
             $data = [
                 'item_code' => $main->item_code,
                 'description' => $group->description,
@@ -586,6 +570,8 @@ class MenuController extends Controller
 
                 'pr_tcSR' => $group->tcSR->item_code ?? '-',
 
+                'pr_TA' => $group->pr_ta->item_code ?? '-',
+
                 // WIP
                 'wip_disc' => $group->wip_disc->item_code ?? '-',
 
@@ -604,6 +590,9 @@ class MenuController extends Controller
                 'wip_tcSR' => $group->wip_tcSR->item_code ?? '-',
 
                 'wip_valve' => $group->wip_valve->item_code ?? '-',
+
+                'wip_tyre' => $group->wip_tyre->item_code ?? '-',
+
             ];
 
             $finalReportData->push($data);
@@ -616,7 +605,7 @@ class MenuController extends Controller
             'actual_sales' => $actual_sales,
             'bom' => $finalReportData,
             'dcxsq' => $dcxsq,
-            'lastMaster' => $lastUpdate,
+            'lastUpdate' => $lastUpdate,
             'auth' => [
                 'user' => Auth::check() ? [
                     'name' => Auth::user()->name,

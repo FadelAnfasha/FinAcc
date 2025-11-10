@@ -8,6 +8,7 @@ export const mainNavItems: NavItem[] = [
         title: 'Home',
         href: 'dashboard',
         icon: 'pi-warehouse',
+        status: 'open',
     },
 
     // RFS
@@ -16,6 +17,7 @@ export const mainNavItems: NavItem[] = [
         title: 'Request for Service',
         href: 'rfs.index',
         icon: 'pi-question-circle',
+        status: 'open',
     },
 
     // Admin
@@ -25,6 +27,7 @@ export const mainNavItems: NavItem[] = [
         href: 'admin.index',
         icon: 'pi-prime',
         onlyFor: ['Admin'],
+        status: 'open',
     },
 
     // All Master Data
@@ -39,34 +42,58 @@ export const mainNavItems: NavItem[] = [
                 title: 'Process Cost Master Data',
                 icon: 'pi-file-import',
                 href: 'pc.master',
+                status: 'open', // Add the status property here
             },
             {
                 key: 'bomMaster',
                 title: 'BOM Master Data',
                 icon: 'pi-file-import',
                 href: 'bom.master',
+                status: 'open', // Add the status property here
             },
             {
                 key: 'bomMasterStandard',
                 title: 'Standard Master Data',
                 icon: 'pi-file-import',
                 href: 'sc.master',
+                status: 'open', // Add the status property here
             },
             {
                 key: 'bomMasterActual',
                 title: 'Actual Master Data',
                 icon: 'pi-file-import',
                 href: 'ac.master',
+                status: 'open', // Add the status property here
             },
         ],
     },
 
+    // Production Cost Calculation
+
+    // {
+    //     key: 'wd',
+    //     title: 'Production Cost (Soon)',
+    //     href: 'pc.report',
+    //     icon: 'pi-wrench',
+    //     status: 'close',
+    // },
+
     // Process Cost Report
     {
-        key: 'pc',
-        title: 'Process Cost Calculation',
+        key: 'spc',
+        title: 'Standard Process Cost Calculation',
         href: 'pc.report',
         icon: 'pi-wrench',
+        status: 'open',
+    },
+
+    // Actual Process Cost
+    {
+        key: 'apc',
+        title: 'Actual Process Cost (Soon)',
+        href: 'pc.report',
+        icon: 'pi-wrench',
+        status: 'close',
     },
 
     // BOM Report
@@ -75,6 +102,7 @@ export const mainNavItems: NavItem[] = [
         title: 'Bill of Material Explode',
         href: 'bom.report', // Ubah jadi menu sendiri
         icon: 'pi-receipt',
+        status: 'open',
     },
 
     // BOM Report
@@ -84,6 +112,7 @@ export const mainNavItems: NavItem[] = [
         title: 'Standard Cost Calculation',
         href: 'sc.report',
         icon: 'pi-dollar',
+        status: 'open',
     },
 
     {
@@ -91,6 +120,7 @@ export const mainNavItems: NavItem[] = [
         title: 'Actual Cost Calculation',
         href: 'ac.report', // Ubah jadi menu sendiri
         icon: 'pi-dollar',
+        status: 'open',
     },
 
     {
@@ -98,5 +128,6 @@ export const mainNavItems: NavItem[] = [
         title: 'Difference Cost Calculation',
         href: 'dc.report', // Ubah jadi menu sendiri
         icon: 'pi-dollar',
+        status: 'open',
     },
 ];

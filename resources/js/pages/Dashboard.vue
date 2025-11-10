@@ -1123,24 +1123,26 @@ body {
                                 <div class="rounded-xl border border-yellow-500/30 bg-gradient-to-b from-yellow-900/50 to-yellow-800/50 p-8">
                                     <div class="mb-6 text-center">
                                         <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-yellow-500">
-                                            <svg
-                                                width="40"
-                                                height="40"
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                stroke-width="2"
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                            >
-                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                            <Link :href="route('bom.report')">
+                                                <svg
+                                                    width="40"
+                                                    height="40"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    stroke-width="2"
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                >
+                                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
 
-                                                <polyline points="14 2 14 8 20 8" />
+                                                    <polyline points="14 2 14 8 20 8" />
 
-                                                <line x1="16" y1="13" x2="8" y2="13" />
-                                                <line x1="16" y1="17" x2="8" y2="17" />
-                                                <line x1="10" y1="9" x2="8" y2="9" />
-                                            </svg>
+                                                    <line x1="16" y1="13" x2="8" y2="13" />
+                                                    <line x1="16" y1="17" x2="8" y2="17" />
+                                                    <line x1="10" y1="9" x2="8" y2="9" />
+                                                </svg>
+                                            </Link>
                                         </div>
                                         <h4 class="text-2xl font-semibold text-yellow-300">Bill of Material</h4>
                                     </div>
@@ -1158,22 +1160,24 @@ body {
                                 <div class="rounded-xl border border-orange-500/30 bg-gradient-to-b from-orange-900/50 to-orange-800/50 p-8">
                                     <div class="mb-6 text-center">
                                         <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-orange-500">
-                                            <svg
-                                                width="40"
-                                                height="40"
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                stroke-width="2"
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                            >
-                                                <circle cx="12" cy="12" r="10" />
-                                                <path d="M12 16V8M8 12h8" />
+                                            <Link :href="route('pc.report')">
+                                                <svg
+                                                    width="40"
+                                                    height="40"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    stroke-width="2"
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                >
+                                                    <circle cx="12" cy="12" r="10" />
+                                                    <path d="M12 16V8M8 12h8" />
 
-                                                <path d="M17 17l-1.5-1.5M17 17h-3M17 17v-3" />
-                                                <path d="M7 7l1.5 1.5M7 7h3M7 7v3" />
-                                            </svg>
+                                                    <path d="M17 17l-1.5-1.5M17 17h-3M17 17v-3" />
+                                                    <path d="M7 7l1.5 1.5M7 7h3M7 7v3" />
+                                                </svg>
+                                            </Link>
                                         </div>
                                         <h4 class="text-2xl font-semibold text-orange-300">Process Cost</h4>
                                     </div>

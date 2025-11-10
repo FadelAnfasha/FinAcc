@@ -14,6 +14,7 @@ export interface NavItem {
     isActive?: boolean;
     onlyFor?: string[]; // 👈 role access
     children?: NavItem[]; // 👈 submenu
+    status?: string | null;
 }
 
 export type AppPageProps<T extends Record<string, unknown> = Record<string, unknown>> = T & {

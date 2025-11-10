@@ -85,7 +85,12 @@ function isExpanded(key: string) {
 
                     <div v-if="isExpanded(item.key ?? '')" class="mt-1 ml-3">
                         <SidebarMenuItem v-for="child in item.children" :key="child.key">
-                            <SidebarMenuButton size="lg" :is-active="route(child.href ?? '') === page.url" :tooltip="isCollapsed ? child.title : ''">
+                            <SidebarMenuButton
+                                size="lg"
+                                :is-active="route(child.href ?? '') === page.url"
+                                :tooltip="isCollapsed ? child.title : ''"
+                                :disabled="child.status === 'close'"
+                            >
                                 <Link
                                     :href="route(child.href ?? '')"
                                     class="flex w-full items-center"
@@ -100,7 +105,12 @@ function isExpanded(key: string) {
                 </SidebarMenuItem>
 
                 <SidebarMenuItem v-else>
-                    <SidebarMenuButton size="lg" :is-active="route(item.href ?? '') === page.url" :tooltip="item.title">
+                    <SidebarMenuButton
+                        size="lg"
+                        :is-active="route(item.href ?? '') === page.url"
+                        :tooltip="item.title"
+                        :disabled="item.status === 'close'"
+                    >
                         <Link
                             :href="route(item.href ?? '')"
                             class="flex w-full items-center"
