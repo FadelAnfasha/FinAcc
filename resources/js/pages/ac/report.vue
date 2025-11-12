@@ -374,16 +374,18 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                         <div class="mt-6 mb-2 font-semibold">Select Actual Price Period:</div>
                         <div class="flex space-x-4">
                             <div class="flex-1">
-                                <label for="report-month" class="block text-sm font-medium text-gray-400">Select month selection mode : </label>
+                                <label for="report-month" class="block text-sm font-medium text-muted-foreground"
+                                    >Select month selection mode :
+                                </label>
 
                                 <div class="mb-3 flex space-x-4">
                                     <label class="inline-flex items-center">
                                         <input type="radio" v-model="selectionModeType" value="single" class="form-radio text-indigo-600" />
-                                        <span class="ml-2 text-sm text-gray-700">Single Month</span>
+                                        <span class="ml-2 text-sm text-foreground">Single Month</span>
                                     </label>
                                     <label class="inline-flex items-center">
                                         <input type="radio" v-model="selectionModeType" value="range" class="form-radio text-indigo-600" />
-                                        <span class="ml-2 text-sm text-gray-700">Ranged Months</span>
+                                        <span class="ml-2 text-sm text-foreground">Ranged Months</span>
                                     </label>
                                 </div>
 
@@ -405,13 +407,13 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                         </p>
 
                         <div>
-                            <p class="mt-6 mb-2 font-semibold">Make sure this data is up to date:</p>
+                            <p class="mt-6 mb-2 font-bold">Make sure this data is up to date:</p>
                             <div class="overflow-x-auto">
                                 <table class="w-full border-collapse text-left">
                                     <thead>
                                         <tr>
-                                            <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Data</th>
-                                            <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Last Update</th>
+                                            <th class="border-b border-gray-700 px-4 py-2 font-bold text-muted-foreground">Data</th>
+                                            <th class="border-b border-gray-700 px-4 py-2 font-bold text-muted-foreground">Last Update</th>
                                         </tr>
                                     </thead>
                                     <tbody>

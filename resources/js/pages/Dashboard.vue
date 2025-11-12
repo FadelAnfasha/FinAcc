@@ -7,6 +7,7 @@ import { Head, Link, usePage } from '@inertiajs/vue3';
 import { Position, VueFlow } from '@vue-flow/core';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
+// import Card from '@/components/ui/card/Card.vue';
 import Panel from 'primevue/panel';
 import { computed, shallowRef } from 'vue';
 
@@ -371,14 +372,14 @@ body {
                     <Card
                         v-for="(card, index) in cardData"
                         :key="index"
-                        class="relative"
-                        style="width: 25rem; height: 30rem; display: flex; flex-direction: column"
+                        class="relative transition-shadow duration-300 hover:shadow-lg"
+                        style="width: 25rem; height: 30rem; display: flex"
                     >
                         <template #header>
                             <img
                                 :alt="card.title + ' header'"
-                                class="px-4 pt-4"
-                                style="height: 200px; width: 500px"
+                                class="object-cover px-4 pt-4"
+                                style="height: 200px; width: 100%; object-fit: cover"
                                 :src="'/finacc/storage/images/' + card.img + '.png'"
                             />
                         </template>
@@ -392,19 +393,22 @@ body {
                             </p>
                         </template>
                         <template #footer>
-                            <div class="absolute right-4 bottom-4 mt-1 flex justify-end gap-4 px-4 pb-4">
+                            <div class="absolute right-0 bottom-0 mt-1 flex w-full justify-end gap-4 px-4 pb-4">
                                 <template v-if="card.guideHref">
                                     <a :href="card.guideHref" target="_blank" rel="noopener noreferrer">
                                         <Button label="Guidance" severity="info" class="w-20" />
                                     </a>
                                 </template>
-                                <template v-if="card.href && card.href.startsWith('#')">
-                                    <Button label="Go" class="w-20" @click="scrollToSection(card.href)" />
-                                </template>
-                                <template v-else>
-                                    <Link :href="route(card.href)">
-                                        <Button label="Go" class="w-20" />
-                                    </Link>
+
+                                <template v-if="card.href">
+                                    <template v-if="card.href.startsWith('#')">
+                                        <Button label="Go" class="w-20" @click="scrollToSection(card.href)" />
+                                    </template>
+                                    <template v-else>
+                                        <Link :href="route(card.href)">
+                                            <Button label="Go" class="w-20" />
+                                        </Link>
+                                    </template>
                                 </template>
                             </div>
                         </template>

@@ -7,25 +7,16 @@ use Illuminate\Support\Facades\Auth;
 
 use App\Models\HistoryRFS;
 use App\Models\RequestForService;
+use App\Http\Requests\RequestForServiceValidation;
 
 class RequestForServiceController extends Controller
 {
-    public function store(Request $request)
+    public function store(RequestForServiceValidation $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'npk' => 'required|string|max:50',
-            'priority' => 'required|integer',
-            'description' => 'required|string',
-            'status' => 'required',
-            'attachment' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,xlsx,xls|max:10240',
-        ]);
-
+        $validated = $request->validated();
         if ($request->hasFile('attachment')) {
             $validated['attachment'] = $request->file('attachment')->store('attachment', 'public');
         }
-
-        // dd($validated);
 
         $user = Auth::user();
 

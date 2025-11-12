@@ -24,3 +24,5 @@ declare module '@vue/runtime-core' {
         $headManager: ReturnType<typeof createHeadManager>;
     }
 }
+
+declare module 'vanta/src/vanta.rings';
