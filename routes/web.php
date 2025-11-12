@@ -83,6 +83,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 #======= RFS Route ========
 #==========================
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/rfs/store', [RequestForServiceController::class, 'store'])
+        ->middleware('permission:CreateRequest');
 
     Route::post('/rfs/{id}/accept', [RequestForServiceController::class, 'accept'])
         ->middleware('permission:Approve');
@@ -316,6 +318,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/dc/update/DC', [DifferenceCostController::class, 'updateDifferenceCost'])->middleware('permission:Update_Report')->name('dc.updateDC');
     Route::post('/dc/update/DCxSQ', [DifferenceCostController::class, 'updateDCxSQ'])->middleware('permission:Update_Report')->name('dc.updateDCxSQ');
+});
+
+
+#=============================
+#====== Production Cost ======
+#=============================
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/prodcost/report', [DifferenceCostController::class, 'updateDifferenceCost'])->middleware('permission:Update_Report')->name('prodc.report');
 });
 
 

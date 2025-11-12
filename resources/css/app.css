@@ -345,48 +345,48 @@
 } */
 
 .dark {
-    --background: hsl(45, 10%, 10%);
-    --foreground: hsl(0, 0%, 90%);
+    --background: hsl(240, 10%, 8%);
+    --foreground: hsl(0, 0%, 98%);
 
-    --muted: hsl(50, 100%, 40%);
-    --muted-foreground: hsl(0, 0%, 75%);
+    --muted: hsl(240, 5%, 20%);
+    --muted-foreground: hsl(240, 5%, 65%);
 
-    --card: hsl(45, 10%, 15%);
-    --card-foreground: hsl(0, 0%, 90%);
-    --popover: hsl(45, 15%, 15%);
-    --popover-foreground: hsl(0, 0%, 90%);
+    --card: hsl(240, 10%, 12%);
+    --card-foreground: hsl(0, 0%, 98%);
+    --popover: hsl(240, 10%, 15%);
+    --popover-foreground: hsl(0, 0%, 98%);
 
-    --primary: hsl(50, 100%, 50%);
-    --primary-foreground: hsl(0, 0%, 0%);
+    --primary: hsl(260, 80%, 65%); /* Bright purple */
+    --primary-foreground: hsl(240, 10%, 5%);
 
-    --secondary: hsl(45, 10%, 85%);
-    --secondary-foreground: hsl(0, 0%, 90%);
+    --secondary: hsl(0, 0%, 90%);
+    --secondary-foreground: hsl(240, 10%, 25%);
 
-    --accent: hsl(55, 100%, 70%);
-    --accent-foreground: hsl(0, 0%, 95%);
+    --accent: hsl(260, 80%, 65%); /* Lighter purple/pink */
+    --accent-foreground: hsl(240, 10%, 5%);
 
-    --destructive: hsl(0, 60%, 45%); 
-    --destructive-foreground: hsl(0, 0%, 100%);
+    --destructive: hsl(0, 80%, 50%); /* Bright red */
+    --destructive-foreground: hsl(0, 0%, 98%);
 
-    --border: hsl(45, 15%, 20%);
-    --input: hsl(45, 25%, 20%);
-    --ring: hsl(50, 100%, 55%);
+    --border: hsl(240, 8%, 20%);
+    --input: hsl(240, 8%, 25%);
+    --ring: hsl(260, 80%, 65%);
 
-    --chart-1: hsl(50, 100%, 50%);
-    --chart-2: hsl(45, 10%, 30%);
-    --chart-3: hsl(0, 0%, 80%);
-    --chart-4: hsl(45, 20%, 40%);
-    --chart-5: hsl(55, 90%, 65%);
+    --chart-1: hsl(260, 80%, 65%);
+    --chart-2: hsl(240, 10%, 35%);
+    --chart-3: hsl(240, 5%, 70%);
+    --chart-4: hsl(250, 60%, 55%);
+    --chart-5: hsl(270, 70%, 75%);
 
-    --sidebar-background: hsl(45, 30%, 15%);
+    --sidebar-background: hsl(240, 10%, 10%);
     --sidebar-foreground: hsl(0, 0%, 95%);
-    --sidebar-primary: hsl(50, 100%, 50%);
-    --sidebar-primary-foreground: hsl(0, 0%, 0%);
-    --sidebar-accent: hsl(49, 100%, 50%);
-    --sidebar-accent-foreground: hsl(0, 0%, 90%);
-    --sidebar-border: hsl(45, 10%, 25%);
-    --sidebar-ring: hsl(50, 100%, 50%);
-    --sidebar: hsl(45, 25%, 10%);
+    --sidebar-primary: hsl(260, 80%, 65%);
+    --sidebar-primary-foreground: hsl(240, 10%, 5%);
+    --sidebar-accent: hsl(260, 80%, 65%);
+    --sidebar-accent-foreground: hsl(240, 10%, 5%);
+    --sidebar-border: hsl(240, 8%, 18%);
+    --sidebar-ring: hsl(260, 80%, 65%);
+    --sidebar: hsl(240, 10%, 12%);
 }
 @layer base {
     * {

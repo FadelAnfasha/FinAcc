@@ -70,13 +70,13 @@ export const mainNavItems: NavItem[] = [
 
     // Production Cost Calculation
 
-    // {
-    //     key: 'wd',
-    //     title: 'Production Cost (Soon)',
-    //     href: 'pc.report',
-    //     icon: 'pi-wrench',
-    //     status: 'close',
-    // },
+    {
+        key: 'wd',
+        title: 'Production Cost Calculation (Soon)',
+        href: 'prodc.report',
+        icon: 'pi-wrench',
+        status: 'close',
+    },
 
     // Process Cost Report
     {

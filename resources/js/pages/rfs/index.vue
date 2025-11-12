@@ -10,10 +10,26 @@ import InputText from 'primevue/inputtext';
 import Select from 'primevue/select';
 import Textarea from 'primevue/textarea';
 import { useToast } from 'primevue/usetoast';
-import { computed, ref, Ref, watchEffect } from 'vue';
+
+import { computed, ref, Ref, watch, watchEffect } from 'vue';
 
 const page = usePage();
 const toast = useToast();
+const prioritiesOption = ref([
+    { name: 'Low', code: '1' },
+    { name: 'Medium', code: '2' },
+    { name: 'High', code: '3' },
+    { name: 'Urgent', code: '4' },
+]);
+const selectedPriority = ref('1');
+const today = new Date();
+const formattedDate = today
+    .toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+    })
+    .replace(/\//g, ' - ');
 
 watchEffect(() => {
     const currentFlash = page.props.flash as { success?: string; error?: string } | undefined;
@@ -35,6 +51,25 @@ watchEffect(() => {
         });
     }
 });
+
+const form = useForm({
+    name: (page.props.auth.user as UserWithNPK)?.name || '',
+    npk: (page.props.auth.user as UserWithNPK)?.npk || '',
+    priority: '1',
+    created_at: formattedDate,
+    description: '',
+    status: '1',
+    attachment: null as File | null,
+    updated_at: new Date().toISOString().split('T')[0],
+});
+
+watch(
+    selectedPriority,
+    (newPriorityCode) => {
+        form.priority = newPriorityCode;
+    },
+    { immediate: true },
+);
 
 // Define proper types
 interface Priority {
@@ -261,25 +296,53 @@ interface UserWithNPK {
     [key: string]: any;
 }
 
-// Form data with proper typing
-const form = useForm({
-    name: (page.props.auth.user as UserWithNPK)?.name || '',
-    npk: (page.props.auth.user as UserWithNPK)?.npk || '',
-    priority: '2',
-    created_at: new Date().toISOString().split('T')[0],
-    description: '',
-    status: '1',
-    attachment: null as File | null,
-    updated_at: new Date().toISOString().split('T')[0],
-});
-
 const fileInput = ref<HTMLInputElement | null>(null);
-const selectedFileName = ref('');
+const selectedFileName = ref();
 const loading = ref(false);
 
 // Ref for create form section
 const createFormSection = ref<HTMLElement | null>(null);
 const dataSection = ref<HTMLElement | null>(null);
+
+// Handle file selection with proper typing
+const handleFileSelect = (event: Event) => {
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
+    if (file) {
+        form.attachment = file;
+        selectedFileName.value = file.name;
+    }
+};
+
+// Submit form
+const submitForm = () => {
+    form.post('rfs/store', {
+        forceFormData: true, // WAJIB untuk upload file
+        onStart: () => {
+            form.clearErrors();
+        },
+        onSuccess: () => {
+            form.reset();
+            selectedFileName.value = null;
+            if (fileInput.value) {
+                fileInput.value = null;
+            }
+        },
+        onError: (errors) => {
+            console.error('Form submission errors:', errors);
+        },
+    });
+};
+
+// Reset form
+const resetForm = () => {
+    form.reset();
+    selectedFileName.value = '';
+    if (fileInput.value) {
+        fileInput.value.value = '';
+    }
+    selectedPriority.value = '1';
+};
 
 // Auto scroll to create form
 const scrollToCreateForm = () => {
@@ -299,45 +362,6 @@ const scrollTodataSection = () => {
         });
     }
 };
-
-// Handle file selection with proper typing
-const handleFileSelect = (event: Event) => {
-    const target = event.target as HTMLInputElement;
-    const file = target.files?.[0];
-    if (file) {
-        form.attachment = file;
-        selectedFileName.value = file.name;
-    }
-};
-
-// Submit form
-const submitForm = () => {
-    form.post('rfs', {
-        forceFormData: true, // WAJIB untuk upload file
-        onStart: () => {
-            form.clearErrors();
-        },
-        onSuccess: () => {
-            form.reset();
-            selectedFileName.value = '';
-            if (fileInput.value) {
-                fileInput.value = null;
-            }
-        },
-        onError: (errors) => {
-            console.error('Form submission errors:', errors);
-        },
-    });
-};
-
-// Reset form
-const resetForm = () => {
-    form.reset();
-    selectedFileName.value = '';
-    if (fileInput.value) {
-        fileInput.value.value = '';
-    }
-};
 </script>
 
 <template>
@@ -351,6 +375,7 @@ const resetForm = () => {
                     Hi <span class="text-red-400">{{ userName }}</span
                     >,
                 </p>
+
                 <div v-if="dialogType == 'uat'">
                     <p>
                         Please describe the impact of
@@ -495,7 +520,7 @@ const resetForm = () => {
         </Dialog>
 
         <!-- Data Table Section -->
-        <section ref="dataSection" class="m-6 scroll-mt-8">
+        <section ref="dataSection" class="m-6 scroll-mt-16">
             <div class="flex items-center justify-between">
                 <div class="flex flex-col gap-1">
                     <h2 class="text-start text-3xl font-bold text-gray-900 dark:text-white">Request Data</h2>
@@ -505,10 +530,10 @@ const resetForm = () => {
                     label=" Create"
                     severity="info"
                     v-if="auth?.user?.role !== 'Admin'"
-                    unstyled
                     @click="scrollToCreateForm"
                     icon="pi pi-plus"
-                    class="rounded-xl border border-teal-500 bg-white px-3 py-1 text-teal-500 hover:border-white hover:bg-teal-500 hover:text-white"
+                    unstyled
+                    class="w-full cursor-pointer rounded-xl bg-emerald-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-emerald-700 sm:w-auto"
                 />
             </div>
 
@@ -534,11 +559,11 @@ const resetForm = () => {
                 :loading="loading"
                 :globalFilterFields="['name', 'priority', 'created_at', 'description', 'impact', 'status', 'updated_at']"
                 tableStyle="min-width: 50rem"
-                class="text-sm"
                 sortField="created_at"
+                class="text-sm"
                 :sortOrder="-1"
             >
-                <Column field="created_at" header="Request Date" :showFilterMenu="false" sortable style="width: 10%">
+                <Column field="created_at" header="Request Date" :showFilterMenu="false" sortable style="width: 15%">
                     <template #filter="{ filterModel, filterCallback }">
                         <DatePicker
                             :modelValue="filterModel.value ? new Date(filterModel.value + 'T00:00:00') : null"
@@ -588,7 +613,7 @@ const resetForm = () => {
                     header="Priority"
                     :sortable="true"
                     :showFilterMenu="false"
-                    style="width: 5%"
+                    style="width: 10%"
                     class="justify-items-center"
                 >
                     <!-- Body Badge -->
@@ -653,7 +678,7 @@ const resetForm = () => {
 
                 <Column field="description" header="Req. Description" :showFilterMenu="false" sortable style="width: 20%">
                     <template #body="{ data }">
-                        <div class="max-w-[550px] truncate" :title="data.description" v-tooltip.top="data.description">
+                        <div class="max-w-[280px] truncate" :title="data.description" v-tooltip.top="data.description">
                             {{ data.description }}
                         </div>
                     </template>
@@ -662,7 +687,14 @@ const resetForm = () => {
                     </template>
                 </Column>
 
-                <Column field="status.status" header="Status" :sortable="true" :showFilterMenu="false" style="width: 5%" class="justify-items-center">
+                <Column
+                    field="status.status"
+                    header="Status"
+                    :sortable="true"
+                    :showFilterMenu="false"
+                    style="width: 10%"
+                    class="justify-items-center"
+                >
                     <!-- Body Badge -->
                     <template #body="{ data }">
                         <span
@@ -723,7 +755,7 @@ const resetForm = () => {
                     </template>
                 </Column>
 
-                <Column header="Action" style="width: 15%" class="justify-items-center">
+                <Column header="Action" style="width: 30%" class="justify-items-center">
                     <template #body="{ data }">
                         <div class="flex gap-4">
                             <button
@@ -811,10 +843,10 @@ const resetForm = () => {
         </section>
 
         <!-- Create Form Section -->
-        <section ref="createFormSection" v-if="auth?.user?.role !== 'Admin'" class="m-6 scroll-mt-8">
+        <section ref="createFormSection" v-if="auth?.user?.role !== 'Admin'" class="m-6 scroll-mt-16">
             <div class="flex items-center justify-between">
                 <div class="flex flex-col gap-1">
-                    <h2 class="text-3xl font-semibold">Create Request</h2>
+                    <h2 class="text-start text-3xl font-bold text-gray-900 dark:text-white">Create Request</h2>
                     <p class="text-start text-gray-600 dark:text-gray-400">Fill the form below to request a service.</p>
                 </div>
                 <Button
@@ -822,9 +854,9 @@ const resetForm = () => {
                     severity="warn"
                     icon="pi pi-eye"
                     variant="outlined"
-                    unstyled
                     @click="scrollTodataSection"
-                    class="rounded-xl border border-amber-500 bg-white px-3 py-1 text-amber-500 hover:border-white hover:bg-amber-500 hover:text-white"
+                    unstyled
+                    class="w-full cursor-pointer rounded-xl bg-emerald-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-emerald-700 sm:w-auto"
                 />
             </div>
 
@@ -850,92 +882,84 @@ const resetForm = () => {
                         <form @submit.prevent="submitForm" class="space-y-6" enctype="multipart/form-data">
                             <!-- Nama (Read-only) -->
                             <div class="space-y-2">
-                                <label class="text-sm font-medium text-card-foreground">Name :</label>
-                                <input
-                                    type="text"
-                                    v-model="form.name"
-                                    class="w-full cursor-not-allowed rounded-md border border-border bg-muted px-3 py-2 text-card-foreground"
-                                    readonly
-                                    disabled
-                                />
+                                <div class="flex flex-col gap-2">
+                                    <label for="username" class="font-semibold text-secondary">Username :</label>
+                                    <InputText id="username" v-model="form.name" disabled />
+                                </div>
                             </div>
 
                             <!-- NPK (Read-only) -->
                             <div class="space-y-2">
-                                <label class="text-sm font-medium text-card-foreground">NPK :</label>
-                                <input
-                                    type="text"
-                                    v-model="form.npk"
-                                    class="w-full cursor-not-allowed rounded-md border border-border bg-muted px-3 py-2 text-card-foreground"
-                                    readonly
-                                    disabled
-                                />
+                                <div class="flex flex-col gap-2">
+                                    <label for="npk" class="font-semibold text-secondary">NPK :</label>
+                                    <InputText id="npk" v-model="form.npk" disabled />
+                                </div>
                             </div>
 
                             <!-- Priority -->
                             <div class="space-y-2">
-                                <label class="text-sm font-medium text-card-foreground">Priority :</label>
-                                <select
-                                    v-model="form.priority"
-                                    class="w-full rounded-md border border-border bg-background px-3 py-2 text-card-foreground focus:ring-2 focus:ring-ring focus:outline-none"
-                                    :class="{ 'border-red-500': form.errors.priority }"
-                                >
-                                    <option value="1">Low</option>
-                                    <option value="2">Medium</option>
-                                    <option value="3">High</option>
-                                    <option value="4">Urgent</option>
-                                </select>
+                                <div class="flex flex-col gap-2">
+                                    <label for="priority" class="font-semibold text-secondary">Priority :</label>
+                                    <Select
+                                        v-model="selectedPriority"
+                                        :options="prioritiesOption"
+                                        optionLabel="name"
+                                        optionValue="code"
+                                        placeholder="Select priority"
+                                        class="w-full bg-background text-card-foreground"
+                                    />
+                                </div>
                                 <div v-if="form.errors.priority" class="text-sm text-red-500">{{ form.errors.priority }}</div>
                             </div>
 
                             <!-- Tanggal Input (Read-only) -->
                             <div class="space-y-2">
-                                <label class="text-sm font-medium text-card-foreground">Submit Date :</label>
-                                <input
-                                    type="date"
-                                    v-model="form.created_at"
-                                    class="w-full cursor-not-allowed rounded-md border border-border bg-muted px-3 py-2 text-card-foreground"
-                                    readonly
-                                    disabled
-                                />
+                                <div class="flex flex-col gap-2">
+                                    <label for="date" class="font-semibold text-secondary">Date :</label>
+                                    <InputText id="date" v-model="form.created_at" disabled />
+                                </div>
                             </div>
 
                             <!-- Detail Keperluan -->
                             <div class="space-y-2">
-                                <label class="text-sm font-medium text-card-foreground">Requirement Details :</label>
-                                <textarea
-                                    v-model="form.description"
-                                    rows="5"
-                                    class="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-card-foreground focus:ring-2 focus:ring-ring focus:outline-none"
-                                    :class="{ 'border-red-500': form.errors.description }"
-                                    placeholder="Describe the details of your service needs or requests..."
-                                    required
-                                ></textarea>
+                                <div class="flex flex-col gap-2">
+                                    <label for="description" class="font-semibold text-secondary">Requirement Details :</label>
+                                    <Textarea
+                                        v-model="form.description"
+                                        rows="5"
+                                        class="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-card-foreground focus:ring-2 focus:ring-ring focus:outline-none"
+                                        :class="{ 'border-red-500': form.errors.description }"
+                                        placeholder="Describe the details of your service needs or requests..."
+                                        required
+                                    ></Textarea>
+                                </div>
                                 <div v-if="form.errors.description" class="text-sm text-red-500">{{ form.errors.description }}</div>
                             </div>
 
                             <!-- Lampiran -->
                             <div class="space-y-2">
-                                <label class="text-sm font-medium text-primary">Attachment :</label>
-                                <div class="flex items-center space-x-3">
-                                    <input
-                                        type="file"
-                                        ref="fileInput"
-                                        @change="handleFileSelect"
-                                        class="hidden"
-                                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xlsx,.xls"
-                                    />
-                                    <button
-                                        type="button"
-                                        @click="fileInput?.click()"
-                                        class="rounded-md border border-border bg-secondary px-4 py-2 text-secondary-foreground transition-colors hover:bg-secondary/80"
-                                    >
-                                        Choose File
-                                    </button>
-                                    <span v-if="selectedFileName" class="text-sm text-primary">{{ selectedFileName }}</span>
-                                    <span v-else class="text-sm text-primary">No files selected</span>
+                                <div class="flex flex-col gap-2">
+                                    <label for="attachment" class="font-semibold text-secondary">Attachment :</label>
+                                    <div class="flex items-center space-x-3">
+                                        <input
+                                            type="file"
+                                            ref="fileInput"
+                                            @change="handleFileSelect"
+                                            class="hidden"
+                                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xlsx,.xls"
+                                        />
+                                        <button
+                                            type="button"
+                                            @click="fileInput?.click()"
+                                            class="rounded-md border border-border bg-secondary px-4 py-2 text-secondary-foreground transition-colors hover:bg-secondary/80"
+                                        >
+                                            Choose File
+                                        </button>
+                                        <span v-if="selectedFileName" class="text-sm text-primary">{{ selectedFileName }}</span>
+                                        <span v-else class="text-sm text-primary">No files selected</span>
+                                    </div>
+                                    <p class="text-xs text-primary">Supported formats: PDF, DOC, DOCX, JPG, PNG, XLSX, XLS (Max: 10MB)</p>
                                 </div>
-                                <p class="text-xs text-primary">Supported formats: PDF, DOC, DOCX, JPG, PNG, XLSX, XLS (Max: 10MB)</p>
                                 <div v-if="form.errors.attachment" class="text-sm text-red-500">{{ form.errors.attachment }}</div>
                             </div>
 
@@ -944,7 +968,7 @@ const resetForm = () => {
                                 <button
                                     type="button"
                                     @click="resetForm"
-                                    class="rounded-md border border-border px-6 py-2 text-muted-foreground transition-colors hover:bg-muted"
+                                    class="rounded-md border border-border px-6 py-2 text-primary transition-colors hover:bg-muted hover:text-foreground"
                                 >
                                     Reset
                                 </button>
