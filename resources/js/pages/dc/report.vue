@@ -70,7 +70,7 @@ const dc = computed(() =>
     })),
 );
 
-const combinedData = computed(() => {
+const combinedDiffCost = computed(() => {
     const sc = (page.props.sc || []) as any[];
     const ac = (page.props.ac || []) as any[];
     const dc = (page.props.dc || []) as any[];
@@ -145,6 +145,98 @@ const combinedData = computed(() => {
     return combined.sort((a, b) => cleanItemCode(a.item_code).localeCompare(cleanItemCode(b.item_code)));
 });
 
+const combinedDiffCostXSQuantity = computed(() => {
+    const sc = (page.props.sc || []) as any[];
+    const ac = (page.props.ac || []) as any[];
+    const dc = (page.props.dc || []) as any[];
+    const dcxsq = (page.props.dcxsq || []) as any[];
+
+    if (!Array.isArray(sc) || !Array.isArray(ac) || !Array.isArray(dcxsq)) {
+        return [];
+    }
+
+    // Fungsi untuk mengekstrak TAHUN (YYYY) dari string periode (misal: "YTD-Jul'2025")
+    const extractYear = (periodString: string) => {
+        if (!periodString) return '';
+        const parts = String(periodString).split("'");
+        if (parts.length > 1) {
+            let yearPart = parts[1].trim();
+            // Amankan dari format tahun 2 digit (misalnya '25' diubah menjadi '2025')
+            if (yearPart.length === 2) {
+                yearPart = '20' + yearPart;
+            }
+            return yearPart; // Harus mengembalikan tahun 4 digit (misal: "2025")
+        }
+        return String(periodString).trim();
+    };
+
+    const cleanItemCode = (value: string) => {
+        return value ? String(value).trim() : '';
+    };
+
+    // --- Pembuatan Map Standard Cost (Kunci: TAHUN-ItemCode) ---
+    const standardCostMap = new Map();
+    sc.forEach((item) => {
+        // item.period (SC) HANYA BERUPA TAHUN (mis: '2025')
+        const key = `${cleanItemCode(item.period)}-${cleanItemCode(item.item_code)}`;
+        standardCostMap.set(key, item);
+    });
+
+    // --- Pembuatan Map Actual Cost (Kunci: PERIODE PENUH-ItemCode) ---
+    const actualCostMap = new Map();
+    ac.forEach((item) => {
+        // item.period (AC) BERUPA PERIODE PENUH (mis: 'YTD-Sep'2025')
+        const key = `${cleanItemCode(item.period)}-${cleanItemCode(item.item_code)}`;
+        actualCostMap.set(key, item);
+    });
+
+    const differenceCostMap = new Map();
+    dc.forEach((item) => {
+        // Diasumsikan item.period (DC) memiliki format yang sama dengan DC: 'YTD-Sep'2025'
+        const key = `${cleanItemCode(item.period)}-${cleanItemCode(item.item_code)}`;
+        differenceCostMap.set(key, item);
+    });
+
+    const sortedDc = [...dcxsq].sort((a, b) => cleanItemCode(a.item_code).localeCompare(cleanItemCode(b.item_code)));
+
+    const combined = sortedDc.map((dcxsqItem, index) => {
+        const fullDcPeriod = dcxsqItem.period; // Nilai: "YTD-Feb'2025 / Feb"
+        const itemCode = cleanItemCode(dcxsqItem.item_code);
+
+        // 💡 PERBAIKAN UTAMA: Ambil hanya bagian periode penuh sebelum ' / '
+        const cleanedPeriod = fullDcPeriod ? String(fullDcPeriod).split(' / ')[0].trim() : ''; // Hasil: "YTD-Feb'2025"
+
+        // 1. KUNCI STANDARD COST: Ambil Tahun dari periode yang sudah dibersihkan
+        const yearFromDCPeriod = extractYear(cleanedPeriod); // -> '2025'
+        const standardKey = `${yearFromDCPeriod}-${itemCode}`; // Kunci: "2025-ITEM001"
+
+        // 2. KUNCI ACTUAL COST: Gunakan periode DC yang sudah dibersihkan
+        const actualKey = `${cleanItemCode(cleanedPeriod)}-${itemCode}`; // Kunci: "YTD-Feb'2025-ITEM001"
+        const differenceKey = actualKey; // Kunci DC sama dengan kunci AC (Periode Penuh-Item Code)
+
+        // Ambil data cost dari Map
+        const standardCostItem = standardCostMap.get(standardKey);
+        const actualCostItem = actualCostMap.get(actualKey);
+        const differenceCostItem = differenceCostMap.get(differenceKey);
+
+        const defaultCost = { total_raw_material: 0, total_process: 0, total: 0 };
+        const descriptionFromBom = dcxsqItem.bom ? dcxsqItem.bom.description : '-';
+
+        return {
+            no: index + 1,
+            item_code: dcxsqItem.item_code,
+            description: descriptionFromBom,
+            period: fullDcPeriod, // Tetap gunakan periode penuh untuk tampilan di tabel
+            standard_cost: standardCostItem || defaultCost,
+            actual_cost: actualCostItem || defaultCost,
+            difference_cost: differenceCostItem || defaultCost,
+            dcxsq: dcxsqItem,
+        };
+    });
+
+    return combined.sort((a, b) => cleanItemCode(a.item_code).localeCompare(cleanItemCode(b.item_code)));
+});
+
 const dcxsq = computed(() =>
     (page.props.dcxsq as any[]).map((dcxsq, index) => ({
         ...dcxsq,
@@ -153,10 +245,20 @@ const dcxsq = computed(() =>
 );
 
 const dcTotalRawMaterial = computed(() => {
-    const periodFilter = filtersDifference.value?.period;
-    const selectedPeriod = periodFilter ? periodFilter.value : '';
+    const periodFilterDiff = filtersDifference.value?.period;
+    const periodFilterDCxSQ = filtersDCxSQ.value?.period;
 
-    if (!selectedPeriod || selectedPeriod === '') {
+    const cleanPeriodValue = (periodValue: any) => {
+        if (!periodValue) return null;
+        return String(periodValue).split(' / ')[0].trim();
+    };
+
+    const selectedPeriodDiff = periodFilterDiff ? cleanPeriodValue(periodFilterDiff.value) : null;
+    const selectedPeriodDCxSQ = periodFilterDCxSQ ? cleanPeriodValue(periodFilterDCxSQ.value) : null;
+
+    const selectedPeriod = selectedPeriodDCxSQ || selectedPeriodDiff;
+
+    if (!selectedPeriod) {
         return {
             value: 'Select Period First',
             class: { 'text-gray-500': true },
@@ -195,17 +297,24 @@ const dcTotalRawMaterial = computed(() => {
 });
 
 const dcTotalProcess = computed(() => {
-    const periodFilter = filtersDifference.value?.period;
-    const selectedPeriod = periodFilter ? periodFilter.value : '';
+    const periodFilterDiff = filtersDifference.value?.period;
+    const periodFilterDCxSQ = filtersDCxSQ.value?.period;
 
-    // =======================================================
-    // ⭐️ PEMERIKSAAN UTAMA: JIKA FILTER KOSONG, KEMBALIKAN PESAN
-    // =======================================================
-    if (!selectedPeriod || selectedPeriod === '') {
+    const cleanPeriodValue = (periodValue: any) => {
+        if (!periodValue) return null;
+        return String(periodValue).split(' / ')[0].trim();
+    };
+
+    const selectedPeriodDiff = periodFilterDiff ? cleanPeriodValue(periodFilterDiff.value) : null;
+    const selectedPeriodDCxSQ = periodFilterDCxSQ ? cleanPeriodValue(periodFilterDCxSQ.value) : null;
+
+    const selectedPeriod = selectedPeriodDCxSQ || selectedPeriodDiff;
+
+    if (!selectedPeriod) {
         return {
-            value: 'Select Period First', // Pesan khusus
-            class: { 'text-gray-500': true }, // Warna abu-abu untuk pesan
-            isPlaceholder: true, // Flag untuk digunakan di template
+            value: 'Select Period First',
+            class: { 'text-gray-500': true },
+            isPlaceholder: true,
         };
     }
     // =======================================================
@@ -244,17 +353,24 @@ const dcTotalProcess = computed(() => {
 });
 
 const dcTotalofTotal = computed(() => {
-    const periodFilter = filtersDifference.value?.period;
-    const selectedPeriod = periodFilter ? periodFilter.value : '';
+    const periodFilterDiff = filtersDifference.value?.period;
+    const periodFilterDCxSQ = filtersDCxSQ.value?.period;
 
-    // =======================================================
-    // ⭐️ PEMERIKSAAN UTAMA: JIKA FILTER KOSONG, KEMBALIKAN PESAN
-    // =======================================================
-    if (!selectedPeriod || selectedPeriod === '') {
+    const cleanPeriodValue = (periodValue: any) => {
+        if (!periodValue) return null;
+        return String(periodValue).split(' / ')[0].trim();
+    };
+
+    const selectedPeriodDiff = periodFilterDiff ? cleanPeriodValue(periodFilterDiff.value) : null;
+    const selectedPeriodDCxSQ = periodFilterDCxSQ ? cleanPeriodValue(periodFilterDCxSQ.value) : null;
+
+    const selectedPeriod = selectedPeriodDCxSQ || selectedPeriodDiff;
+
+    if (!selectedPeriod) {
         return {
-            value: 'Select Period First', // Pesan khusus
-            class: { 'text-gray-500': true }, // Warna abu-abu untuk pesan
-            isPlaceholder: true, // Flag untuk digunakan di template
+            value: 'Select Period First',
+            class: { 'text-gray-500': true },
+            isPlaceholder: true,
         };
     }
     // =======================================================
@@ -655,7 +771,7 @@ const filtersDifference = ref({
 
 const filtersDCxSQ = ref({
     item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    'bom.description': { value: null, matchMode: FilterMatchMode.CONTAINS },
+    description: { value: null, matchMode: FilterMatchMode.CONTAINS },
     period: { value: null as string | null, matchMode: FilterMatchMode.EQUALS },
     sales_month: { value: null as number | null, matchMode: FilterMatchMode.EQUALS },
 });
@@ -1016,7 +1132,7 @@ function closeDialog() {
                                 </div>
 
                                 <DataTable
-                                    :value="combinedData"
+                                    :value="combinedDiffCost"
                                     tableStyle="min-width: 50rem"
                                     paginator
                                     :rows="10"
@@ -1235,7 +1351,7 @@ function closeDialog() {
                                 </div>
 
                                 <DataTable
-                                    :value="dcxsq"
+                                    :value="combinedDiffCostXSQuantity"
                                     tableStyle="min-width: 50rem"
                                     paginator
                                     :rows="10"
@@ -1251,8 +1367,69 @@ function closeDialog() {
                                     class="text-md"
                                     ref="dtDCxSQ"
                                 >
-                                    <Column field="no" header="No" sortable v-bind="tbStyle('main')"></Column>
-                                    <Column field="item_code" header="Item Code" sortable v-bind="tbStyle('main')" :showFilterMenu="false">
+                                    <ColumnGroup type="header">
+                                        <Row>
+                                            <Column field="no" header="#" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
+                                            <Column field="item_code" header="Item Code" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
+                                            <Column field="description" header="Description" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
+                                            <Column field="period" header="Period" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
+                                            <Column field="dcxsq.quantity" header="Quantity" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
+
+                                            <Column header="Standard Cost" :colspan="3" v-bind="tbStyle('rm')"></Column>
+                                            <Column header="Actual Cost" :colspan="3" v-bind="tbStyle('pr')"></Column>
+                                            <Column header="Difference Cost" :colspan="3" v-bind="tbStyle('wip')"></Column>
+                                            <Column header="Difference Cost x Sales Quantity" :colspan="3" v-bind="tbStyle('fg')"></Column>
+                                        </Row>
+                                        <Row>
+                                            <Column
+                                                field="standard_cost.total_raw_material"
+                                                sortable
+                                                header="Total Raw Material"
+                                                v-bind="tbStyle('rm')"
+                                            ></Column>
+                                            <Column
+                                                field="standard_cost.total_process"
+                                                sortable
+                                                header="Total Process"
+                                                v-bind="tbStyle('rm')"
+                                            ></Column>
+                                            <Column field="standard_cost.total" sortable header="Total" v-bind="tbStyle('rm')"></Column>
+                                            <Column
+                                                field="actual_cost.total_raw_material"
+                                                sortable
+                                                header="Total Raw Material"
+                                                v-bind="tbStyle('pr')"
+                                            ></Column>
+                                            <Column field="actual_cost.total_process" sortable header="Total Process" v-bind="tbStyle('pr')"></Column>
+                                            <Column field="actual_cost.total" sortable header="Total" v-bind="tbStyle('pr')"></Column>
+
+                                            <Column
+                                                field="difference_cost.total_raw_material"
+                                                sortable
+                                                header="Total Raw Material"
+                                                v-bind="tbStyle('wip')"
+                                            ></Column>
+                                            <Column
+                                                field="difference_cost.total_process"
+                                                sortable
+                                                header="Total Process"
+                                                v-bind="tbStyle('wip')"
+                                            ></Column>
+                                            <Column field="difference_cost.total" sortable header="Total" v-bind="tbStyle('wip')"></Column>
+
+                                            <Column
+                                                field="dcxsq.total_raw_material"
+                                                sortable
+                                                header="Total Raw Material"
+                                                v-bind="tbStyle('fg')"
+                                            ></Column>
+                                            <Column field="dcxsq.total_process" sortable header="Total Process" v-bind="tbStyle('fg')"></Column>
+                                            <Column field="dcxsq.total" sortable header="Total" v-bind="tbStyle('fg')"></Column>
+                                        </Row>
+                                    </ColumnGroup>
+
+                                    <Column field="no" header="#" v-bind="tbStyle('main')"></Column>
+                                    <Column field="item_code" v-bind="tbStyle('main')" :showFilterMenu="false">
                                         <template #filter="{ filterModel, filterCallback }">
                                             <InputText
                                                 v-model="filterModel.value"
@@ -1262,92 +1439,163 @@ function closeDialog() {
                                             />
                                         </template>
                                     </Column>
-                                    <Column field="bom.description" header="Name" :showFilterMenu="false" sortable v-bind="tbStyle('main')" frozen>
+                                    <Column field="description" v-bind="tbStyle('main')" :showFilterMenu="false">
                                         <template #filter="{ filterModel, filterCallback }">
                                             <InputText
                                                 v-model="filterModel.value"
                                                 @input="filterCallback()"
-                                                placeholder="Search description"
+                                                placeholder="Search Description"
                                                 class="w-full"
                                             />
                                         </template>
-                                        <template #body="{ data }">
-                                            {{ data.bom ? data.bom.description : 'N/A' }}
-                                        </template>
                                     </Column>
-
-                                    <Column
-                                        field="period"
-                                        header="Difference Cost x Actual Sales Month"
-                                        sortable
-                                        v-bind="tbStyle('main')"
-                                        :showFilterMenu="false"
-                                    >
+                                    <Column field="period" header="Period" sortable v-bind="tbStyle('main')" :showFilterMenu="false">
                                         <template #filter="{ filterModel, filterCallback }">
                                             <div class="flex justify-center">
                                                 <Select
                                                     v-model="filterModel.value"
                                                     :options="listDCxSQ"
                                                     optionLabel="name"
-                                                    optionValue="code"
-                                                    placeholder="Select a period"
-                                                    :showClear="true"
+                                                    optionValue="name"
+                                                    placeholder="DCxSQ Period"
                                                     class="w-full"
+                                                    :showClear="true"
                                                     @change="filterCallback()"
-                                                >
-                                                </Select>
+                                                />
                                             </div>
                                         </template>
                                     </Column>
-                                    <Column field="quantity" header="Quantity" sortable v-bind="tbStyle('main')" />
-                                    <Column field="total_raw_material" header="Total Raw Material" sortable v-bind="tbStyle('rm')">
+                                    <Column field="dcxsq.quantity" header="Quantity" v-bind="tbStyle('main')"></Column>
+
+                                    <Column field="standard_cost.total_raw_material" sortable v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.standard_cost.total_raw_material).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="standard_cost.total_process" sortable v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.standard_cost.total_process).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="standard_cost.total" sortable v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.standard_cost.total).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="actual_cost.total_raw_material" sortable v-bind="tbStyle('pr')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.actual_cost.total_raw_material).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="actual_cost.total_process" sortable v-bind="tbStyle('pr')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.actual_cost.total_process).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="actual_cost.total" sortable v-bind="tbStyle('pr')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.actual_cost.total).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="difference_cost.total_raw_material" sortable v-bind="tbStyle('wip')">
                                         <template #body="{ data }">
                                             <span
                                                 :class="{
-                                                    'text-red-500': data.total_raw_material < 0,
-                                                    'text-green-500': data.total_raw_material > 0,
+                                                    'text-red-500': data.difference_cost.total_raw_material < 0,
+                                                    'text-green-500': data.difference_cost.total_raw_material > 0,
                                                 }"
                                             >
-                                                {{ Number(data.total_raw_material).toLocaleString('id-ID') }}
+                                                {{ Number(data.difference_cost.total_raw_material).toLocaleString('id-ID') }}
                                             </span>
                                         </template>
+                                        <template #footer>
+                                            <span :class="dcTotalRawMaterial.class">
+                                                <strong>{{ dcTotalRawMaterial.value }}</strong>
+                                            </span>
+                                        </template>
+                                    </Column>
+                                    <Column field="difference_cost.total_process" sortable v-bind="tbStyle('wip')">
+                                        <template #body="{ data }">
+                                            <span
+                                                :class="{
+                                                    'text-red-500': data.difference_cost.total_process < 0,
+                                                    'text-green-500': data.difference_cost.total_raw_material > 0,
+                                                }"
+                                            >
+                                                {{ Number(data.difference_cost.total_process).toLocaleString('id-ID') }}
+                                            </span>
+                                        </template>
+                                        <template #footer>
+                                            <span :class="dcTotalProcess.class">
+                                                <strong>{{ dcTotalProcess.value }}</strong>
+                                            </span>
+                                        </template>
+                                    </Column>
+                                    <Column field="difference_cost.total" sortable v-bind="tbStyle('wip')">
+                                        <template #body="{ data }">
+                                            <span
+                                                :class="{
+                                                    'text-red-500': data.difference_cost.total < 0,
+                                                    'text-green-500': data.difference_cost.total_raw_material > 0,
+                                                }"
+                                            >
+                                                {{ Number(data.difference_cost.total).toLocaleString('id-ID') }}
+                                            </span>
+                                        </template>
+                                        <template #footer>
+                                            <span :class="dcTotalofTotal.class">
+                                                <strong>{{ dcTotalofTotal.value }}</strong>
+                                            </span>
+                                        </template>
+                                    </Column>
 
+                                    <Column field="dcxsq.total_raw_material" sortable v-bind="tbStyle('fg')">
+                                        <template #body="{ data }">
+                                            <span
+                                                :class="{
+                                                    'text-red-500': data.dcxsq.total_raw_material < 0,
+                                                    'text-green-500': data.dcxsq.total_raw_material > 0,
+                                                }"
+                                            >
+                                                {{ Number(data.dcxsq.total_raw_material).toLocaleString('id-ID') }}
+                                            </span>
+                                        </template>
                                         <template #footer>
                                             <span :class="dcxsqTotalRawMaterial.class">
                                                 <strong>{{ dcxsqTotalRawMaterial.value }}</strong>
                                             </span>
                                         </template>
                                     </Column>
-                                    <Column field="total_process" header="Total Process" sortable v-bind="tbStyle('pr')">
+                                    <Column field="difference_cost.total_process" sortable v-bind="tbStyle('fg')">
                                         <template #body="{ data }">
                                             <span
                                                 :class="{
-                                                    'text-red-500': data.total_process < 0,
-                                                    'text-green-500': data.total_process > 0,
+                                                    'text-red-500': data.difference_cost.total_process < 0,
+                                                    'text-green-500': data.difference_cost.total_raw_material > 0,
                                                 }"
                                             >
-                                                {{ Number(data.total_process).toLocaleString('id-ID') }}
+                                                {{ Number(data.difference_cost.total_process).toLocaleString('id-ID') }}
                                             </span>
                                         </template>
-
                                         <template #footer>
                                             <span :class="dcxsqTotalProcess.class">
                                                 <strong>{{ dcxsqTotalProcess.value }}</strong>
                                             </span>
                                         </template>
                                     </Column>
-                                    <Column field="total" header="Total" sortable v-bind="tbStyle('fg')">
+                                    <Column field="difference_cost.total" sortable v-bind="tbStyle('fg')">
                                         <template #body="{ data }">
                                             <span
                                                 :class="{
-                                                    'text-red-500': data.total < 0,
-                                                    'text-green-500': data.total > 0,
+                                                    'text-red-500': data.difference_cost.total < 0,
+                                                    'text-green-500': data.difference_cost.total_raw_material > 0,
                                                 }"
                                             >
-                                                {{ Number(data.total).toLocaleString('id-ID') }}
+                                                {{ Number(data.difference_cost.total).toLocaleString('id-ID') }}
                                             </span>
                                         </template>
-
                                         <template #footer>
                                             <span :class="dcxsqTotalofTotal.class">
                                                 <strong>{{ dcxsqTotalofTotal.value }}</strong>
