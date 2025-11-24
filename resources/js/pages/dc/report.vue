@@ -44,6 +44,7 @@ const updateType = ref<'diffCost' | 'dcXsq' | null>(null);
 const activeTabValue = ref('0');
 const userName = computed(() => page.props.auth?.user?.name ?? '');
 
+// Style buat table
 function tbStyle(section: 'main' | 'rm' | 'pr' | 'wip' | 'fg') {
     const styles = {
         main: { header: '#758596', body: '#c8cccc' },
@@ -59,10 +60,12 @@ function tbStyle(section: 'main' | 'rm' | 'pr' | 'wip' | 'fg') {
     };
 }
 
+// Nampung nilai
 const props = defineProps({
     auth: Object,
 });
 
+// Data Diff Cost
 const dc = computed(() =>
     (page.props.dc as any[]).map((dc, index) => ({
         ...dc,
@@ -70,173 +73,7 @@ const dc = computed(() =>
     })),
 );
 
-const combinedDiffCost = computed(() => {
-    const sc = (page.props.sc || []) as any[];
-    const ac = (page.props.ac || []) as any[];
-    const dc = (page.props.dc || []) as any[];
-
-    if (!Array.isArray(sc) || !Array.isArray(ac) || !Array.isArray(dc)) {
-        return [];
-    }
-
-    // Fungsi untuk mengekstrak TAHUN (YYYY) dari string periode (misal: "YTD-Jul'2025")
-    const extractYear = (periodString: string) => {
-        if (!periodString) return '';
-        const parts = String(periodString).split("'");
-        if (parts.length > 1) {
-            return parts[1].trim();
-        }
-        return String(periodString).trim();
-    };
-
-    const cleanItemCode = (value: string) => {
-        return value ? String(value).trim() : '';
-    };
-
-    // --- Pembuatan Map Standard Cost (Kunci: TAHUN-ItemCode) ---
-    const standardCostMap = new Map();
-    sc.forEach((item) => {
-        // item.period (SC) HANYA BERUPA TAHUN (mis: '2025')
-        const key = `${cleanItemCode(item.period)}-${cleanItemCode(item.item_code)}`;
-        standardCostMap.set(key, item);
-    });
-
-    // --- Pembuatan Map Actual Cost (Kunci: PERIODE PENUH-ItemCode) ---
-    const actualCostMap = new Map();
-    ac.forEach((item) => {
-        // item.period (AC) BERUPA PERIODE PENUH (mis: 'YTD-Sep'2025')
-        const key = `${cleanItemCode(item.period)}-${cleanItemCode(item.item_code)}`;
-        actualCostMap.set(key, item);
-    });
-
-    const sortedDc = [...dc].sort((a, b) => cleanItemCode(a.item_code).localeCompare(cleanItemCode(b.item_code)));
-
-    const combined = sortedDc.map((dcItem, index) => {
-        // PERIODE DC (Penuh, mis: 'YTD-Jul'2025')
-        const period = dcItem.period;
-        const itemCode = cleanItemCode(dcItem.item_code);
-
-        // 1. KUNCI STANDARD COST: Ambil Tahun dari periode DC
-        const yearFromDCPeriod = extractYear(period); // -> '2025'
-        const standardKey = `${yearFromDCPeriod}-${itemCode}`;
-
-        // 2. KUNCI ACTUAL COST: Gunakan periode DC yang PENUH
-        const actualKey = `${cleanItemCode(period)}-${itemCode}`;
-
-        // Ambil data cost dari Map
-        const standardCostItem = standardCostMap.get(standardKey);
-        const actualCostItem = actualCostMap.get(actualKey); // Mencari periode penuh
-
-        const defaultCost = { total_raw_material: 0, total_process: 0, total: 0 };
-        const descriptionFromBom = dcItem.bom ? dcItem.bom.description : '-';
-
-        return {
-            no: index + 1,
-            item_code: dcItem.item_code,
-            description: descriptionFromBom,
-            period: dcItem.period,
-            standard_cost: standardCostItem || defaultCost,
-            actual_cost: actualCostItem || defaultCost,
-
-            difference_cost: dcItem,
-        };
-    });
-
-    return combined.sort((a, b) => cleanItemCode(a.item_code).localeCompare(cleanItemCode(b.item_code)));
-});
-
-const combinedDiffCostXSQuantity = computed(() => {
-    const sc = (page.props.sc || []) as any[];
-    const ac = (page.props.ac || []) as any[];
-    const dc = (page.props.dc || []) as any[];
-    const dcxsq = (page.props.dcxsq || []) as any[];
-
-    if (!Array.isArray(sc) || !Array.isArray(ac) || !Array.isArray(dcxsq)) {
-        return [];
-    }
-
-    // Fungsi untuk mengekstrak TAHUN (YYYY) dari string periode (misal: "YTD-Jul'2025")
-    const extractYear = (periodString: string) => {
-        if (!periodString) return '';
-        const parts = String(periodString).split("'");
-        if (parts.length > 1) {
-            let yearPart = parts[1].trim();
-            // Amankan dari format tahun 2 digit (misalnya '25' diubah menjadi '2025')
-            if (yearPart.length === 2) {
-                yearPart = '20' + yearPart;
-            }
-            return yearPart; // Harus mengembalikan tahun 4 digit (misal: "2025")
-        }
-        return String(periodString).trim();
-    };
-
-    const cleanItemCode = (value: string) => {
-        return value ? String(value).trim() : '';
-    };
-
-    // --- Pembuatan Map Standard Cost (Kunci: TAHUN-ItemCode) ---
-    const standardCostMap = new Map();
-    sc.forEach((item) => {
-        // item.period (SC) HANYA BERUPA TAHUN (mis: '2025')
-        const key = `${cleanItemCode(item.period)}-${cleanItemCode(item.item_code)}`;
-        standardCostMap.set(key, item);
-    });
-
-    // --- Pembuatan Map Actual Cost (Kunci: PERIODE PENUH-ItemCode) ---
-    const actualCostMap = new Map();
-    ac.forEach((item) => {
-        // item.period (AC) BERUPA PERIODE PENUH (mis: 'YTD-Sep'2025')
-        const key = `${cleanItemCode(item.period)}-${cleanItemCode(item.item_code)}`;
-        actualCostMap.set(key, item);
-    });
-
-    const differenceCostMap = new Map();
-    dc.forEach((item) => {
-        // Diasumsikan item.period (DC) memiliki format yang sama dengan DC: 'YTD-Sep'2025'
-        const key = `${cleanItemCode(item.period)}-${cleanItemCode(item.item_code)}`;
-        differenceCostMap.set(key, item);
-    });
-
-    const sortedDc = [...dcxsq].sort((a, b) => cleanItemCode(a.item_code).localeCompare(cleanItemCode(b.item_code)));
-
-    const combined = sortedDc.map((dcxsqItem, index) => {
-        const fullDcPeriod = dcxsqItem.period; // Nilai: "YTD-Feb'2025 / Feb"
-        const itemCode = cleanItemCode(dcxsqItem.item_code);
-
-        // 💡 PERBAIKAN UTAMA: Ambil hanya bagian periode penuh sebelum ' / '
-        const cleanedPeriod = fullDcPeriod ? String(fullDcPeriod).split(' / ')[0].trim() : ''; // Hasil: "YTD-Feb'2025"
-
-        // 1. KUNCI STANDARD COST: Ambil Tahun dari periode yang sudah dibersihkan
-        const yearFromDCPeriod = extractYear(cleanedPeriod); // -> '2025'
-        const standardKey = `${yearFromDCPeriod}-${itemCode}`; // Kunci: "2025-ITEM001"
-
-        // 2. KUNCI ACTUAL COST: Gunakan periode DC yang sudah dibersihkan
-        const actualKey = `${cleanItemCode(cleanedPeriod)}-${itemCode}`; // Kunci: "YTD-Feb'2025-ITEM001"
-        const differenceKey = actualKey; // Kunci DC sama dengan kunci AC (Periode Penuh-Item Code)
-
-        // Ambil data cost dari Map
-        const standardCostItem = standardCostMap.get(standardKey);
-        const actualCostItem = actualCostMap.get(actualKey);
-        const differenceCostItem = differenceCostMap.get(differenceKey);
-
-        const defaultCost = { total_raw_material: 0, total_process: 0, total: 0 };
-        const descriptionFromBom = dcxsqItem.bom ? dcxsqItem.bom.description : '-';
-
-        return {
-            no: index + 1,
-            item_code: dcxsqItem.item_code,
-            description: descriptionFromBom,
-            period: fullDcPeriod, // Tetap gunakan periode penuh untuk tampilan di tabel
-            standard_cost: standardCostItem || defaultCost,
-            actual_cost: actualCostItem || defaultCost,
-            difference_cost: differenceCostItem || defaultCost,
-            dcxsq: dcxsqItem,
-        };
-    });
-
-    return combined.sort((a, b) => cleanItemCode(a.item_code).localeCompare(cleanItemCode(b.item_code)));
-});
-
+// Data Diff Cost x Sales Quantity
 const dcxsq = computed(() =>
     (page.props.dcxsq as any[]).map((dcxsq, index) => ({
         ...dcxsq,
@@ -272,9 +109,10 @@ const dcTotalRawMaterial = computed(() => {
     let total = 0;
 
     filteredData = rawData.filter((item) => item.period === selectedPeriod);
+    // 2. Logika Penjumlahan:
 
     filteredData.forEach((item) => {
-        const value = Number(item.total_raw_material || 0);
+        const value = Number(item.difference_cost.total_raw_material || 0);
         total += value;
     });
 
@@ -329,7 +167,7 @@ const dcTotalProcess = computed(() => {
 
     // 2. Logika Penjumlahan:
     filteredData.forEach((item) => {
-        const value = Number(item.total_process || 0);
+        const value = Number(item.difference_cost.total_process || 0);
         total += value;
     });
 
@@ -385,7 +223,7 @@ const dcTotalofTotal = computed(() => {
 
     // 2. Logika Penjumlahan:
     filteredData.forEach((item) => {
-        const value = Number(item.total || 0);
+        const value = Number(item.difference_cost.total || 0);
         total += value;
     });
 
@@ -426,9 +264,8 @@ const dcxsqTotalRawMaterial = computed(() => {
     let total = 0;
 
     filteredData = rawData.filter((item) => item.period === selectedPeriod);
-
     filteredData.forEach((item) => {
-        const value = Number(item.total_raw_material || 0);
+        const value = Number(item.dcxsq.total_raw_material || 0);
         total += value;
     });
 
@@ -476,7 +313,7 @@ const dcxsqTotalProcess = computed(() => {
 
     // 2. Logika Penjumlahan:
     filteredData.forEach((item) => {
-        const value = Number(item.total_process || 0);
+        const value = Number(item.dcxsq.total_process || 0);
         total += value;
     });
 
@@ -503,9 +340,6 @@ const dcxsqTotalofTotal = computed(() => {
     const periodFilter = filtersDCxSQ.value?.period;
     const selectedPeriod = periodFilter ? periodFilter.value : '';
 
-    // =======================================================
-    // ⭐️ PEMERIKSAAN UTAMA: JIKA FILTER KOSONG, KEMBALIKAN PESAN
-    // =======================================================
     if (!selectedPeriod || selectedPeriod === '') {
         return {
             value: 'Select Period First', // Pesan khusus
@@ -513,19 +347,15 @@ const dcxsqTotalofTotal = computed(() => {
             isPlaceholder: true, // Flag untuk digunakan di template
         };
     }
-    // =======================================================
 
     const rawData = dcxsq.value || [];
     let filteredData = rawData;
     let total = 0;
 
-    // 1. Logika Pemfilteran: (Sekarang hanya berjalan jika selectedPeriod sudah terisi)
-    // Filter data mentah berdasarkan periode yang dipilih
     filteredData = rawData.filter((item) => item.period === selectedPeriod);
 
-    // 2. Logika Penjumlahan:
     filteredData.forEach((item) => {
-        const value = Number(item.total || 0);
+        const value = Number(item.dcxsq.total || 0);
         total += value;
     });
 
@@ -1132,7 +962,7 @@ function closeDialog() {
                                 </div>
 
                                 <DataTable
-                                    :value="combinedDiffCost"
+                                    :value="dc"
                                     tableStyle="min-width: 50rem"
                                     paginator
                                     :rows="10"
@@ -1351,7 +1181,7 @@ function closeDialog() {
                                 </div>
 
                                 <DataTable
-                                    :value="combinedDiffCostXSQuantity"
+                                    :value="dcxsq"
                                     tableStyle="min-width: 50rem"
                                     paginator
                                     :rows="10"
