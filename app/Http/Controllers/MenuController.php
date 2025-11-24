@@ -724,6 +724,149 @@ class MenuController extends Controller
         ]);
     }
 
+    // Tambahkan ini sebagai fungsi helper di dalam DiffCost_Report atau jadikan method terpisah
+    // Saya asumsikan Anda ingin mengembalikan data yang sudah digabungkan.
+
+    private function getCombinedDiffCost($sc, $ac, $dc)
+    {
+        // Fungsi untuk membersihkan Item Code
+        $cleanItemCode = function ($value) {
+            return trim((string) $value);
+        };
+
+        // Fungsi untuk mengekstrak TAHUN (YYYY) dari string periode (misal: "YTD-Jul'2025")
+        $extractYear = function ($periodString) {
+            if (empty($periodString)) return '';
+            $parts = explode("'", (string) $periodString);
+            if (count($parts) > 1) {
+                $yearPart = trim($parts[1]);
+                // Amankan dari format tahun 2 digit (misalnya '25' diubah menjadi '2025')
+                if (strlen($yearPart) === 2) {
+                    $yearPart = '20' . $yearPart;
+                }
+                return $yearPart;
+            }
+            // Jika formatnya hanya tahun (seperti di SC), kembalikan langsung
+            return trim((string) $periodString);
+        };
+
+        // --- Pembuatan Map Standard Cost (Kunci: TAHUN-ItemCode) ---
+        // SC.period = TAHUN (mis: '2025')
+        $standardCostMap = collect($sc)->keyBy(function ($item) use ($cleanItemCode) {
+            return "{$cleanItemCode($item->period)}-{$cleanItemCode($item->item_code)}";
+        });
+
+        // --- Pembuatan Map Actual Cost (Kunci: PERIODE PENUH-ItemCode) ---
+        // AC.period = PERIODE PENUH (mis: 'YTD-Sep'2025')
+        $actualCostMap = collect($ac)->keyBy(function ($item) use ($cleanItemCode) {
+            return "{$cleanItemCode($item->period)}-{$cleanItemCode($item->item_code)}";
+        });
+
+        $defaultCost = ['total_raw_material' => 0, 'total_process' => 0, 'total' => 0];
+
+        // Urutkan $dc berdasarkan item_code (sama seperti di JS)
+        $sortedDc = collect($dc)->sortBy(fn($item) => $cleanItemCode($item->item_code));
+
+        // Lakukan penggabungan data
+        $combined = $sortedDc->map(function ($dcItem, $index) use ($extractYear, $cleanItemCode, $standardCostMap, $actualCostMap, $defaultCost) {
+            $period = $dcItem->period; // PERIODE DC (Penuh, mis: 'YTD-Jul'2025')
+            $itemCode = $cleanItemCode($dcItem->item_code);
+
+            // 1. KUNCI STANDARD COST: Ambil Tahun dari periode DC
+            $yearFromDCPeriod = $extractYear($period); // -> '2025'
+            $standardKey = "{$yearFromDCPeriod}-{$itemCode}";
+
+            // 2. KUNCI ACTUAL COST: Gunakan periode DC yang PENUH
+            $actualKey = "{$cleanItemCode($period)}-{$itemCode}";
+
+            // Ambil data cost dari Map (menggunakan ->get($key) pada Collection Map)
+            $standardCostItem = $standardCostMap->get($standardKey);
+            $actualCostItem = $actualCostMap->get($actualKey);
+
+            $descriptionFromBom = optional($dcItem->bom)->description ?: '-';
+
+            return [
+                'no' => $index + 1,
+                'item_code' => $dcItem->item_code,
+                'description' => $descriptionFromBom,
+                'period' => $dcItem->period,
+                // Gunakan array() untuk memastikan konsistensi dengan $defaultCost
+                'standard_cost' => $standardCostItem ? $standardCostItem->toArray() : $defaultCost,
+                'actual_cost' => $actualCostItem ? $actualCostItem->toArray() : $defaultCost,
+                'difference_cost' => $dcItem->toArray(), // DC adalah data utamanya
+            ];
+        });
+
+        // Urutkan hasil akhir berdasarkan item_code
+        return $combined->sortBy(fn($item) => $item['item_code'])->values()->toArray();
+    }
+
+    private function getCombinedDiffCostXSQuantity($sc, $ac, $dc, $dcxsq)
+    {
+        $cleanItemCode = function ($value) {
+            return trim((string) $value);
+        };
+
+        $extractYear = function ($periodString) {
+            if (empty($periodString)) return '';
+            $parts = explode("'", (string) $periodString);
+            if (count($parts) > 1) {
+                $yearPart = trim($parts[1]);
+                // Amankan dari format tahun 2 digit
+                if (strlen($yearPart) === 2) {
+                    $yearPart = '20' . $yearPart;
+                }
+                return $yearPart;
+            }
+            return trim((string) $periodString);
+        };
+
+        $standardCostMap = collect($sc)->keyBy(function ($item) use ($cleanItemCode) {
+            return "{$cleanItemCode($item->period)}-{$cleanItemCode($item->item_code)}";
+        });
+
+        $actualCostMap = collect($ac)->keyBy(function ($item) use ($cleanItemCode) {
+            return "{$cleanItemCode($item->period)}-{$cleanItemCode($item->item_code)}";
+        });
+
+        $differenceCostMap = collect($dc)->keyBy(function ($item) use ($cleanItemCode) {
+            return "{$cleanItemCode($item->period)}-{$cleanItemCode($item->item_code)}";
+        });
+
+        $defaultCost = ['total_raw_material' => 0, 'total_process' => 0, 'total' => 0];
+        $sortedDcXsq = collect($dcxsq)->sortBy(fn($item) => $cleanItemCode($item->item_code));
+        $combined = $sortedDcXsq->map(function ($dcxsqItem, $index) use ($extractYear, $cleanItemCode, $standardCostMap, $actualCostMap, $differenceCostMap, $defaultCost) {
+            $fullDcPeriod = $dcxsqItem->period;
+            $itemCode = $cleanItemCode($dcxsqItem->item_code);
+
+            $cleanedPeriod = $fullDcPeriod ? trim(explode(' / ', (string) $fullDcPeriod)[0]) : '';
+
+            $yearFromDCPeriod = $extractYear($cleanedPeriod);
+            $standardKey = "{$yearFromDCPeriod}-{$itemCode}";
+            $actualKey = "{$cleanItemCode($cleanedPeriod)}-{$itemCode}";
+
+            $standardCostItem = $standardCostMap->get($standardKey);
+            $actualCostItem = $actualCostMap->get($actualKey);
+            $differenceCostItem = $differenceCostMap->get($actualKey);
+
+            $descriptionFromBom = optional($dcxsqItem->bom)->description ?: '-';
+
+            return [
+                'no' => $index + 1,
+                'item_code' => $dcxsqItem->item_code,
+                'description' => $descriptionFromBom,
+                'period' => $fullDcPeriod,
+                'standard_cost' => $standardCostItem ? $standardCostItem->toArray() : $defaultCost,
+                'actual_cost' => $actualCostItem ? $actualCostItem->toArray() : $defaultCost,
+                'difference_cost' => $differenceCostItem ? $differenceCostItem->toArray() : $defaultCost,
+                'dcxsq' => $dcxsqItem->toArray(),
+            ];
+        });
+
+        // Urutkan hasil akhir berdasarkan item_code
+        return $combined->sortBy(fn($item) => $item['item_code'])->values()->toArray();
+    }
+
     public function DiffCost_Report()
     {
         $scPeriod = StandardCost::distinct()->pluck('period');
@@ -756,6 +899,8 @@ class MenuController extends Controller
             $query->select('item_code', 'description');
         }])->get();
 
+        $combinedDC = $this->getCombinedDiffCost($sc, $ac, $dc);
+        $combinedDCxSQ = $this->getCombinedDiffCostXSQuantity($sc, $ac, $dc, $dcxsq);
         return Inertia::render("dc/report", [
             'sc' => $sc,
             'ac' => $ac,
@@ -763,8 +908,9 @@ class MenuController extends Controller
             'acPeriod' => $acPeriod,
             'dcPeriod' => $dcPeriod,
             'dcxsqPeriod' => $dcxsqPeriod,
-            'dc' => $dc,
-            'dcxsq' => $dcxsq,
+            'dc' => $combinedDC,
+            'dcxsq' => $combinedDCxSQ, // Nama properti baru
+            // 'dcxsq' => $dcxsq,
             'actual_sales' => $actual_sales,
             'auth' => [
                 'user' => Auth::check() ? [

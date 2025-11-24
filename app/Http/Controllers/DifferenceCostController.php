@@ -22,13 +22,18 @@ class DifferenceCostController extends Controller
         ]);
 
         $standardCost = StandardCost::where('period', $validatedData['standard_period'])
-            // ->take(10)
+            // ->take(35)]
+            // ->where('item_code', 'F16N01')
             ->get();
+
+        // dd($standardCost);
 
         $actualCost = ActualCost::where('period', $validatedData['actual_period'])
-            // ->take(10)
+            // ->take(35)
+            // ->where('item_code', 'F16N01')
             ->get();
 
+        // dd($actualCost);
 
         $differenceCosts = [];
         $processedItemCodes = [];
@@ -73,6 +78,8 @@ class DifferenceCostController extends Controller
                 'updated_at' => now(),
             ];
         }
+
+        // dd(vars: $differenceCosts);
 
         // Simpan ke database menggunakan upsert
         DifferenceCost::upsert($differenceCosts, ['item_code', 'period'], ['total_raw_material', 'total_process', 'total']);
