@@ -1398,15 +1398,15 @@ function closeDialog() {
                                             </span>
                                         </template>
                                     </Column>
-                                    <Column field="difference_cost.total_process" sortable v-bind="tbStyle('fg')">
+                                    <Column field="dcxsq.total_process" sortable v-bind="tbStyle('fg')">
                                         <template #body="{ data }">
                                             <span
                                                 :class="{
-                                                    'text-red-500': data.difference_cost.total_process < 0,
-                                                    'text-green-500': data.difference_cost.total_raw_material > 0,
+                                                    'text-red-500': data.dcxsq.total_process < 0,
+                                                    'text-green-500': data.dcxsq.total_raw_material > 0,
                                                 }"
                                             >
-                                                {{ Number(data.difference_cost.total_process).toLocaleString('id-ID') }}
+                                                {{ Number(data.dcxsq.total_process).toLocaleString('id-ID') }}
                                             </span>
                                         </template>
                                         <template #footer>
@@ -1415,7 +1415,7 @@ function closeDialog() {
                                             </span>
                                         </template>
                                     </Column>
-                                    <Column field="difference_cost.total" sortable v-bind="tbStyle('fg')">
+                                    <Column field="dcxsq.total" sortable v-bind="tbStyle('fg')">
                                         <template #body="{ data }">
                                             <span
                                                 :class="{
