@@ -1419,11 +1419,11 @@ function closeDialog() {
                                         <template #body="{ data }">
                                             <span
                                                 :class="{
-                                                    'text-red-500': data.difference_cost.total < 0,
-                                                    'text-green-500': data.difference_cost.total_raw_material > 0,
+                                                    'text-red-500': data.dcxsq.total < 0,
+                                                    'text-green-500': data.dcxsq.total_raw_material > 0,
                                                 }"
                                             >
-                                                {{ Number(data.difference_cost.total).toLocaleString('id-ID') }}
+                                                {{ Number(data.dcxsq.total).toLocaleString('id-ID') }}
                                             </span>
                                         </template>
                                         <template #footer>
