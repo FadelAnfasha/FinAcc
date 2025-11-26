@@ -2,14 +2,14 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { FilterMatchMode } from '@primevue/core/api';
-import dayjs from 'dayjs';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
 import ColumnGroup from 'primevue/columngroup';
 import DataTable from 'primevue/datatable';
 import Dialog from 'primevue/dialog';
-import InputNumber from 'primevue/inputnumber';
 import InputText from 'primevue/inputtext';
+import MultiSelect from 'primevue/multiselect';
+
 import Row from 'primevue/row';
 import Select from 'primevue/select';
 import Tab from 'primevue/tab';
@@ -514,6 +514,20 @@ const listDCxSQ = computed(() =>
     })),
 );
 
+const listQuantity = computed(() => {
+    // 1. Ambil nilai unik (seperti sebelumnya)
+    const quantitiesWithDuplicates = dcxsq.value.map((item) => item.dcxsq.quantity);
+    const uniqueQuantities = [...new Set(quantitiesWithDuplicates)];
+
+    // 2. Map ke array objek { label: '0', value: 0 }
+    return uniqueQuantities
+        .sort((a, b) => a - b)
+        .map((qty) => ({
+            label: String(qty), // Label yang dilihat pengguna (sebagai string)
+            value: qty, // Nilai aktual yang digunakan untuk filter (sebagai number)
+        }));
+});
+
 interface StandardPeriod {
     name: string;
     code: string;
@@ -603,7 +617,10 @@ const filtersDCxSQ = ref({
     item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
     description: { value: null, matchMode: FilterMatchMode.CONTAINS },
     period: { value: null as string | null, matchMode: FilterMatchMode.EQUALS },
-    sales_month: { value: null as number | null, matchMode: FilterMatchMode.EQUALS },
+    'dcxsq.quantity': {
+        value: [] as number[] | null,
+        matchMode: FilterMatchMode.IN,
+    },
 });
 
 function exportCSV(type: 'diffCost' | 'dcXsq') {
@@ -614,10 +631,6 @@ function exportCSV(type: 'diffCost' | 'dcXsq') {
         const exportFilename = `DiffCost x Sales Quantity-${new Date().toISOString().slice(0, 10)}.csv`;
         dtDCxSQ.value.exportCSV({ selectionOnly: false, filename: exportFilename });
     }
-}
-
-function formatlastUpdate(date: Date | string) {
-    return dayjs(date).format('DD MMM YYYY HH:mm:ss');
 }
 
 function showUpdateDialog(type: 'diffCost' | 'dcXsq') {
@@ -894,36 +907,6 @@ function closeDialog() {
                 </template>
             </Dialog>
 
-            <Dialog v-model:visible="updateConstDialog" header="Edit OPEX & Profit Margin" modal class="w-[25rem]" :closable="false">
-                <div class="space-y-4">
-                    <div class="flex flex-col gap-2">
-                        <label for="tempOpex">OPEX (%):</label>
-                        <InputNumber v-model="tempOpex" inputId="tempOpex" suffix="%" fluid />
-                    </div>
-                    <div class="flex flex-col gap-2">
-                        <label for="tempProgin">Profit Margin (%):</label>
-                        <InputNumber v-model="tempProgin" inputId="tempProgin" suffix="%" fluid />
-                    </div>
-                </div>
-
-                <div class="flex justify-end gap-3 pt-6">
-                    <Button
-                        label=" Cancel"
-                        icon="pi pi-times"
-                        unstyled
-                        class="w-28 cursor-pointer rounded-xl bg-red-500 px-4 py-2 text-center font-bold text-slate-900 hover:bg-red-700"
-                        @click="cancelOpexProgin"
-                    />
-                    <Button
-                        label=" Save"
-                        icon="pi pi-check"
-                        unstyled
-                        class="w-28 cursor-pointer rounded-xl bg-emerald-500 px-4 py-2 text-center font-bold text-slate-900 hover:bg-emerald-700"
-                        @click="saveOpexProgin"
-                    />
-                </div>
-            </Dialog>
-
             <div class="mx-26 mb-26">
                 <Tabs v-model="activeTabValue">
                     <TabList>
@@ -1193,7 +1176,7 @@ function closeDialog() {
                                     v-model:filters="filtersDCxSQ"
                                     filterDisplay="row"
                                     :loading="loading"
-                                    :globalFilterFields="['item_code', 'period']"
+                                    :globalFilterFields="['item_code', 'description', 'period']"
                                     class="text-md"
                                     ref="dtDCxSQ"
                                 >
@@ -1295,8 +1278,22 @@ function closeDialog() {
                                             </div>
                                         </template>
                                     </Column>
-                                    <Column field="dcxsq.quantity" header="Quantity" v-bind="tbStyle('main')"></Column>
-
+                                    <Column field="dcxsq.quantity" header="Quantity" v-bind="tbStyle('main')" :showFilterMenu="false">
+                                        <template #filter="{ filterModel, filterCallback }">
+                                            <div class="flex justify-center">
+                                                <MultiSelect
+                                                    v-model="filterModel.value"
+                                                    @change="filterCallback()"
+                                                    :options="listQuantity"
+                                                    optionLabel="label"
+                                                    optionValue="value"
+                                                    placeholder="Qty"
+                                                    :maxSelectedLabels="3"
+                                                >
+                                                </MultiSelect>
+                                            </div>
+                                        </template>
+                                    </Column>
                                     <Column field="standard_cost.total_raw_material" sortable v-bind="tbStyle('rm')">
                                         <template #body="{ data }">
                                             {{ Number(data.standard_cost.total_raw_material).toLocaleString('id-ID') }}
