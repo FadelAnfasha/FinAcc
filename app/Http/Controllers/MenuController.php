@@ -909,8 +909,7 @@ class MenuController extends Controller
             'dcPeriod' => $dcPeriod,
             'dcxsqPeriod' => $dcxsqPeriod,
             'dc' => $combinedDC,
-            'dcxsq' => $combinedDCxSQ, // Nama properti baru
-            // 'dcxsq' => $dcxsq,
+            'dcxsq' => $combinedDCxSQ,
             'actual_sales' => $actual_sales,
             'auth' => [
                 'user' => Auth::check() ? [
