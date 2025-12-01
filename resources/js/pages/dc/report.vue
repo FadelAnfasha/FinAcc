@@ -30,6 +30,8 @@ const month = ref();
 const tempOpex = ref<number | null>(null);
 const tempProgin = ref<number | null>(null);
 const monthRange = ref(null);
+const dataDetail = ref<any>(null);
+const headerName = ref('');
 const selectStandardPeriod = ref<StandardPeriod | null>(null);
 const selectActualPeriod = ref<ActualPeriod | null>(null);
 
@@ -37,7 +39,7 @@ const selectDifferencePeriod = ref<DifferencePeriod | null>(null);
 const selectSalesPeriod = ref<SalesPeriod | null>(null);
 const selectDCxSQPeriod = ref<DCxSQPeriod | null>(null);
 const updateReportDialog = ref(false);
-const updateConstDialog = ref(false);
+const detailDialog = ref(false);
 type UpdateStatus = 'idle' | 'updating' | 'done';
 const updateStatus = ref<UpdateStatus>('idle');
 const updateType = ref<'diffCost' | 'dcXsq' | null>(null);
@@ -80,6 +82,8 @@ const dcxsq = computed(() =>
         no: index + 1,
     })),
 );
+
+console.log('DC Data:', dcxsq.value);
 
 const dcTotalRawMaterial = computed(() => {
     const periodFilterDiff = filtersDifference.value?.period;
@@ -402,6 +406,14 @@ const listDifferencePeriod = computed(() =>
     })),
 );
 
+const listDifferenceRemark = computed(() =>
+    (page.props.dcRemark as string[]).map((remark, index) => ({
+        code: remark,
+        name: remark,
+        no: index + 1,
+    })),
+);
+
 const listSalesMonth = computed(() => {
     const data = (page.props.actual_sales as any[]) || [];
     if (data.length === 0) {
@@ -528,6 +540,33 @@ const listQuantity = computed(() => {
         }));
 });
 
+const componentDetails = computed(() => [
+    {
+        name: 'DISC',
+        std_code: dataDetail.value.standard_cost?.disc_code,
+        std_price: dataDetail.value.standard_cost?.disc_price,
+        act_code: dataDetail.value.actual_cost?.disc_code,
+        act_price: dataDetail.value.actual_cost?.disc_price,
+        diff: dataDetail.value.difference_cost?.diff_disc,
+    },
+    {
+        name: 'RIM',
+        std_code: dataDetail.value.standard_cost?.rim_code,
+        std_price: dataDetail.value.standard_cost?.rim_price,
+        act_code: dataDetail.value.actual_cost?.rim_code,
+        act_price: dataDetail.value.actual_cost?.rim_price,
+        diff: dataDetail.value.difference_cost?.diff_rim,
+    },
+    {
+        name: 'SIDERING',
+        std_code: dataDetail.value.standard_cost?.sidering_code,
+        std_price: dataDetail.value.standard_cost?.sidering_price,
+        act_code: dataDetail.value.actual_cost?.sidering_code,
+        act_price: dataDetail.value.actual_cost?.sidering_price,
+        diff: dataDetail.value.difference_cost?.diff_sidering,
+    },
+]);
+
 interface StandardPeriod {
     name: string;
     code: string;
@@ -611,6 +650,7 @@ const filtersDifference = ref({
     item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
     description: { value: null, matchMode: FilterMatchMode.CONTAINS },
     period: { value: null as string | null, matchMode: FilterMatchMode.EQUALS },
+    'difference_cost.remark': { value: null as string | null, matchMode: FilterMatchMode.EQUALS },
 });
 
 const filtersDCxSQ = ref({
@@ -621,6 +661,7 @@ const filtersDCxSQ = ref({
         value: [] as number[] | null,
         matchMode: FilterMatchMode.IN,
     },
+    'difference_cost.remark': { value: null as string | null, matchMode: FilterMatchMode.EQUALS },
 });
 
 function exportCSV(type: 'diffCost' | 'dcXsq') {
@@ -640,6 +681,13 @@ function showUpdateDialog(type: 'diffCost' | 'dcXsq') {
     nextTick(() => {
         updateReportDialog.value = true;
     });
+}
+
+function showDetailDialog(data: any, type: 'dcXsq' | 'dc') {
+    detailDialog.value = true;
+    dataDetail.value = data;
+    console.log('Detail Data:', dataDetail.value);
+    headerName.value = 'Detail of : ' + data.item_code;
 }
 
 const validationErrors = ref({
@@ -744,6 +792,7 @@ function confirmUpdate() {
 
 function closeDialog() {
     updateReportDialog.value = false;
+    detailDialog.value = false;
     updateStatus.value = 'idle';
     updateType.value = null;
     validationErrors.value = {
@@ -907,6 +956,159 @@ function closeDialog() {
                 </template>
             </Dialog>
 
+            <Dialog v-model:visible="detailDialog" :header="headerName" modal :style="{ width: '100rem' }" :closable="false" @hide="closeDialog">
+                <div class="space-y-4 rounded-xl bg-white p-2 shadow-lg">
+                    <div class="mt-1 text-lg text-gray-500 italic">
+                        <p class="text-lg text-gray-600">
+                            Description : <span class="font-medium text-gray-700">{{ dataDetail.description }}</span>
+                        </p>
+
+                        <p class="text-lg text-gray-600">
+                            Remark : <span class="font-medium text-gray-700">{{ dataDetail.difference_cost.remark }}</span>
+                        </p>
+
+                        <p class="text-lg text-gray-600">
+                            Period : <span class="font-medium text-gray-700">{{ dataDetail.difference_cost.period }}</span>
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-4 gap-x-4 overflow-hidden rounded-lg border border-gray-200">
+                        <div class="col-span-1 bg-gray-300 p-3 font-extrabold text-slate-700">Material</div>
+                        <div class="col-span-1 border-l border-gray-200 bg-gray-300 p-3 text-center font-extrabold text-slate-700">
+                            Standard (SC) <span class="text-sm text-orange-600">({{ dataDetail.standard_cost.period }})</span>
+                        </div>
+                        <div class="col-span-1 border-l border-gray-200 bg-gray-300 p-3 text-center font-extrabold text-slate-700">
+                            Actual (AC) <span class="text-sm text-orange-600">({{ dataDetail.actual_cost.period }})</span>
+                        </div>
+                        <div class="col-span-1 border-l border-gray-200 bg-gray-300 p-3 text-center font-extrabold text-slate-700">
+                            Difference <span class="text-sm text-orange-600">({{ dataDetail.difference_cost.period }})</span>
+                        </div>
+
+                        <template v-for="(item, index) in componentDetails" :key="index">
+                            <div class="border-t border-gray-200 p-3 font-medium text-gray-800">{{ item.name }}</div>
+
+                            <div class="border-t border-l border-gray-200 p-3">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-semibold text-gray-500">
+                                        {{ item.std_code ? item.std_code : '-' }}
+                                    </span>
+                                    <span class="text-base font-bold text-gray-900">
+                                        {{ item.std_price ? Number(item.std_price).toLocaleString('id-ID') : '-' }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="border-t border-l border-gray-200 p-3">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-semibold text-gray-500">
+                                        {{ item.act_code ? item.act_code : '-' }}
+                                    </span>
+                                    <span class="text-base font-bold text-gray-900">
+                                        {{ item.act_price ? Number(item.act_price).toLocaleString('id-ID') : '-' }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div
+                                class="border-t border-l border-gray-200 p-3 text-right font-bold"
+                                :class="item.diff < 0 ? 'bg-red-50 text-red-600' : item.diff > 0 ? 'bg-green-50 text-green-600' : 'text-gray-600'"
+                            >
+                                {{ item.diff ? Number(item.diff).toLocaleString('id-ID') : '-' }}
+                            </div>
+                        </template>
+
+                        <div class="col-span-1 border-t border-gray-300 bg-yellow-200 p-3 font-extrabold text-slate-900">TOTAL RAW MATERIAL</div>
+                        <div class="border-t border-l border-gray-300 bg-yellow-200 p-3 text-right font-extrabold">
+                            {{
+                                dataDetail.standard_cost?.total_raw_material
+                                    ? Number(dataDetail.standard_cost?.total_raw_material).toLocaleString('id-ID')
+                                    : '-'
+                            }}
+                        </div>
+                        <div class="border-t border-l border-gray-300 bg-yellow-200 p-3 text-right font-extrabold">
+                            {{
+                                dataDetail.actual_cost?.total_raw_material
+                                    ? Number(dataDetail.actual_cost?.total_raw_material).toLocaleString('id-ID')
+                                    : '-'
+                            }}
+                        </div>
+                        <div
+                            class="border-t border-l border-gray-300 bg-yellow-200 p-3 text-right font-extrabold"
+                            :class="dataDetail.difference_cost.total_raw_material < 0 ? 'text-red-700' : 'text-green-700'"
+                        >
+                            {{
+                                dataDetail.difference_cost?.total_raw_material
+                                    ? Number(dataDetail.difference_cost?.total_raw_material).toLocaleString('id-ID')
+                                    : '-'
+                            }}
+                        </div>
+
+                        <div class="col-span-1 border-t border-gray-300 bg-green-200 p-3 font-extrabold text-slate-900">TOTAL PROCESS</div>
+                        <div class="border-t border-l border-gray-300 bg-green-200 p-3 text-right font-extrabold">
+                            {{
+                                dataDetail.standard_cost?.total_process
+                                    ? Number(dataDetail.standard_cost?.total_process).toLocaleString('id-ID')
+                                    : '-'
+                            }}
+                        </div>
+
+                        <div class="border-t border-l border-gray-300 bg-green-200 p-3 text-right font-extrabold">
+                            {{ dataDetail.actual_cost?.total_process ? Number(dataDetail.actual_cost?.total_process).toLocaleString('id-ID') : '-' }}
+                        </div>
+
+                        <div
+                            class="border-t border-l border-gray-300 bg-green-200 p-3 text-right font-extrabold"
+                            :class="dataDetail.difference_cost.total_process < 0 ? 'text-red-700' : 'text-green-700'"
+                        >
+                            {{
+                                dataDetail.difference_cost?.total_process
+                                    ? Number(dataDetail.difference_cost?.total_process).toLocaleString('id-ID')
+                                    : '-'
+                            }}
+                        </div>
+
+                        <div class="col-span-1 border-t border-gray-300 bg-blue-200 p-3 font-extrabold text-slate-900">TOTAL</div>
+
+                        <div class="border-t border-l border-gray-300 bg-blue-200 p-3 text-right font-extrabold">
+                            {{ dataDetail.standard_cost?.total ? Number(dataDetail.standard_cost?.total).toLocaleString('id-ID') : '-' }}
+                        </div>
+
+                        <div class="border-t border-l border-gray-300 bg-blue-200 p-3 text-right font-extrabold">
+                            {{ dataDetail.actual_cost?.total ? Number(dataDetail.actual_cost?.total).toLocaleString('id-ID') : '-' }}
+                        </div>
+
+                        <div
+                            class="border-t border-l border-gray-300 bg-blue-200 p-3 text-right font-extrabold"
+                            :class="dataDetail.difference_cost.total < 0 ? 'text-red-700' : 'text-green-700'"
+                        >
+                            {{ dataDetail.difference_cost?.total ? Number(dataDetail.difference_cost?.total).toLocaleString('id-ID') : '-' }}
+                        </div>
+
+                        <div class="col-span-3 border-t border-gray-300 bg-lime-200 p-3 font-extrabold text-slate-900">QUANTITY</div>
+
+                        <div
+                            class="border-t border-l border-gray-300 bg-lime-200 p-3 text-right font-extrabold"
+                            :class="dataDetail.difference_cost.total < 0 ? 'text-red-700' : 'text-green-700'"
+                        >
+                            {{ dataDetail.dcxsq?.quantity ? Number(dataDetail.dcxsq?.quantity).toLocaleString('id-ID') : '-' }}
+                        </div>
+
+                        <div class="col-span-3 border-t border-gray-300 bg-orange-200 p-3 font-extrabold text-slate-900">TOTAL * QUANTITY</div>
+
+                        <div
+                            class="border-t border-l border-gray-300 bg-orange-200 p-3 text-right font-extrabold"
+                            :class="dataDetail.difference_cost.total < 0 ? 'text-red-700' : 'text-green-700'"
+                        >
+                            {{ dataDetail.difference_cost?.total ? Number(dataDetail.difference_cost?.total).toLocaleString('id-ID') : '-' }}
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end pt-4">
+                        <Button label="Close" icon="pi pi-times-circle" class="p-button-danger p-button-rounded" @click="closeDialog" />
+                    </div>
+                </div>
+            </Dialog>
+
             <div class="mx-26 mb-26">
                 <Tabs v-model="activeTabValue">
                     <TabList>
@@ -966,13 +1168,20 @@ function closeDialog() {
                                             <Column field="no" header="#" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
                                             <Column field="item_code" header="Item Code" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
                                             <Column field="description" header="Description" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
-
                                             <Column field="period" header="Period" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
-
                                             <Column header="Standard Cost" :colspan="3" v-bind="tbStyle('rm')"></Column>
                                             <Column header="Actual Cost" :colspan="3" v-bind="tbStyle('pr')"></Column>
                                             <Column header="Difference Cost" :colspan="3" v-bind="tbStyle('fg')"></Column>
+                                            <Column
+                                                field="difference_cost.remark"
+                                                header="Remark"
+                                                sortable
+                                                :rowspan="2"
+                                                v-bind="tbStyle('wip')"
+                                            ></Column>
+                                            <Column header="Action" :rowspan="2" v-bind="tbStyle('main')"></Column>
                                         </Row>
+
                                         <Row>
                                             <Column
                                                 field="standard_cost.total_raw_material"
@@ -1130,6 +1339,26 @@ function closeDialog() {
                                             </span>
                                         </template>
                                     </Column>
+                                    <Column field="difference_cost.remark" sortable v-bind="tbStyle('wip')" :showFilterMenu="false"
+                                        ><template #filter="{ filterModel, filterCallback }">
+                                            <div class="flex justify-center">
+                                                <Select
+                                                    v-model="filterModel.value"
+                                                    :options="listDifferenceRemark"
+                                                    optionLabel="name"
+                                                    optionValue="code"
+                                                    placeholder="Difference Remark"
+                                                    class="w-full"
+                                                    :showClear="true"
+                                                    @change="filterCallback()"
+                                                />
+                                            </div> </template
+                                    ></Column>
+                                    <Column header="Action" v-bind="tbStyle('main')">
+                                        <template #body="{ data }">
+                                            <Button type="button" icon="pi pi-search" rounded @click="showDetailDialog(data, 'dc')"></Button>
+                                        </template>
+                                    </Column>
                                 </DataTable>
                             </section>
                         </TabPanel>
@@ -1192,6 +1421,8 @@ function closeDialog() {
                                             <Column header="Actual Cost" :colspan="3" v-bind="tbStyle('pr')"></Column>
                                             <Column header="Difference Cost" :colspan="3" v-bind="tbStyle('wip')"></Column>
                                             <Column header="Difference Cost x Sales Quantity" :colspan="3" v-bind="tbStyle('fg')"></Column>
+                                            <Column header="Remark" :rowspan="2" v-bind="tbStyle('main')"></Column>
+                                            <Column header="Action" :rowspan="2" v-bind="tbStyle('main')"></Column>
                                         </Row>
                                         <Row>
                                             <Column
@@ -1427,6 +1658,27 @@ function closeDialog() {
                                             <span :class="dcxsqTotalofTotal.class">
                                                 <strong>{{ dcxsqTotalofTotal.value }}</strong>
                                             </span>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="difference_cost.remark" header="Remark" sortable v-bind="tbStyle('main')" :showFilterMenu="false"
+                                        ><template #filter="{ filterModel, filterCallback }">
+                                            <div class="flex justify-center">
+                                                <Select
+                                                    v-model="filterModel.value"
+                                                    :options="listDifferenceRemark"
+                                                    optionLabel="name"
+                                                    optionValue="code"
+                                                    placeholder="Difference Remark"
+                                                    class="w-full"
+                                                    :showClear="true"
+                                                    @change="filterCallback()"
+                                                />
+                                            </div> </template
+                                    ></Column>
+                                    <Column header="Action" sortable v-bind="tbStyle('main')" :showFilterMenu="false">
+                                        <template #body="{ data }">
+                                            <Button type="button" icon="pi pi-search" rounded @click="showDetailDialog(data, 'dcxsq')"></Button>
                                         </template>
                                     </Column>
                                 </DataTable>

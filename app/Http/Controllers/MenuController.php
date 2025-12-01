@@ -724,9 +724,6 @@ class MenuController extends Controller
         ]);
     }
 
-    // Tambahkan ini sebagai fungsi helper di dalam DiffCost_Report atau jadikan method terpisah
-    // Saya asumsikan Anda ingin mengembalikan data yang sudah digabungkan.
-
     private function getCombinedDiffCost($sc, $ac, $dc)
     {
         // Fungsi untuk membersihkan Item Code
@@ -873,6 +870,7 @@ class MenuController extends Controller
         $acPeriod = ActualCost::distinct()->pluck('period');
         $dcPeriod = DifferenceCost::distinct()->pluck('period');
         $dcxsqPeriod = DiffCostXSalesQty::distinct()->pluck('period');
+        $dcRemark = DifferenceCost::distinct()->pluck('remark');
 
         $scPeriod = $this->sortPeriods($scPeriod);
         $acPeriod = $this->sortPeriods($acPeriod);
@@ -907,6 +905,7 @@ class MenuController extends Controller
             'scPeriod' => $scPeriod,
             'acPeriod' => $acPeriod,
             'dcPeriod' => $dcPeriod,
+            'dcRemark' => $dcRemark,
             'dcxsqPeriod' => $dcxsqPeriod,
             'dc' => $combinedDC,
             'dcxsq' => $combinedDCxSQ,
