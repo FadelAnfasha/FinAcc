@@ -262,7 +262,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     #==========================
     #==== Standard Report =====
     #==========================
-
     Route::post('/sc/update/SC', [StandardCostController::class, 'update'])->middleware('permission:Update_Report')->name('sc.update');
     Route::get('/sc/previewSC/{item_code}', action: [StandardCostController::class, 'preview'])->name('sc.preview');
 
