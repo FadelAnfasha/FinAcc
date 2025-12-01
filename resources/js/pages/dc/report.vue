@@ -43,6 +43,7 @@ const detailDialog = ref(false);
 type UpdateStatus = 'idle' | 'updating' | 'done';
 const updateStatus = ref<UpdateStatus>('idle');
 const updateType = ref<'diffCost' | 'dcXsq' | null>(null);
+const detailType = ref<'diffCost' | 'dcXsq' | null>(null);
 const activeTabValue = ref('0');
 const userName = computed(() => page.props.auth?.user?.name ?? '');
 
@@ -82,8 +83,6 @@ const dcxsq = computed(() =>
         no: index + 1,
     })),
 );
-
-console.log('DC Data:', dcxsq.value);
 
 const dcTotalRawMaterial = computed(() => {
     const periodFilterDiff = filtersDifference.value?.period;
@@ -683,10 +682,10 @@ function showUpdateDialog(type: 'diffCost' | 'dcXsq') {
     });
 }
 
-function showDetailDialog(data: any, type: 'dcXsq' | 'dc') {
+function showDetailDialog(data: any, type: 'dcXsq' | 'diffCost') {
     detailDialog.value = true;
+    detailType.value = type;
     dataDetail.value = data;
-    console.log('Detail Data:', dataDetail.value);
     headerName.value = 'Detail of : ' + data.item_code;
 }
 
@@ -1084,22 +1083,31 @@ function closeDialog() {
                             {{ dataDetail.difference_cost?.total ? Number(dataDetail.difference_cost?.total).toLocaleString('id-ID') : '-' }}
                         </div>
 
-                        <div class="col-span-3 border-t border-gray-300 bg-lime-200 p-3 font-extrabold text-slate-900">QUANTITY</div>
+                        <div v-if="detailType === 'dcXsq'" class="col-span-3 border-t border-gray-300 bg-lime-200 p-3 font-extrabold text-slate-900">
+                            QUANTITY
+                        </div>
 
                         <div
+                            v-if="detailType === 'dcXsq'"
                             class="border-t border-l border-gray-300 bg-lime-200 p-3 text-right font-extrabold"
                             :class="dataDetail.difference_cost.total < 0 ? 'text-red-700' : 'text-green-700'"
                         >
                             {{ dataDetail.dcxsq?.quantity ? Number(dataDetail.dcxsq?.quantity).toLocaleString('id-ID') : '-' }}
                         </div>
 
-                        <div class="col-span-3 border-t border-gray-300 bg-orange-200 p-3 font-extrabold text-slate-900">TOTAL * QUANTITY</div>
+                        <div
+                            v-if="detailType === 'dcXsq'"
+                            class="col-span-3 border-t border-gray-300 bg-orange-200 p-3 font-extrabold text-slate-900"
+                        >
+                            TOTAL * QUANTITY
+                        </div>
 
                         <div
+                            v-if="detailType === 'dcXsq'"
                             class="border-t border-l border-gray-300 bg-orange-200 p-3 text-right font-extrabold"
-                            :class="dataDetail.difference_cost.total < 0 ? 'text-red-700' : 'text-green-700'"
+                            :class="dataDetail.dcxsq.total < 0 ? 'text-red-700' : 'text-green-700'"
                         >
-                            {{ dataDetail.difference_cost?.total ? Number(dataDetail.difference_cost?.total).toLocaleString('id-ID') : '-' }}
+                            {{ dataDetail.dcxsq?.total ? Number(dataDetail.dcxsq?.total).toLocaleString('id-ID') : '-' }}
                         </div>
                     </div>
 
@@ -1356,7 +1364,7 @@ function closeDialog() {
                                     ></Column>
                                     <Column header="Action" v-bind="tbStyle('main')">
                                         <template #body="{ data }">
-                                            <Button type="button" icon="pi pi-search" rounded @click="showDetailDialog(data, 'dc')"></Button>
+                                            <Button type="button" icon="pi pi-search" rounded @click="showDetailDialog(data, 'diffCost')"></Button>
                                         </template>
                                     </Column>
                                 </DataTable>
@@ -1678,7 +1686,7 @@ function closeDialog() {
                                     ></Column>
                                     <Column header="Action" sortable v-bind="tbStyle('main')" :showFilterMenu="false">
                                         <template #body="{ data }">
-                                            <Button type="button" icon="pi pi-search" rounded @click="showDetailDialog(data, 'dcxsq')"></Button>
+                                            <Button type="button" icon="pi pi-search" rounded @click="showDetailDialog(data, 'dcXsq')"></Button>
                                         </template>
                                     </Column>
                                 </DataTable>
