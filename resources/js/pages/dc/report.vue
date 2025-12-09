@@ -1582,6 +1582,7 @@ function closeDialog() {
                                             </span>
                                         </template>
                                     </Column>
+
                                     <Column field="difference_cost.total_process" sortable v-bind="tbStyle('wip')">
                                         <template #body="{ data }">
                                             <span
@@ -1599,6 +1600,7 @@ function closeDialog() {
                                             </span>
                                         </template>
                                     </Column>
+
                                     <Column field="difference_cost.total" sortable v-bind="tbStyle('wip')">
                                         <template #body="{ data }">
                                             <span
@@ -1634,6 +1636,7 @@ function closeDialog() {
                                             </span>
                                         </template>
                                     </Column>
+
                                     <Column field="dcxsq.total_process" sortable v-bind="tbStyle('fg')">
                                         <template #body="{ data }">
                                             <span
@@ -1651,6 +1654,7 @@ function closeDialog() {
                                             </span>
                                         </template>
                                     </Column>
+
                                     <Column field="dcxsq.total" sortable v-bind="tbStyle('fg')">
                                         <template #body="{ data }">
                                             <span
@@ -1684,6 +1688,7 @@ function closeDialog() {
                                                 />
                                             </div> </template
                                     ></Column>
+
                                     <Column header="Action" sortable v-bind="tbStyle('main')" :showFilterMenu="false">
                                         <template #body="{ data }">
                                             <Button type="button" icon="pi pi-search" rounded @click="showDetailDialog(data, 'dcXsq')"></Button>
