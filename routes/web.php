@@ -24,6 +24,8 @@ use App\Http\Controllers\standardMaterialController;
 use App\Http\Controllers\StandardCostController;
 use App\Http\Controllers\ValveController;
 use App\Http\Controllers\WagesDistributionController;
+use App\Models\ActualCost;
+use App\Models\ActualSalesQuantity;
 use PhpOffice\PhpSpreadsheet\Calculation\DateTimeExcel\Difference;
 
 #===========================
@@ -259,11 +261,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
 
+
     #==========================
     #==== Standard Report =====
     #==========================
     Route::post('/sc/update/SC', [StandardCostController::class, 'update'])->middleware('permission:Update_Report')->name('sc.update');
     Route::get('/sc/previewSC/{item_code}', action: [StandardCostController::class, 'preview'])->name('sc.preview');
+    Route::get('/api/sc/list-period', [StandardCostController::class, 'getStandardPeriod'])->name('report.sc.period');
 
     // Route::get('/sc/download/{item_code}', [BOMController::class, 'downloadReport'])->name('sc.download');
 
@@ -293,6 +297,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('ac.report');
     Route::post('/ac/update/AC', [ActualCostController::class, 'update'])->middleware('permission:Update_Report')->name('ac.update');
     Route::get('/ac/previewSC/{item_code}', action: [ActualCostController::class, 'preview'])->name('ac.preview');
+    Route::get('/api/ac/list-period', [ActualCostController::class, 'getActualPeriod'])->name('report.ac.period');
+
     // Route::post('/sc/update/DC', [BOMController::class, 'updateDifferenceCost'])->middleware('permission:Update_Report')->name('sc.updateDC');
     // Route::post('/sc/update/DCxSQ', [BOMController::class, 'updateDCxSQ'])->middleware('permission:Update_Report')->name('sc.updateDCxSQ');
 
@@ -307,6 +313,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'progress' => Cache::get('import-progress-acsqty', 0),
         ]);
     });
+    Route::get('/api/sq/list-month', [actualSalesQuantityController::class, 'getSalesMonth'])->name('report.sq.listMonth');
 });
 
 
@@ -317,6 +324,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/dc/update/DC', [DifferenceCostController::class, 'updateDifferenceCost'])->middleware('permission:Update_Report')->name('dc.updateDC');
     Route::post('/dc/update/DCxSQ', [DifferenceCostController::class, 'updateDCxSQ'])->middleware('permission:Update_Report')->name('dc.updateDCxSQ');
+    Route::get('/api/dc/list', [DifferenceCostController::class, 'getPaginatedDifferenceCost'])->name('report.dc.paginated');
+    Route::get('/api/dc/list-period', [DifferenceCostController::class, 'getDifferencePeriod'])->name('report.dc.period');
+    Route::get('/api/dc/list-remark', [DifferenceCostController::class, 'getDifferenceRemark'])->name('report.dc.remark');
+    Route::get('/api/dc/get-total', [DifferenceCostController::class, 'getTotalDifferenceCost'])->name('report.dc.total');
+    Route::get('api/dc/list-quantity', [DifferenceCostController::class, 'getDifferenceQuantity'])->name('report.dc.quantity');
 });
 
 

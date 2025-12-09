@@ -12,6 +12,7 @@ const props = defineProps<{
     aria-label="breadcrumb"
     data-slot="breadcrumb"
     :class="['animate-in slide-in-from-right motion-safe:animate-bounce zoom-in duration-700', props.class]"  >
+    <!--:class="['animate-in slide-in-from-right motion-safe:animate-bounce zoom-in duration-700', props.class]" -->
     <slot />
   </nav>
 </template>
