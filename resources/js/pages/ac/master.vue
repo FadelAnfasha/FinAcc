@@ -7,6 +7,7 @@ import dayjs from 'dayjs';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
+import DatePicker from 'primevue/datepicker';
 import Dialog from 'primevue/dialog';
 import FileUpload, { FileUploadUploaderEvent } from 'primevue/fileupload';
 import InputText from 'primevue/inputtext';
@@ -23,6 +24,9 @@ import { computed, nextTick, ref, Ref, watch } from 'vue';
 const dtACMAT = ref();
 const dtACSQTY = ref();
 const toast = useToast();
+const year = ref();
+const maxDate = ref(new Date());
+
 const page = usePage();
 const headerStyle = { backgroundColor: '#758596', color: 'white' };
 const bodyStyle = { backgroundColor: '#c8cccc', color: 'black' };
@@ -42,6 +46,7 @@ const fileUploaderACMAT = ref<any>(null);
 const fileUploaderACSQTY = ref<any>(null);
 const uploadProgress = ref(0);
 const activeTabValue = ref('0');
+const selectionModeType = ref('single');
 
 const isUploading = ref(false);
 const loading = ref(false);
@@ -111,6 +116,10 @@ const dataSource = [
     'Share Others/Finacc/Bill of Material/Actual Material Price/actualMat_master.csv',
     'Share Others/Finacc/Bill of Material/Bill of Material (BOM)/actualSalesQty_master.csv',
 ];
+
+const currentSelectionMode = computed(() => {
+    return selectionModeType.value === 'range' ? 'range' : 'single';
+});
 
 function formatlastUpdate(date: Date | string) {
     return dayjs(date).format('DD MMM YYYY HH:mm:ss');
@@ -190,6 +199,7 @@ function handleCSVImport(event: FileUploadUploaderEvent, type: 'acmat' | 'acsqty
 function cancelCSVimport(type: 'acmat' | 'acsqty') {
     showImportDialog.value = false;
     selectedFile.value = null;
+    year.value = null;
 
     nextTick(() => {
         if (type === 'acmat') fileUploaderACMAT.value?.clear();
@@ -199,9 +209,20 @@ function cancelCSVimport(type: 'acmat' | 'acsqty') {
 
 function confirmUpload(type: 'acmat' | 'acsqty') {
     if (!selectedFile.value || !importType.value) return;
-
+    const importYear = year.value ? new Date(year.value).getFullYear() : null;
+    if (!importYear) {
+        toast.add({
+            severity: 'error',
+            summary: 'Validation Error',
+            detail: 'Please select the year for import.',
+            life: 3000,
+            group: 'br',
+        });
+        return;
+    }
     const formData = new FormData();
     formData.append('file', selectedFile.value);
+    formData.append('period', importYear.toString());
 
     const routes = {
         acmat: 'acmat.import',
@@ -258,6 +279,7 @@ function resetImportState() {
     uploadProgress.value = 0;
     selectedFile.value = null;
     notImported.value = true;
+    year.value = null;
 }
 
 function startPollingProgress(type: 'acmat' | 'acsqty') {
@@ -435,6 +457,23 @@ const props = defineProps({
                             >,
                         </p>
 
+                        <div>
+                            <div class="mt-6 mb-2 font-semibold">Select Actual Material Price Period:</div>
+                            <div class="flex space-x-4">
+                                <div class="flex-1">
+                                    <DatePicker
+                                        v-model="year"
+                                        view="year"
+                                        dateFormat="yy"
+                                        :showClear="true"
+                                        :selectionMode="currentSelectionMode"
+                                        :maxDate="maxDate"
+                                        placeholder="Select year"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
                         <p>
                             Are you sure you want to import
                             <strong class="text-blue-500">{{ importName }}</strong
@@ -611,6 +650,11 @@ const props = defineProps({
                                         </template>
                                         <template #body="{ data }">
                                             {{ data.bom ? data.bom.description : '-' }}
+                                        </template>
+                                    </Column>
+                                    <Column field="period" header="Period" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ data.period }}
                                         </template>
                                     </Column>
 

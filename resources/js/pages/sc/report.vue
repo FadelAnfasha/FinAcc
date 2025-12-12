@@ -323,7 +323,7 @@ function openPreviewTab(item_code: string, opex: number, progin: number, preview
                         </p>
                         <p>Are you sure you want to update the report?</p>
                         <div>
-                            <div class="mt-6 mb-2 font-semibold">Select Actual Price Period:</div>
+                            <div class="mt-6 mb-2 font-semibold">Select Standard Price Period:</div>
                             <div class="flex space-x-4">
                                 <div class="flex-1">
                                     <DatePicker
