@@ -891,7 +891,7 @@ class MenuController extends Controller
 
         $dcxsq = DiffCostXSalesQty::with(['bom' => function ($query) {
             $query->select('item_code', 'description');
-        }])->get();
+        }])->where('quantity', '!=', 0)->get();
 
         $actual_sales = ActualSalesQuantity::with(['bom' => function ($query) {
             $query->select('item_code', 'description');

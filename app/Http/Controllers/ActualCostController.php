@@ -13,52 +13,92 @@ use App\Models\ActualSalesQuantity;
 use App\Models\Valve;
 use App\Models\ProcessCost;
 use App\Models\BillOfMaterial;
+use App\Models\ActualMaterialPrice;
+use DateTime;
 
 
 class ActualCostController extends Controller
 {
+    private $monthOrder = [
+        'jan',
+        'feb',
+        'mar',
+        'apr',
+        'may',
+        'jun',
+        'jul',
+        'aug',
+        'sep',
+        'oct',
+        'nov',
+        'dec',
+    ];
+
+    private function getMonthName($monthNumber)
+    {
+        // Menggunakan DateTime untuk konversi nomor bulan ke nama bulan singkat (jan, feb, dst.)
+        $dateObj = DateTime::createFromFormat('!m', $monthNumber);
+        return strtolower($dateObj->format('M'));
+    }
+
+    private function getPriceFromActualMaterialPrice(string $itemCode, int $targetMonthNumber, int $year): float
+    {
+        // Mengganti ActualMaterialPrice dengan ActualMaterial
+        // KARENA data harga (kolom *_price) sudah ada di tabel 'actual_materials'
+
+        // --- 1. Cek Tahun Target (Mundur dari bulan target hingga Jan) ---
+        $actualPrices = ActualMaterial::where('item_code', $itemCode)
+            ->where('period', $year)
+            ->first();
+
+        if ($actualPrices) {
+            for ($i = $targetMonthNumber; $i >= 1; $i--) {
+                $monthKey = $this->getMonthName($i) . '_price';
+
+                // Pastikan kolom price sudah ada di objek model (berhasil diambil dari DB)
+                if (isset($actualPrices->{$monthKey}) && $actualPrices->{$monthKey} > 0) {
+                    return (float) $actualPrices->{$monthKey};
+                }
+            }
+        }
+
+        // --- 2. Fallback ke Tahun Sebelumnya (Mundur dari Dec tahun sebelumnya) ---
+        $previousYear = $year - 1;
+
+        // Loop mundur 12 bulan di tahun sebelumnya
+        // Catatan: Pencarian ini kurang efisien karena melakukan query DB di dalam loop.
+        // Sebaiknya, ambil data tahun sebelumnya di luar loop, baru loop kolomnya.
+        // Namun, jika tujuannya adalah mencari harga pertama yang non-zero dari Dec ke Jan di tahun sebelumnya:
+        $prevYearPrices = ActualMaterial::where('item_code', $itemCode)
+            ->where('period', $previousYear)
+            ->first();
+
+        if ($prevYearPrices) {
+            for ($i = 12; $i >= 1; $i--) {
+                $monthKey = $this->getMonthName($i) . '_price';
+                if (isset($prevYearPrices->{$monthKey}) && $prevYearPrices->{$monthKey} > 0) {
+                    return (float) $prevYearPrices->{$monthKey};
+                }
+            }
+        }
+
+        return 0.0;
+    }
+
     public function update(Request $request)
     {
         $validatedData = $request->validate([
-            'startMonth' => 'required|integer|min:1|max:12', // Angka bulan
-            'endMonth' => 'required|integer|min:1|max:12',   // Angka bulan
+            'startMonth' => 'required|integer|min:1|max:12',
+            'endMonth' => 'required|integer|min:1|max:12',
             'year' => 'required|integer',
         ]);
 
         $year = $validatedData['year'];
-        $month = $validatedData['endMonth'];
-
         $startMonthNumber = $validatedData['startMonth'];
         $endMonthNumber = $validatedData['endMonth'];
 
-        $monthOrder = [
-            'jan',
-            'feb',
-            'mar',
-            'apr',
-            'may',
-            'jun',
-            'jul',
-            'aug',
-            'sep',
-            'oct',
-            'nov',
-            'dec',
-        ];
-
-        $convertToMMM = function ($monthNumber) {
-            $dateObj = \DateTime::createFromFormat('!m', $monthNumber);
-            return strtolower($dateObj->format('M'));
-        };
-
-        // Terapkan konversi ke format MMM
-        $startMonth = $convertToMMM($startMonthNumber);
-        $endMonth = $convertToMMM($endMonthNumber);
-
-        // Tentukan kolom yang akan di-select secara dinamis
-        $startIndex = array_search($startMonth, $monthOrder);
-        $endIndex = array_search($endMonth, $monthOrder);
-        $monthSlice = array_slice($monthOrder, $startIndex, $endIndex - $startIndex + 1);
+        $startMonth = $this->getMonthName($startMonthNumber);
+        $endMonth = $this->getMonthName($endMonthNumber);
 
         if ($startMonth !== $endMonth) {
             $period = "YTD-" . ucfirst($endMonth) . "'" . $year;
@@ -66,57 +106,8 @@ class ActualCostController extends Controller
             $period = ucfirst($startMonth) . "'" . $year;
         }
 
-        $monthlyColumns = [];
-        foreach ($monthSlice as $month) {
-            $monthlyColumns[] = $month . '_price';
-            $monthlyColumns[] = $month . '_qty';
-        }
-
-        // Pastikan item_code dan foreign key ada di selectColumns
-        $selectColumns = array_merge(['item_code'], $monthlyColumns);
-
-        $materialPrices = ActualMaterial::select($selectColumns)->get();
-        $calculatedPrices = collect();
-        foreach ($materialPrices as $material) {
-            $totalAmount = 0; // Total Harga
-            $totalQuantity = 0; // Total Kuantitas (penyebut)
-
-            // 3. Iterasi dinamis pada pasangan kolom bulan
-            foreach ($monthSlice as $month) {
-                $priceKey = $month . '_price';
-                $qtyKey = $month . '_qty';
-                // dump($priceKey, $qtyKey);
-
-                // Ambil nilai harga dan kuantitas. Gunakan null-coalescing untuk menghindari error jika data null.
-                // Konversi ke float/int untuk memastikan perhitungan yang benar.
-                $price = (float)($material->{$priceKey} ?? 0);
-                $qty = (float)($material->{$qtyKey} ?? 0);
-
-                // Tambahkan ke total
-                $totalAmount += $price;
-                $totalQuantity += $qty;
-            }
-            // dump($totalAmount, $totalQuantity);
-
-
-            $weightedAveragePrice = 0;
-
-            // 4. Hitung Rata-Rata Harga Tertimbang
-            if ($totalQuantity > 0) {
-                $weightedAveragePrice = $totalAmount / $totalQuantity;
-            }
-            $priceMap = $calculatedPrices->keyBy('item_code');
-            // Masukkan hasil perhitungan ke koleksi baru
-            $calculatedPrices->push([
-                'item_code' => $material->item_code,
-                'avg_price' => round($weightedAveragePrice, 4), // Bulatkan untuk kerapihan
-            ]);
-        }
-
-        // Ambil data BOM
         $bomData = BillOfMaterial::all();
 
-        // Grouping Logika (Disimpan sama)
         $groups = collect();
         $currentGroup = collect();
 
@@ -139,33 +130,30 @@ class ActualCostController extends Controller
             $main = $group->first();
             $typeChar = substr($main->item_code, 3, 1);
 
-            // Komponen lain ...
             $group->disc = $group->first(function ($item) {
-                return substr($item->item_code, 0, 3) === 'RFD';
+                return Str::startsWith($item->item_code, 'RFD');
             });
             $group->rim = $group->first(function ($item) {
-                return substr($item->item_code, 0, 3) === 'RFR';
+                return Str::startsWith($item->item_code, 'RFR');
             });
             $group->sidering = $group->first(function ($item) {
-                return substr($item->item_code, 0, 3) === 'RFS';
+                return Str::startsWith($item->item_code, 'RFS');
             });
 
-            // Properti pr_*
             $group->pr_disc = $group->first(function ($item) {
-                return substr($item->item_code, 0, 5) === 'RS-DC';
+                return Str::startsWith($item->item_code, 'RS-DC');
             });
             $group->pr_rim = $group->first(function ($item) {
-                return substr($item->item_code, 0, 5) === 'RS-RB';
+                return Str::startsWith($item->item_code, 'RS-RB');
             });
             $group->pr_sr = $group->first(function ($item) {
-                return substr($item->item_code, 0, 5) === 'RS-SR';
+                return Str::startsWith($item->item_code, 'RS-SR');
             });
 
             $group->pr_assy = $group->first(function ($item) {
-                return substr($item->item_code, 0, 5) === 'RS-AS';
+                return Str::startsWith($item->item_code, 'RS-AS');
             });
 
-            // Logika filter CED
             $cdItems = $group->filter(function ($item) {
                 return Str::startsWith($item->item_code, 'RS-CD');
             })->values();
@@ -174,15 +162,13 @@ class ActualCostController extends Controller
                 $group->cedW = $cdItems[0];
                 $group->cedSR = $cdItems[1];
             } elseif ($cdItems->count() === 1) {
-                if ($typeChar === 'D') {
+                if ($typeChar === 'D' || $typeChar === 'W') {
                     $group->cedW = $cdItems[0];
                     $group->cedSR = null;
                 } elseif ($typeChar === 'N') {
                     $group->cedW = null;
                     $group->cedSR = $cdItems[0];
                 } else {
-                    // Perbaikan: Jika hanya ada satu item RS-CD dan typeChar bukan 'D' atau 'N' (misal 'W'),
-                    // asumsikan itu adalah cedW.
                     $group->cedW = $cdItems[0];
                     $group->cedSR = null;
                 }
@@ -199,7 +185,7 @@ class ActualCostController extends Controller
                 $group->tcW = $tcItems[0];
                 $group->tcSR = $tcItems[1];
             } elseif ($tcItems->count() === 1) {
-                if ($typeChar === 'D') {
+                if ($typeChar === 'D' || $typeChar === 'W') {
                     $group->tcW = $tcItems[0];
                     $group->tcSR = null;
                 } elseif ($typeChar === 'N') {
@@ -215,105 +201,76 @@ class ActualCostController extends Controller
             }
 
             $group->wip_disc = $group->first(function ($item) {
-                return substr($item->item_code, 0, 2) === 'WB' && substr($item->item_code, 3, 2) === 'D-';
+                return Str::startsWith($item->item_code, 'WB') && substr($item->item_code, 3, 2) === 'D-';
             });
 
             $group->wip_rim = $group->first(function ($item) {
-                return substr($item->item_code, 0, 2) === 'WA' && substr($item->item_code, 3, 2) === 'R-';
+                return Str::startsWith($item->item_code, 'WA') && substr($item->item_code, 3, 2) === 'R-';
             });
 
             $group->wip_sr = $group->first(function ($item) {
-                return substr($item->item_code, 0, 2) === 'WD' && substr($item->item_code, 3, 2) === 'S-';
+                return Str::startsWith($item->item_code, 'WD') && substr($item->item_code, 3, 2) === 'S-';
             });
 
             $group->wip_assy = $group->first(function ($item) {
-                return substr($item->item_code, 0, 2) === 'WC' && substr($item->item_code, 3, 2) === 'W-';
+                return Str::startsWith($item->item_code, 'WC') && substr($item->item_code, 3, 2) === 'W-';
             });
 
             $group->wip_cedW = $group->first(function ($item) {
-                return substr($item->item_code, 0, 2) === 'WE' && substr($item->item_code, 3, 2) === 'W-';
+                return Str::startsWith($item->item_code, 'WE') && substr($item->item_code, 3, 2) === 'W-';
             });
 
             $group->wip_cedSR = $group->first(function ($item) {
-                return substr($item->item_code, 0, 2) === 'WE' && substr($item->item_code, 3, 2) === 'S-';
+                return Str::startsWith($item->item_code, 'WE') && substr($item->item_code, 3, 2) === 'S-';
             });
 
             $group->wip_tcW = $group->first(function ($item) {
-                return substr($item->item_code, 0, 2) === 'WF' && substr($item->item_code, 3, 2) === 'W-';
+                return Str::startsWith($item->item_code, 'WF') && substr($item->item_code, 3, 2) === 'W-';
             });
 
             $group->wip_tcSR = $group->first(function ($item) {
-                return substr($item->item_code, 0, 2) === 'WF' && substr($item->item_code, 3, 2) === 'S-';
+                return Str::startsWith($item->item_code, 'WF') && substr($item->item_code, 3, 2) === 'S-';
             });
 
             $group->wip_valve = $group->first(function ($item) {
-                return substr($item->item_code, 0, 3) === 'CGP'
-                    && (
-                        stripos($item->description, 'valve') !== false
-                        || stripos($item->description, 'VLI') !== false
-                    );
+                return Str::startsWith($item->item_code, 'CGP')
+                    && (stripos($item->description, 'valve') !== false || stripos($item->description, 'VLI') !== false);
             });
         }
 
         foreach ($groups as $group) {
-            $main = $group->first(); // FG
-            $main->load(['processCost', 'actualMaterial']);
+            $main = $group->first();
+            $main->load('processCost');
 
-            $disc_item_code = $group->disc?->actualMaterial?->item_code;
-            $disc_avg_price = $disc_item_code ? ($priceMap[$disc_item_code]['avg_price'] ?? 0) : 0;
+            $disc_item_code = $group->disc?->item_code;
+            // Panggil fungsi yang sudah disesuaikan
+            $disc_avg_price = $disc_item_code ? $this->getPriceFromActualMaterialPrice($disc_item_code, $endMonthNumber, $year) : 0;
             $disc_price = ceil(($disc_avg_price * ($group->disc?->quantity ?? 0)) * 100) / 100;
 
-            $rim_item_code = $group->rim?->actualMaterial?->item_code;
-            $rim_avg_price = $rim_item_code ? ($priceMap[$rim_item_code]['avg_price'] ?? 0) : 0;
+            $rim_item_code = $group->rim?->item_code;
+            // Panggil fungsi yang sudah disesuaikan
+            $rim_avg_price = $rim_item_code ? $this->getPriceFromActualMaterialPrice($rim_item_code, $endMonthNumber, $year) : 0;
             $rim_price = ceil(($rim_avg_price * ($group->rim?->quantity ?? 0)) * 100) / 100;
 
-            $sidering_item_code = $group->sidering?->actualMaterial?->item_code;
-            $sidering_avg_price = $sidering_item_code ? ($priceMap[$sidering_item_code]['avg_price'] ?? 0) : 0;
+            $sidering_item_code = $group->sidering?->item_code;
+            // Panggil fungsi yang sudah disesuaikan
+            $sidering_avg_price = $sidering_item_code ? $this->getPriceFromActualMaterialPrice($sidering_item_code, $endMonthNumber, $year) : 0;
             $sidering_price = ceil(($sidering_avg_price * ($group->sidering?->quantity ?? 0)) * 100) / 100;
 
+            // ... (Kode perhitungan harga proses dan WIP lainnya)
 
-            // $disc_price = ceil((($group->disc->actualMaterial->price ?? 0) * $group->disc?->quantity ?? 0) * 100) / 100;
-            // $rim_price = ceil((($group->rim->actualMaterial->price ?? 0) * $group->rim?->quantity ?? 0) * 100) / 100;
-            // $sidering_price = ceil((($group->sidering->actualMaterial->price ?? 0) * $group->sidering?->quantity ?? 0) * 100) / 100;
-
-            // $disc_price = $group->disc->materialInfo->standardPrice ?? 0;
-            // $rim_price = $group->rim->materialInfo->standardPrice ?? 0;
-            // $sidering_price = $group->sidering->materialInfo->standardPrice ?? 0;
-
-            // Perbaikan untuk pr_cedW_price
             $pr_cedW_price = 0;
-            // Hitung jika cedW item ada DAN item_code-nya bukan '-' atau kosong
             if ($group->cedW && ($group->cedW->item_code !== '-' && !empty($group->cedW->item_code))) {
                 $maxOfCed = $main->processCost->max_of_ced ?? 0;
                 $pr_cedW_price = ceil(($maxOfCed * 5 / 7) * 100) / 100;
             }
 
-            // Perbaikan untuk pr_cedSR_price
             $pr_cedSR_price = 0;
-            // Hitung jika cedSR item ada DAN item_code-nya bukan '-' atau kosong
             if ($group->cedSR && ($group->cedSR->item_code !== '-' && !empty($group->cedSR->item_code))) {
                 $maxOfCed = $main->processCost->max_of_ced ?? 0;
                 $pr_cedSR_price = ceil(($maxOfCed * 2 / 7) * 100) / 100;
             }
 
-            // $pr_tcW_price = ceil(((($main->processCost->max_of_topcoat ?? null) * 5) / 7) * 100) / 100;
-
-            // $pr_tcW_price = 0;
-            // // Hitung jika tcW item ada DAN item_code-nya bukan '-' atau kosong
-            // if ($group->tcW && ($group->tcW->item_code !== '-' && !empty($group->tcW->item_code))) {
-            //     $maxOfTC = $main->processCost->max_of_topcoat ?? 0;
-            //     $pr_tcW_price = ceil(($maxOfTC * 5 / 7) * 100) / 100;
-            // }
-
-            // // $pr_tcSR_price = ceil(((($main->processCost->max_of_topcoat ?? null) * 2) / 7) * 100) / 100;
-            // $pr_tcSR_price = 0;
-            // // Hitung jika tcSR item ada DAN item_code-nya bukan '-' atau kosong
-            // if ($group->tcSR && ($group->tcSR->item_code !== '-' && !empty($group->tcSR->item_code))) {
-            //     $maxOfTC = $main->processCost->max_of_topcoat ?? 0;
-            //     $pr_tcSR_price = ceil(($maxOfTC * 2 / 7) * 100) / 100;
-            // }
-
-            // --- Perbaikan untuk pr_tcW_price dan pr_tcSR_price ---
             $pr_tcW_price = 0;
             $pr_tcSR_price = 0;
             $maxOfTopcoat = $main->processCost->max_of_topcoat ?? 0;
@@ -322,119 +279,112 @@ class ActualCostController extends Controller
             $tcSRExists = $group->tcSR && ($group->tcSR->item_code !== '-' && !empty($group->tcSR->item_code));
 
             if ($tcWExists && $tcSRExists) {
-                // Kasus 1: Keduanya ada
                 $pr_tcW_price = ceil(($maxOfTopcoat * 5 / 7) * 100) / 100;
                 $pr_tcSR_price = ceil(($maxOfTopcoat * 2 / 7) * 100) / 100;
             } elseif ($tcWExists && !$tcSRExists) {
-                // Kasus 2: Hanya tcW yang ada
-                $pr_tcW_price = ceil(($maxOfTopcoat * 1) * 100) / 100; // 7/7 = 1
+                $pr_tcW_price = ceil(($maxOfTopcoat * 1) * 100) / 100;
                 $pr_tcSR_price = 0;
             } elseif (!$tcWExists && $tcSRExists) {
-                // Kasus 3: Hanya tcSR yang ada
                 $pr_tcW_price = 0;
-                $pr_tcSR_price = ceil(($maxOfTopcoat * 1) * 100) / 100; // 7/7 = 1
+                $pr_tcSR_price = ceil(($maxOfTopcoat * 1) * 100) / 100;
             }
 
             $wip_disc_price = ceil((($main->processCost->max_of_disc ?? 0) + ($disc_price ?? 0)) * 100) / 100;
             $wip_rim_price = ceil((($main->processCost->max_of_rim ?? 0) + ($rim_price ?? 0)) * 100) / 100;
             $wip_sidering_price = ceil((($main->processCost->max_of_sidering ?? 0) + ($sidering_price ?? 0)) * 100) / 100;
             $wip_assy_price = ceil((($main->processCost->max_of_assy ?? 0) + ($wip_disc_price ?? 0) + ($wip_rim_price ?? 0)) * 100) / 100;
-            $wip_cedW_price = ceil((($pr_cedW_price ?? 0) +  ($wip_assy_price ?? 0)) * 100) / 100;
-            $wip_cedSR_price = ceil((($pr_cedSR_price ?? 0) +  ($wip_sidering_price ?? 0)) * 100) / 100;
+            $wip_cedW_price = ceil((($pr_cedW_price ?? 0) + ($wip_assy_price ?? 0)) * 100) / 100;
+            $wip_cedSR_price = ceil((($pr_cedSR_price ?? 0) + ($wip_sidering_price ?? 0)) * 100) / 100;
             $wip_tcW_price = ceil((($wip_cedW_price ?? 0) + ($pr_tcW_price ?? 0)) * 100) / 100;
             $wip_tcSR_price = ceil((($wip_cedSR_price ?? 0) + ($pr_tcSR_price ?? 0)) * 100) / 100;
 
+            $wip_valve_price = 0;
             if (isset($group->wip_valve) && $group->wip_valve->item_code === 'CGP089') {
                 $wip_valve_price = 25815;
             } elseif (isset($group->wip_valve) && $group->wip_valve->item_code === 'CGP064') {
                 $wip_valve_price = 14985;
             } elseif (isset($group->wip_valve) && $group->wip_valve->item_code === 'CGP090') {
-                $wip_valve_price = 10000;
-            } else {
                 $wip_valve_price = 0;
-            };
+            } else {
+                $wip_valve_price = $group->wip_valve?->valveInfo?->price ?? 0;
+            }
+
+            // ... (Pembentukan array $data)
 
             $data = [
                 'item_code' => $main->item_code,
 
-                // Disc
-                'disc_qty' => $group->disc->quantity ?? 0,
-                'disc_code' => $group->disc->item_code ?? '-',
-                'disc_price' => $disc_price ?? 0,
+                'disc_qty' => $group->disc?->quantity ?? 0,
+                'disc_code' => $group->disc?->item_code ?? '-',
+                'disc_price' => $disc_price,
 
-                // Rim
-                'rim_qty' => $group->rim->quantity ?? 0,
-                'rim_code' => $group->rim->item_code ?? '-',
-                'rim_price' => $rim_price ?? 0,
+                'rim_qty' => $group->rim?->quantity ?? 0,
+                'rim_code' => $group->rim?->item_code ?? '-',
+                'rim_price' => $rim_price,
 
-                // Sidering
-                'sidering_qty' => $group->sidering->quantity ?? 0,
-                'sidering_code' => $group->sidering->item_code ?? '-',
-                'sidering_price' => $sidering_price ?? 0,
+                'sidering_qty' => $group->sidering?->quantity ?? 0,
+                'sidering_code' => $group->sidering?->item_code ?? '-',
+                'sidering_price' => $sidering_price,
 
-                // pr_*
-                'pr_disc' => $group->pr_disc->item_code ?? '-',
+                'pr_disc' => $group->pr_disc?->item_code ?? '-',
                 'pr_disc_price' => $main->processCost->max_of_disc ?? 0,
 
-                'pr_rim' => $group->pr_rim->item_code ?? '-',
+                'pr_rim' => $group->pr_rim?->item_code ?? '-',
                 'pr_rim_price' => $main->processCost->max_of_rim ?? 0,
 
-                'pr_sidering' => $group->pr_sr->item_code ?? '-',
+                'pr_sidering' => $group->pr_sr?->item_code ?? '-',
                 'pr_sidering_price' => $main->processCost->max_of_sidering ?? 0,
 
-                'pr_assy' => $group->pr_assy->item_code ?? '-',
+                'pr_assy' => $group->pr_assy?->item_code ?? '-',
                 'pr_assy_price' => $main->processCost->max_of_assy ?? 0,
 
-                'pr_cedW' => $group->cedW->item_code ?? '-',
-                'pr_cedW_price' => $pr_cedW_price ?? 0,
+                'pr_cedW' => $group->cedW?->item_code ?? '-',
+                'pr_cedW_price' => $pr_cedW_price,
 
-                'pr_cedSR' => $group->cedSR->item_code ?? '-',
-                'pr_cedSR_price' => $pr_cedSR_price ?? 0,
+                'pr_cedSR' => $group->cedSR?->item_code ?? '-',
+                'pr_cedSR_price' => $pr_cedSR_price,
 
-                'pr_tcW' => $group->tcW->item_code ?? '-',
-                'pr_tcW_price' => $pr_tcW_price ?? 0,
+                'pr_tcW' => $group->tcW?->item_code ?? '-',
+                'pr_tcW_price' => $pr_tcW_price,
 
-                'pr_tcSR' => $group->tcSR->item_code ?? '-',
-                'pr_tcSR_price' => $pr_tcSR_price ?? 0,
+                'pr_tcSR' => $group->tcSR?->item_code ?? '-',
+                'pr_tcSR_price' => $pr_tcSR_price,
 
                 'pack_price' => $main->processCost->max_of_packaging ?? 0,
 
-                // WIP
-                'wip_disc' => $group->wip_disc->item_code ?? '-',
-                'wip_disc_price' => $wip_disc_price ?? 0,
+                'wip_disc' => $group->wip_disc?->item_code ?? '-',
+                'wip_disc_price' => $wip_disc_price,
 
-                'wip_rim' => $group->wip_rim->item_code ?? '-',
-                'wip_rim_price' => $wip_rim_price ?? 0,
+                'wip_rim' => $group->wip_rim?->item_code ?? '-',
+                'wip_rim_price' => $wip_rim_price,
 
-                'wip_sidering' => $group->wip_sr->item_code ?? '-',
-                'wip_sidering_price' => $wip_sidering_price ?? 0,
+                'wip_sidering' => $group->wip_sr?->item_code ?? '-',
+                'wip_sidering_price' => $wip_sidering_price,
 
-                'wip_assy' => $group->wip_assy->item_code ?? '-',
-                'wip_assy_price' => $wip_assy_price ?? 0,
+                'wip_assy' => $group->wip_assy?->item_code ?? '-',
+                'wip_assy_price' => $wip_assy_price,
 
-                'wip_cedW' => $group->wip_cedW->item_code ?? '-',
-                'wip_cedW_price' => $wip_cedW_price ?? 0,
+                'wip_cedW' => $group->wip_cedW?->item_code ?? '-',
+                'wip_cedW_price' => $wip_cedW_price,
 
-                'wip_cedSR' => $group->wip_cedSR->item_code ?? '-',
-                'wip_cedSR_price' => $wip_cedSR_price ?? 0,
+                'wip_cedSR' => $group->wip_cedSR?->item_code ?? '-',
+                'wip_cedSR_price' => $wip_cedSR_price,
 
-                'wip_tcW' => $group->wip_tcW->item_code ?? '-',
-                'wip_tcW_price' => $wip_tcW_price ?? 0,
+                'wip_tcW' => $group->wip_tcW?->item_code ?? '-',
+                'wip_tcW_price' => $wip_tcW_price,
 
-                'wip_tcSR' => $group->wip_tcSR->item_code ?? '-',
-                'wip_tcSR_price' => $wip_tcSR_price ?? 0,
+                'wip_tcSR' => $group->wip_tcSR?->item_code ?? '-',
+                'wip_tcSR_price' => $wip_tcSR_price,
 
-                'wip_valve' => $group->wip_valve->item_code ?? '-',
-                'wip_valve_price' => $group->wip_valve->valveInfo->price ?? 0,
+                'wip_valve' => $group->wip_valve?->item_code ?? '-',
+                'wip_valve_price' => $wip_valve_price,
             ];
 
-            // Hitung total cost
             $totalRawMaterial = collect([
                 $data['disc_price'],
                 $data['rim_price'],
                 $data['sidering_price'],
             ])->sum();
-
 
             $totalProcess = collect([
                 $data['pr_disc_price'],
@@ -453,7 +403,6 @@ class ActualCostController extends Controller
             $data['total_process'] = ceil($totalProcess * 100) / 100;
             $data['total'] = $data['total_raw_material'] + $data['total_process'];
 
-            // Simpan ke DB
             ActualCost::updateOrCreate(
                 [
                     'item_code' => $main->item_code,

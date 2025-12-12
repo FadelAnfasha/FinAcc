@@ -4,13 +4,11 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-
+use Carbon\Carbon;
 use App\Models\ActualMaterial;
 
 class actualMaterialController extends Controller
 {
-
-
     private function cleanValue($value)
     {
         $cleaned = trim($value);
@@ -19,33 +17,41 @@ class actualMaterialController extends Controller
         return is_numeric($cleaned) ? (float)$cleaned : 0;
     }
 
+    private function calculateAveragePrice($amount, $quantity)
+    {
+        if ($quantity == 0) {
+            return 0;
+        }
+        return $amount / $quantity;
+    }
+
     private function getInvalidItemData($itemCode, $row, $reason)
     {
         return [
             'item_code' => $itemCode,
-            'jan_price' => $row[2],
+            'jan_amount' => $row[2],
             'jan_qty' => $row[3],
-            'feb_price' => $row[4],
+            'feb_amount' => $row[4],
             'feb_qty' => $row[5],
-            'mar_price' => $row[6],
+            'mar_amount' => $row[6],
             'mar_qty' => $row[7],
-            'apr_price' => $row[8],
+            'apr_amount' => $row[8],
             'apr_qty' => $row[9],
-            'may_price' => $row[10],
+            'may_amount' => $row[10],
             'may_qty' => $row[11],
-            'jun_price' => $row[12],
+            'jun_amount' => $row[12],
             'jun_qty' => $row[13],
-            'jul_price' => $row[14],
+            'jul_amount' => $row[14],
             'jul_qty' => $row[15],
-            'aug_price' => $row[16],
+            'aug_amount' => $row[16],
             'aug_qty' => $row[17],
-            'sep_price' => $row[18],
+            'sep_amount' => $row[18],
             'sep_qty' => $row[19],
-            'oct_price' => $row[20],
+            'oct_amount' => $row[20],
             'oct_qty' => $row[21],
-            'nov_price' => $row[22],
+            'nov_amount' => $row[22],
             'nov_qty' => $row[23],
-            'dec_price' => $row[24],
+            'dec_amount' => $row[24],
             'dec_qty' => $row[25],
             'reason' => $reason
         ];
@@ -53,10 +59,12 @@ class actualMaterialController extends Controller
 
     public function import(Request $request)
     {
-        $request->validate([
-            'file' => 'required|mimes:csv,txt'
+        $validatedData = $request->validate([
+            'file' => 'required|mimes:csv,txt',
+            'period' => 'required|integer|min:2000|max:' . (Carbon::now()->year + 1),
         ]);
 
+        $importYear = $validatedData['period'];
         $file = $request->file('file');
 
         $itemsToUpsert = [];
@@ -95,30 +103,42 @@ class actualMaterialController extends Controller
         }
 
         $updateColumns = [
-            'jan_price',
+            'jan_amount',
             'jan_qty',
-            'feb_price',
+            'feb_amount',
             'feb_qty',
-            'mar_price',
+            'mar_amount',
             'mar_qty',
-            'apr_price',
+            'apr_amount',
             'apr_qty',
-            'may_price',
+            'may_amount',
             'may_qty',
-            'jun_price',
+            'jun_amount',
             'jun_qty',
-            'jul_price',
+            'jul_amount',
             'jul_qty',
-            'aug_price',
+            'aug_amount',
             'aug_qty',
-            'sep_price',
+            'sep_amount',
             'sep_qty',
-            'oct_price',
+            'oct_amount',
             'oct_qty',
-            'nov_price',
+            'nov_amount',
             'nov_qty',
-            'dec_price',
+            'dec_amount',
             'dec_qty',
+            'jan_price',
+            'feb_price',
+            'mar_price',
+            'apr_price',
+            'may_price',
+            'jun_price',
+            'jul_price',
+            'aug_price',
+            'sep_price',
+            'oct_price',
+            'nov_price',
+            'dec_price',
             'updated_at'
         ];
 
@@ -135,35 +155,33 @@ class actualMaterialController extends Controller
                 continue;
             }
 
-            $itemsToUpsert[] = [
+            $combinedData = [];
+            $amountQtyData = [];
+            $priceData = [];
+
+            for ($i = 0; $i < 12; $i++) {
+                $month = strtolower(date('M', mktime(0, 0, 0, $i + 1, 10)));
+                $amountColumnIndex = 2 + ($i * 2);
+                $qtyColumnIndex = 3 + ($i * 2);
+
+                $amount = $this->cleanValue($row[$amountColumnIndex]);
+                $quantity = $this->cleanValue($row[$qtyColumnIndex]);
+
+                $avgPrice = $this->calculateAveragePrice($amount, $quantity);
+
+                $amountQtyData[$month . '_amount'] = $amount;
+                $amountQtyData[$month . '_qty'] = $quantity;
+                $priceData[$month . '_price'] = round($avgPrice, 4);
+            }
+
+            $combinedData = array_merge($amountQtyData, $priceData);
+
+            $itemsToUpsert[] = array_merge([
                 'item_code' => $itemCode,
-                'jan_price' => $this->cleanValue($row[2]),
-                'jan_qty' => $this->cleanValue($row[3]),
-                'feb_price' => $this->cleanValue($row[4]),
-                'feb_qty' => $this->cleanValue($row[5]),
-                'mar_price' => $this->cleanValue($row[6]),
-                'mar_qty' => $this->cleanValue($row[7]),
-                'apr_price' => $this->cleanValue($row[8]),
-                'apr_qty' => $this->cleanValue($row[9]),
-                'may_price' => $this->cleanValue($row[10]),
-                'may_qty' => $this->cleanValue($row[11]),
-                'jun_price' => $this->cleanValue($row[12]),
-                'jun_qty' => $this->cleanValue($row[13]),
-                'jul_price' => $this->cleanValue($row[14]),
-                'jul_qty' => $this->cleanValue($row[15]),
-                'aug_price' => $this->cleanValue($row[16]),
-                'aug_qty' => $this->cleanValue($row[17]),
-                'sep_price' => $this->cleanValue($row[18]),
-                'sep_qty' => $this->cleanValue($row[19]),
-                'oct_price' => $this->cleanValue($row[20]),
-                'oct_qty' => $this->cleanValue($row[21]),
-                'nov_price' => $this->cleanValue($row[22]),
-                'nov_qty' => $this->cleanValue($row[23]),
-                'dec_price' => $this->cleanValue($row[24]),
-                'dec_qty' => $this->cleanValue($row[25]),
+                'period' => $importYear,
                 'created_at' => now(),
                 'updated_at' => now(),
-            ];
+            ], $combinedData);
 
             $progress = intval(($index + 1) / $total * 100);
             Cache::put('import-progress-actualMat', $progress, now()->addMinutes(5));
@@ -172,7 +190,7 @@ class actualMaterialController extends Controller
         if (!empty($itemsToUpsert)) {
             actualMaterial::upsert(
                 $itemsToUpsert,
-                ['item_code'],
+                ['item_code', 'period'],
                 $updateColumns
             );
 
