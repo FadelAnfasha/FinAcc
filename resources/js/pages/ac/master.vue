@@ -658,9 +658,9 @@ const props = defineProps({
                                         </template>
                                     </Column>
 
-                                    <Column field="jan_price" header="January Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="jan_amount" header="January Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
-                                            {{ Number(data.jan_price).toLocaleString('id-ID') }}
+                                            {{ Number(data.jan_amount).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
                                     <Column field="jan_qty" header="January (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
@@ -668,10 +668,15 @@ const props = defineProps({
                                             {{ Number(data.jan_qty).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
-
-                                    <Column field="feb_price" header="February Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="jan_price" header="January Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
-                                            {{ Number(data.feb_price).toLocaleString('id-ID') }}
+                                            {{ Number(data.jan_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="feb_amount" header="February Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.feb_amount).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
                                     <Column field="feb_qty" header="February (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
@@ -679,10 +684,15 @@ const props = defineProps({
                                             {{ Number(data.feb_qty).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
-
-                                    <Column field="mar_price" header="March Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="feb_price" header="February Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
-                                            {{ Number(data.mar_price).toLocaleString('id-ID') }}
+                                            {{ Number(data.feb_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="mar_amount" header="March Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.mar_amount).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
                                     <Column field="mar_qty" header="March (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
@@ -690,10 +700,15 @@ const props = defineProps({
                                             {{ Number(data.mar_qty).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
-
-                                    <Column field="apr_price" header="April Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="mar_price" header="March Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
-                                            {{ Number(data.apr_price).toLocaleString('id-ID') }}
+                                            {{ Number(data.mar_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="apr_amount" header="April Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.apr_amount).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
                                     <Column field="apr_qty" header="April (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
@@ -701,10 +716,15 @@ const props = defineProps({
                                             {{ Number(data.apr_qty).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
-
-                                    <Column field="may_price" header="May Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="apr_price" header="April Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
-                                            {{ Number(data.may_price).toLocaleString('id-ID') }}
+                                            {{ Number(data.apr_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="may_amount" header="May Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.may_amount).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
                                     <Column field="may_qty" header="May (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
@@ -712,10 +732,15 @@ const props = defineProps({
                                             {{ Number(data.may_qty).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
-
-                                    <Column field="jun_price" header="June Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="may_price" header="May Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
-                                            {{ Number(data.jun_price).toLocaleString('id-ID') }}
+                                            {{ Number(data.may_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="jun_amount" header="June Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.jun_amount).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
                                     <Column field="jun_qty" header="June (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
@@ -723,10 +748,15 @@ const props = defineProps({
                                             {{ Number(data.jun_qty).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
-
-                                    <Column field="jul_price" header="July Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="jun_price" header="June Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
-                                            {{ Number(data.jul_price).toLocaleString('id-ID') }}
+                                            {{ Number(data.jun_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="jul_amount" header="July Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.jul_amount).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
                                     <Column field="jul_qty" header="July (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
@@ -734,10 +764,15 @@ const props = defineProps({
                                             {{ Number(data.jul_qty).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
-
-                                    <Column field="aug_price" header="August Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="jul_price" header="July Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
-                                            {{ Number(data.aug_price).toLocaleString('id-ID') }}
+                                            {{ Number(data.jul_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="aug_amount" header="August Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.aug_amount).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
                                     <Column field="aug_qty" header="August (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
@@ -745,10 +780,15 @@ const props = defineProps({
                                             {{ Number(data.aug_qty).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
-
-                                    <Column field="sep_price" header="September Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="aug_price" header="August Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
-                                            {{ Number(data.sep_price).toLocaleString('id-ID') }}
+                                            {{ Number(data.aug_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="sep_amount" header="September Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.sep_amount).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
                                     <Column field="sep_qty" header="September (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
@@ -756,10 +796,15 @@ const props = defineProps({
                                             {{ Number(data.sep_qty).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
-
-                                    <Column field="oct_price" header="October Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="sep_price" header="September Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
-                                            {{ Number(data.oct_price).toLocaleString('id-ID') }}
+                                            {{ Number(data.sep_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="oct_amount" header="October Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.oct_amount).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
                                     <Column field="oct_qty" header="October (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
@@ -767,10 +812,15 @@ const props = defineProps({
                                             {{ Number(data.oct_qty).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
-
-                                    <Column field="nov_price" header="November Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="oct_price" header="October Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
-                                            {{ Number(data.nov_price).toLocaleString('id-ID') }}
+                                            {{ Number(data.oct_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="nov_amount" header="November Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.nov_amount).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
                                     <Column field="nov_qty" header="November (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
@@ -778,15 +828,25 @@ const props = defineProps({
                                             {{ Number(data.nov_qty).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
-
-                                    <Column field="dec_price" header="December Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="nov_price" header="November Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
-                                            {{ Number(data.dec_price).toLocaleString('id-ID') }}
+                                            {{ Number(data.nov_price).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="dec_amount" header="December Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.dec_amount).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
                                     <Column field="dec_qty" header="December (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ Number(data.dec_qty).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                    <Column field="dec_price" header="December Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        <template #body="{ data }">
+                                            {{ Number(data.dec_price).toLocaleString('id-ID') }}
                                         </template>
                                     </Column>
                                 </DataTable>
