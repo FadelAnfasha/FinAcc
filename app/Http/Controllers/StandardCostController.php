@@ -4,22 +4,19 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 
 use App\Models\StandardCost;
 use App\Models\StandardMaterial;
-use App\Models\Valve;
-use App\Models\ProcessCost;
-use App\Models\BillOfMaterial;
-
+use App\Models\StandardBillOfMaterial;
 
 class StandardCostController extends Controller
 {
     public function update(Request $request)
     {
-        $bomData = BillOfMaterial::all();
+        $bomData = StandardBillOfMaterial::all();
 
         $validatedData = $request->validate([
             'year' => 'required|integer',
@@ -1217,5 +1214,116 @@ class StandardCostController extends Controller
                 'invalidItems' => $invalidItems
             ]
         ]);
+    }
+
+    public function getPaginated(Request $request)
+    {
+        $perPage = $request->input('per_page', 10);
+        $searchTerm = $request->input('search');
+        $itemCodeFilter = $request->input('item_code_filter');
+        $periodFilter = $request->input('period_filter');
+        $descriptionFilter = $request->input('description_filter');
+        $typeFilter = $request->input('type_filter');
+        $sortField = $request->input('sort_field', 'period');
+        $sortOrder = $request->input('sort_order', 'desc');
+
+        $query = StandardCost::with([
+            'bom' => function ($q) {
+                $q->select('id', 'description', 'item_code');
+            }
+        ]);
+
+        $query->select('standard_cost.*');
+        $query->addSelect(StandardCost::raw("
+        CASE SUBSTRING(standard_cost.item_code, 4, 1)
+            WHEN 'W' THEN 'Wheel'
+            WHEN 'D' THEN 'Disc'
+            WHEN 'N' THEN 'Sidering'
+            WHEN 'T' THEN 'Assy Tyre'
+            WHEN 'R' THEN 'Rim'
+            WHEN 'M' THEN 'Material'
+            ELSE '-'
+        END AS type
+    "));
+
+        $joinNeeded = ($sortField === 'bom.description' || $sortField === 'description');
+        if ($joinNeeded) {
+            $query->leftJoin('standard_bill_of_materials as bom_table', 'standard_cost.item_code', '=', 'bom_table.item_code');
+        }
+
+        $query->when($searchTerm, function ($query, $term) {
+            $query->where(function ($q) use ($term) {
+                $q->where('standard_cost.item_code', 'LIKE', '%' . $term . '%')
+                    ->orWhere('standard_cost.period', 'LIKE', '%' . $term . '%')
+                    ->orWhereHas('bom', function ($qBom) use ($term) {
+                        $qBom->where('description', 'LIKE', '%' . $term . '%');
+                    });
+            });
+        });
+
+        $query->when($typeFilter, function ($query, $term) {
+            $terms = is_array($term) ? $term : [$term];
+            $placeholders = implode(',', array_fill(0, count($terms), '?'));
+            $query->havingRaw("type IN ($placeholders)", $terms);
+        })
+            ->when($itemCodeFilter, function ($query, $term) {
+                $query->where('standard_cost.item_code', 'LIKE', '%' . $term . '%');
+            })
+            ->when($periodFilter, function ($query, $term) {
+                $query->where('standard_cost.period', 'LIKE', '%' . $term . '%');
+            })
+            ->when($descriptionFilter, function ($query, $term) {
+                $query->whereHas('bom', function ($q) use ($term) {
+                    $q->where('description', 'LIKE', '%' . $term . '%');
+                });
+            });
+
+        if ($sortField === 'bom.description' || $sortField === 'description') {
+            $query->orderBy('bom_table.description', $sortOrder);
+        } elseif ($sortField === 'type') {
+            $query->orderBy('type', $sortOrder);
+        } else {
+            // Fallback untuk item_code, period, dll
+            $query->orderBy('standard_cost.' . $sortField, $sortOrder);
+        }
+
+        return response()->json($query->paginate($perPage));
+    }
+
+    public function getPeriod(Request $request)
+    {
+        $period = StandardCost::distinct()->pluck('period');
+        return response()->json($period);
+    }
+
+    public function getType()
+    {
+        $types = StandardCost::selectRaw("
+        DISTINCT CASE SUBSTRING(item_code, 4, 1)
+            WHEN 'W' THEN 'Wheel'
+            WHEN 'D' THEN 'Disc'
+            WHEN 'N' THEN 'Sidering'
+            WHEN 'T' THEN 'Assy Tyre'
+            WHEN 'R' THEN 'Rim'
+            WHEN 'M' THEN 'Material'
+            ELSE '-'
+        END AS name
+    ")
+            ->whereRaw("SUBSTRING(item_code, 4, 1) IN ('W', 'D', 'N', 'T', 'R', 'M')")
+            ->orderBy('name', 'asc')
+            ->pluck('name'); // Mengembalikan array sederhana
+
+        return response()->json($types);
+    }
+    public function getExport(Request $request)
+    {
+        $periodFilter = $request->input('period_filter');
+        $query = StandardCost::query();
+        if ($periodFilter) {
+            $query->where('period', $periodFilter);
+        }
+        $scExport = $query->get();
+
+        return response()->json($scExport);
     }
 }

@@ -2,24 +2,22 @@
 
 namespace App\Models;
 
-use Faker\Provider\Biased;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use PhpParser\PrettyPrinter\Standard;
 
-class StandardMaterial extends Model
+class StandardConsumable extends Model
 {
     use HasFactory;
 
-    protected $table = 'standard_materials'; // pastikan nama tabel sesuai dengan yang ada di database
+    protected $table = 'standard_consumables';
     protected $primaryKey = 'item_code';
     public $incrementing = false; // jika item_no bukan auto-increment
     protected $keyType = 'string'; // jika item_no bukan integer
+
     protected $fillable = [
         'item_code',
-        'in_stock',
-        'item_group',
         'price',
-        'manufacturer',
     ];
 
     public function bom()

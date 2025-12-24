@@ -64,7 +64,7 @@ class StandardCost extends Model
 
     public function bom()
     {
-        return $this->belongsTo(BillOfMaterial::class, 'item_code', 'item_code');
+        return $this->belongsTo(StandardBillOfMaterial::class, 'item_code', 'item_code');
     }
 
     public function ct()
@@ -74,96 +74,96 @@ class StandardCost extends Model
 
     public function discWIP()
     {
-        return $this->belongsTo(BillOfMaterial::class, 'wip_disc', 'item_code');
+        return $this->belongsTo(StandardBillOfMaterial::class, 'wip_disc', 'item_code');
     }
 
     public function discMaterial()
     {
-        return $this->belongsTo(BillOfMaterial::class, 'disc_code', 'item_code');
+        return $this->belongsTo(StandardBillOfMaterial::class, 'disc_code', 'item_code');
     }
 
     public function discProcess()
     {
-        return $this->belongsTo(BillOfMaterial::class, 'pr_disc', 'item_code');
+        return $this->belongsTo(StandardBillOfMaterial::class, 'pr_disc', 'item_code');
     }
 
     public function rimWIP()
     {
-        return $this->belongsTo(BillOfMaterial::class, 'wip_rim', 'item_code');
+        return $this->belongsTo(StandardBillOfMaterial::class, 'wip_rim', 'item_code');
     }
 
     public function rimMaterial()
     {
-        return $this->belongsTo(BillOfMaterial::class, 'rim_code', 'item_code');
+        return $this->belongsTo(StandardBillOfMaterial::class, 'rim_code', 'item_code');
     }
 
     public function rimProcess()
     {
-        return $this->belongsTo(BillOfMaterial::class, 'pr_rim', 'item_code');
+        return $this->belongsTo(StandardBillOfMaterial::class, 'pr_rim', 'item_code');
     }
 
     public function sideringWIP()
     {
-        return $this->belongsTo(BillOfMaterial::class, 'wip_sidering', 'item_code');
+        return $this->belongsTo(StandardBillOfMaterial::class, 'wip_sidering', 'item_code');
     }
 
     public function sideringMaterial()
     {
-        return $this->belongsTo(BillOfMaterial::class, 'sidering_code', 'item_code');
+        return $this->belongsTo(StandardBillOfMaterial::class, 'sidering_code', 'item_code');
     }
 
     public function sideringProcess()
     {
-        return $this->belongsTo(BillOfMaterial::class, 'pr_sidering', 'item_code');
+        return $this->belongsTo(StandardBillOfMaterial::class, 'pr_sidering', 'item_code');
     }
 
     public function assyWIP()
     {
-        return $this->belongsTo(BillOfMaterial::class, 'wip_assy', 'item_code');
+        return $this->belongsTo(StandardBillOfMaterial::class, 'wip_assy', 'item_code');
     }
 
     public function assyProcess()
     {
-        return $this->belongsTo(BillOfMaterial::class, 'pr_assy', 'item_code');
+        return $this->belongsTo(StandardBillOfMaterial::class, 'pr_assy', 'item_code');
     }
 
     public function cedWWIP()
     {
-        return $this->belongsTo(BillOfMaterial::class, 'wip_cedW', 'item_code');
+        return $this->belongsTo(StandardBillOfMaterial::class, 'wip_cedW', 'item_code');
     }
 
     public function cedWProcess()
     {
-        return $this->belongsTo(BillOfMaterial::class, 'pr_cedW', 'item_code');
+        return $this->belongsTo(StandardBillOfMaterial::class, 'pr_cedW', 'item_code');
     }
 
     public function cedSRWIP()
     {
-        return $this->belongsTo(BillOfMaterial::class, 'wip_cedSR', 'item_code');
+        return $this->belongsTo(StandardBillOfMaterial::class, 'wip_cedSR', 'item_code');
     }
 
     public function cedSRProcess()
     {
-        return $this->belongsTo(BillOfMaterial::class, 'pr_cedSR', 'item_code');
+        return $this->belongsTo(StandardBillOfMaterial::class, 'pr_cedSR', 'item_code');
     }
 
     public function tcWWIP()
     {
-        return $this->belongsTo(BillOfMaterial::class, 'wip_tcW', 'item_code');
+        return $this->belongsTo(StandardBillOfMaterial::class, 'wip_tcW', 'item_code');
     }
 
     public function tcWProcess()
     {
-        return $this->belongsTo(BillOfMaterial::class, 'pr_tcW', 'item_code');
+        return $this->belongsTo(StandardBillOfMaterial::class, 'pr_tcW', 'item_code');
     }
 
     public function tcSRWIP()
     {
-        return $this->belongsTo(BillOfMaterial::class, 'wip_tcSR', 'item_code');
+        return $this->belongsTo(StandardBillOfMaterial::class, 'wip_tcSR', 'item_code');
     }
 
     public function tcSRProcess()
     {
-        return $this->belongsTo(BillOfMaterial::class, 'pr_tcSR', 'item_code');
+        return $this->belongsTo(StandardBillOfMaterial::class, 'pr_tcSR', 'item_code');
     }
 }

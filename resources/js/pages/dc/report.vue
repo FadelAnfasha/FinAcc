@@ -7,9 +7,12 @@ import Column from 'primevue/column';
 import ColumnGroup from 'primevue/columngroup';
 import DataTable from 'primevue/datatable';
 import Dialog from 'primevue/dialog';
+import IconField from 'primevue/iconfield';
+import InputIcon from 'primevue/inputicon';
 import InputText from 'primevue/inputtext';
 import MultiSelect from 'primevue/multiselect';
 
+import axios from 'axios';
 import Row from 'primevue/row';
 import Select from 'primevue/select';
 import Tab from 'primevue/tab';
@@ -18,7 +21,7 @@ import TabPanel from 'primevue/tabpanel';
 import TabPanels from 'primevue/tabpanels';
 import Tabs from 'primevue/tabs';
 import { useToast } from 'primevue/usetoast';
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 
 const toast = useToast();
 const page = usePage();
@@ -47,7 +50,29 @@ const detailType = ref<'diffCost' | 'dcXsq' | null>(null);
 const activeTabValue = ref('0');
 const userName = computed(() => page.props.auth?.user?.name ?? '');
 
-// Style buat table
+const differenceCostUrl = ref('/finacc/api/difference/get-difference-cost');
+const perPage = ref(10);
+const currentDiffCostPage = ref(1);
+const sortOrderDiffCost = ref(null);
+const sortFieldDiffCost = ref(null);
+const paginatedDiffCostData = ref<any>(null);
+const searchTimeout = ref<number | null>(null);
+const listDiffPeriod = ref<List[]>([]);
+const listDiffRemark = ref<List[]>([]);
+const listDiffTotal = ref<List[]>([]);
+
+const isReady = reactive({
+    standardCost: false,
+});
+const standardCostTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
+
+const isInitialLoading = ref(true);
+
+interface List {
+    name: string;
+    code: string;
+}
+
 function tbStyle(section: 'main' | 'rm' | 'pr' | 'wip' | 'fg') {
     const styles = {
         main: { header: '#758596', body: '#c8cccc' },
@@ -63,7 +88,6 @@ function tbStyle(section: 'main' | 'rm' | 'pr' | 'wip' | 'fg') {
     };
 }
 
-// Nampung nilai
 const props = defineProps({
     auth: Object,
 });
@@ -83,6 +107,67 @@ const dcxsq = computed(() =>
         no: index + 1,
     })),
 );
+
+async function exportCSV(type: string) {
+    if (type === 'diffCost') {
+        const currentPeriod = filtersDiffCost.value.period.value;
+
+        try {
+            // 1. Ambil data lengkap dari endpoint JSON Anda
+            const response = await axios.get(route('report.difference.export'), {
+                params: { period_filter: currentPeriod },
+            });
+
+            const data = response.data;
+
+            if (!data || data.length === 0) {
+                toast.add({ severity: 'warn', summary: 'Info', detail: 'Tidak ada data untuk diexport', life: 3000 });
+                return;
+            }
+
+            // 2. Konversi JSON ke CSV
+            const csvContent = convertToCSV(data);
+
+            // 3. Trigger Download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+
+            link.setAttribute('href', url);
+            link.setAttribute('download', `DifferenceCost_${currentPeriod || 'All'}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error('Export failed', error);
+            toast.add({ severity: 'error', summary: 'Error', detail: 'Gagal mengambil data export', life: 3000 });
+        }
+    }
+}
+
+function convertToCSV(objArray) {
+    const array = typeof objArray !== 'object' ? JSON.parse(objArray) : objArray;
+    let str = '';
+
+    // Ambil Header (Keys) otomatis
+    const headers = Object.keys(array[0]);
+    str += headers.join(',') + '\r\n';
+
+    // Ambil Data (Values)
+    for (let i = 0; i < array.length; i++) {
+        let line = '';
+        for (let index in headers) {
+            if (line !== '') line += ',';
+
+            // Handle jika data mengandung koma agar tidak merusak format CSV
+            const value = array[i][headers[index]] + '';
+            line += `"${value.replace(/"/g, '""')}"`;
+        }
+        str += line + '\r\n';
+    }
+    return str;
+}
 
 const dcTotalRawMaterial = computed(() => {
     const periodFilterDiff = filtersDifference.value?.period;
@@ -663,16 +748,6 @@ const filtersDCxSQ = ref({
     'difference_cost.remark': { value: null as string | null, matchMode: FilterMatchMode.EQUALS },
 });
 
-function exportCSV(type: 'diffCost' | 'dcXsq') {
-    if (type === 'diffCost' && dtDIFF.value) {
-        const exportFilename = `DiffCost-${new Date().toISOString().slice(0, 10)}.csv`;
-        dtDIFF.value.exportCSV({ selectionOnly: false, filename: exportFilename });
-    } else if (type === 'dcXsq' && dtDCxSQ.value) {
-        const exportFilename = `DiffCost x Sales Quantity-${new Date().toISOString().slice(0, 10)}.csv`;
-        dtDCxSQ.value.exportCSV({ selectionOnly: false, filename: exportFilename });
-    }
-}
-
 function showUpdateDialog(type: 'diffCost' | 'dcXsq') {
     updateType.value = type;
     updateStatus.value = 'idle';
@@ -759,6 +834,8 @@ function confirmUpdate() {
                         code: DCupdatePeriod,
                         name: DCupdatePeriod,
                     };
+                    filtersDiffCost.value.period.value = DCupdatePeriod;
+                    loadLazyData(differenceCostUrl.value, 'diffCost');
                 } else if (type === 'dcXsq' && DCxSQupdatePeriod) {
                     // Buat objek ActualPeriod baru untuk memicu 'watch'
                     selectDCxSQPeriod.value = {
@@ -804,6 +881,208 @@ function closeDialog() {
     month.value = null;
     monthRange.value = null;
 }
+
+const fetchDatas = async (url: string) => {
+    try {
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (e: any) {
+        console.error(`Fetch Period Error from ${url}:`, e);
+        throw new Error(`Fail to retrieve data from ${url}: ${e.message}`);
+    }
+};
+
+const fetchDiffPeriod = async () => {
+    try {
+        const differencePeriod = await fetchDatas('/finacc/api/difference/list-period');
+
+        if (Array.isArray(differencePeriod)) {
+            listDiffPeriod.value = differencePeriod.map((p: string) => ({ name: p, code: p }));
+        } else {
+            console.error('API /api/difference/list-period did not return an array:', differencePeriod);
+            listDiffPeriod.value = [];
+        }
+    } catch (error) {
+        console.error('Failed to fetch material group list:', error);
+        listDiffPeriod.value = [];
+    }
+};
+
+const fetchDiffRemark = async () => {
+    try {
+        const differenceRemark = await fetchDatas('/finacc/api/difference/list-remark');
+
+        if (Array.isArray(differenceRemark)) {
+            listDiffRemark.value = differenceRemark.map((p: string) => ({ name: p, code: p }));
+        } else {
+            console.error('API /api/difference/list-remark did not return an array:', differenceRemark);
+            listDiffRemark.value = [];
+        }
+    } catch (error) {
+        console.error('Failed to fetch material group list:', error);
+        listDiffRemark.value = [];
+    }
+};
+
+const fetchDiffTotal = async () => {
+    try {
+        const differenceTotal = await fetchDatas('/finacc/api/difference/get-total');
+
+        if (Array.isArray(differenceTotal)) {
+            listDiffTotal.value = differenceTotal.map((p: string) => ({ name: p, code: p }));
+        } else {
+            console.error('API /api/difference/get-total did not return an array:', differenceTotal);
+            listDiffTotal.value = [];
+        }
+    } catch (error) {
+        console.error('Failed to fetch material group list:', error);
+        listDiffTotal.value = [];
+    }
+};
+
+const filtersDiffCost = ref({
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    period: { value: null, matchMode: FilterMatchMode.EQUALS },
+    description: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    remark: { value: null, matchMode: FilterMatchMode.EQUALS },
+});
+
+const initFilters = () => {
+    // Reset filters Stamat (karena ini yang digunakan oleh Tab 0)
+    filtersDiffCost.value = {
+        global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+        item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
+        period: { value: null, matchMode: FilterMatchMode.EQUALS },
+        description: { value: null, matchMode: FilterMatchMode.CONTAINS },
+        remark: { value: null, matchMode: FilterMatchMode.EQUALS },
+    };
+};
+
+const controllers = {
+    diffCost: null as AbortController | null,
+};
+
+const loadingStates = reactive({
+    diffCost: false,
+});
+
+const loadLazyData = async (url: string, type: 'diffCost') => {
+    if (controllers[type]) controllers[type].abort();
+    controllers[type] = new AbortController();
+
+    loadingStates[type] = true;
+
+    const configMap = {
+        diffCost: {
+            filters: filtersDiffCost.value,
+            page: currentDiffCostPage.value,
+            descKey: 'description',
+            sortField: sortFieldDiffCost.value,
+            sortOrder: sortOrderDiffCost.value,
+            dataRef: paginatedDiffCostData,
+        },
+    };
+
+    const config = configMap[type];
+    const currentFilters = config.filters;
+    const params = new URLSearchParams({
+        page: config.page.toString(),
+        per_page: perPage.value.toString(),
+        search: currentFilters.global.value || '',
+        item_code_filter: currentFilters.item_code.value || '',
+        description_filter: (currentFilters as any)[config.descKey]?.value || '',
+        remark_filter: (currentFilters as any).remark?.value || '',
+    });
+
+    if (config.sortField && config.sortOrder) {
+        params.append('sort_field', config.sortField);
+        params.append('sort_order', config.sortOrder === 1 ? 'asc' : 'desc');
+    }
+
+    if (type === 'diffCost') {
+        const itemPeriod = (currentFilters as any).period?.value;
+        if (itemPeriod) params.append('period_filter', itemPeriod);
+    }
+
+    try {
+        const response = await fetch(`${url}?${params.toString()}`, {
+            signal: controllers[type].signal,
+        });
+        console.log(`${url}?${params.toString()}`);
+
+        if (!response.ok) throw new Error('Fetch failed');
+        const data = await response.json();
+        config.dataRef.value = data;
+    } catch (error: any) {
+        if (error.name === 'AbortError') return;
+        console.error(`Failed to fetch ${type} data:`, error);
+    } finally {
+        loadingStates[type] = false;
+    }
+};
+
+const onLazyLoadDiffCost = (event: any) => {
+    const { first, rows, sortField, sortOrder } = event;
+
+    const newPage = Math.floor(first / rows) + 1;
+    perPage.value = rows;
+
+    if (sortFieldDiffCost.value !== sortField) {
+        currentDiffCostPage.value = 1;
+    } else {
+        currentDiffCostPage.value = newPage;
+    }
+
+    sortFieldDiffCost.value = sortField || null;
+    sortOrderDiffCost.value = sortOrder || null;
+
+    loadLazyData(differenceCostUrl.value, 'diffCost');
+};
+
+watch(
+    filtersDiffCost,
+    () => {
+        if (!isReady.standardCost) {
+            isReady.standardCost = true;
+            return;
+        }
+
+        if (standardCostTimeout.value) clearTimeout(standardCostTimeout.value);
+        standardCostTimeout.value = setTimeout(() => {
+            loadLazyData(differenceCostUrl.value, 'diffCost');
+        }, 500);
+    },
+    { deep: true },
+);
+
+onMounted(async () => {
+    initFilters();
+    try {
+        await Promise.all([fetchDiffPeriod(), fetchDiffRemark(), loadLazyData(differenceCostUrl.value, 'diffCost')]);
+    } finally {
+        isInitialLoading.value = false;
+    }
+});
+
+const clearFilter = (type: 'diffCost') => {
+    if (type === 'diffCost') {
+        filtersDiffCost.value = {
+            global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+            item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
+            period: { value: null, matchMode: FilterMatchMode.EQUALS },
+            description: { value: null, matchMode: FilterMatchMode.CONTAINS },
+            remark: { value: null, matchMode: FilterMatchMode.EQUALS },
+        };
+        currentDiffCostPage.value = 1;
+    }
+};
 </script>
 
 <template>
@@ -1121,7 +1400,7 @@ function closeDialog() {
                 <Tabs v-model="activeTabValue">
                     <TabList>
                         <Tab value="0">Difference</Tab>
-                        <Tab value="1">Difference x Quantity</Tab>
+                        <!-- <Tab value="1">Difference x Quantity</Tab> -->
                     </TabList>
 
                     <TabPanels>
@@ -1130,53 +1409,89 @@ function closeDialog() {
                                 <div class="mb-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                                     <!-- Title -->
                                     <h2 class="text-3xl font-semibold text-gray-900 dark:text-white">Difference</h2>
-
-                                    <!-- Main Controls Container -->
-                                    <div class="flex flex-col gap-4 lg:flex-row lg:items-center">
-                                        <!-- Export and Update Report Buttons -->
-                                        <div class="flex flex-col gap-2 sm:flex-row sm:gap-4">
-                                            <Button
-                                                icon="pi pi-download"
-                                                label=" Export Report"
-                                                unstyled
-                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-orange-700 sm:w-auto"
-                                                @click="exportCSV('diffCost')"
-                                            />
-                                            <Button
-                                                v-if="auth?.user?.permissions?.includes('Update_Report')"
-                                                icon="pi pi-sync"
-                                                label=" Calcuate Difference?"
-                                                unstyled
-                                                class="w-full cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-cyan-700 sm:w-auto"
-                                                @click="showUpdateDialog('diffCost')"
-                                            />
-                                        </div>
-                                    </div>
                                 </div>
 
                                 <DataTable
-                                    :value="dc"
-                                    tableStyle="min-width: 50rem"
-                                    paginator
-                                    :rows="10"
-                                    :rowsPerPageOptions="[5, 10, 20, 50]"
-                                    resizableColumns
-                                    columnResizeMode="fit"
+                                    :value="paginatedDiffCostData?.data || []"
+                                    :lazy="true"
+                                    :totalRecords="paginatedDiffCostData?.total || 0"
+                                    :rows="perPage"
+                                    @page="onLazyLoadDiffCost"
+                                    @sort="onLazyLoadDiffCost"
+                                    :first="(currentDiffCostPage - 1) * perPage"
+                                    :paginator="true"
+                                    paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport"
+                                    currentPageReportTemplate="Showing {first} to {last} from {totalRecords} data"
+                                    responsiveLayout="scroll"
+                                    :globalFilterFields="['item_code', 'description', 'description', 'remark', 'period']"
                                     showGridlines
-                                    removableSort
-                                    v-model:filters="filtersDifference"
+                                    :removableSort="true"
+                                    v-model:filters="filtersDiffCost"
                                     filterDisplay="row"
-                                    :loading="loading"
-                                    :globalFilterFields="['item_code', 'description', 'period']"
-                                    class="text-md"
-                                    ref="dtDIFF"
+                                    :loading="loadingStates.diffCost || isInitialLoading"
+                                    ref="dtStdCost"
                                 >
+                                    <template #header>
+                                        <div class="flex justify-between">
+                                            <div class="flex justify-start space-x-2">
+                                                <div class="flex flex-col gap-2 sm:flex-row sm:gap-4">
+                                                    <Button
+                                                        icon="pi pi-download"
+                                                        label=" Export Report"
+                                                        unstyled
+                                                        class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-orange-700 sm:w-auto"
+                                                        @click="exportCSV('diffCost')"
+                                                    />
+                                                    <Button
+                                                        v-if="auth?.user?.permissions?.includes('Update_Report')"
+                                                        icon="pi pi-sync"
+                                                        label=" Calcuate Difference?"
+                                                        unstyled
+                                                        class="w-full cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-cyan-700 sm:w-auto"
+                                                        @click="showUpdateDialog('diffCost')"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div class="justify-end">
+                                                <div class="flex justify-between space-x-2">
+                                                    <Button
+                                                        type="button"
+                                                        icon="pi pi-filter-slash"
+                                                        label=" Clear"
+                                                        unstyled
+                                                        class="w-full cursor-pointer rounded-xl bg-slate-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-slate-700 sm:w-auto"
+                                                        @click="clearFilter('diffCost')"
+                                                    />
+
+                                                    <IconField>
+                                                        <InputIcon>
+                                                            <i class="pi pi-search" />
+                                                        </InputIcon>
+                                                        <InputText v-model="filtersDiffCost['global'].value" placeholder="Keyword Search" />
+                                                    </IconField>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <template #empty>
+                                        <div v-if="!loading && !isInitialLoading" class="flex justify-center p-4">No data found.</div>
+                                        <div v-else class="flex justify-center p-4">Loading data, please wait...</div>
+                                    </template>
+
                                     <ColumnGroup type="header">
                                         <Row>
-                                            <Column field="no" header="#" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
-                                            <Column field="item_code" header="Item Code" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
+                                            <Column
+                                                field="item_code"
+                                                header="Item Code"
+                                                :rowspan="2"
+                                                sortable
+                                                class="text-center"
+                                                headerClass="justify-content-center"
+                                                v-bind="tbStyle('main')"
+                                            ></Column>
                                             <Column field="description" header="Description" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
                                             <Column field="period" header="Period" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
+                                            <Column field="quantity" header="Qty" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
                                             <Column header="Standard Cost" :colspan="3" v-bind="tbStyle('rm')"></Column>
                                             <Column header="Actual Cost" :colspan="3" v-bind="tbStyle('pr')"></Column>
                                             <Column header="Difference Cost" :colspan="3" v-bind="tbStyle('fg')"></Column>
@@ -1192,43 +1507,27 @@ function closeDialog() {
 
                                         <Row>
                                             <Column
-                                                field="standard_cost.total_raw_material"
+                                                field="sc_total_raw_material"
                                                 sortable
                                                 header="Total Raw Material"
                                                 v-bind="tbStyle('rm')"
                                             ></Column>
+                                            <Column field="sc_total_process" sortable header="Total Process" v-bind="tbStyle('rm')"></Column>
+                                            <Column field="sc_total" sortable header="Total" v-bind="tbStyle('rm')"></Column>
                                             <Column
-                                                field="standard_cost.total_process"
-                                                sortable
-                                                header="Total Process"
-                                                v-bind="tbStyle('rm')"
-                                            ></Column>
-                                            <Column field="standard_cost.total" sortable header="Total" v-bind="tbStyle('rm')"></Column>
-                                            <Column
-                                                field="actual_cost.total_raw_material"
+                                                field="ac_total_raw_material"
                                                 sortable
                                                 header="Total Raw Material"
                                                 v-bind="tbStyle('pr')"
                                             ></Column>
-                                            <Column field="actual_cost.total_process" sortable header="Total Process" v-bind="tbStyle('pr')"></Column>
-                                            <Column field="actual_cost.total" sortable header="Total" v-bind="tbStyle('pr')"></Column>
-                                            <Column
-                                                field="difference_cost.total_raw_material"
-                                                sortable
-                                                header="Total Raw Material"
-                                                v-bind="tbStyle('fg')"
-                                            ></Column>
-                                            <Column
-                                                field="difference_cost.total_process"
-                                                sortable
-                                                header="Total Process"
-                                                v-bind="tbStyle('fg')"
-                                            ></Column>
-                                            <Column field="difference_cost.total" sortable header="Total" v-bind="tbStyle('fg')"></Column>
+                                            <Column field="ac_total_process" sortable header="Total Process" v-bind="tbStyle('pr')"></Column>
+                                            <Column field="ac_total" sortable header="Total" v-bind="tbStyle('pr')"></Column>
+                                            <Column field="total_raw_material" sortable header="Total Raw Material" v-bind="tbStyle('fg')"></Column>
+                                            <Column field="dc_total_process" sortable header="Total Process" v-bind="tbStyle('fg')"></Column>
+                                            <Column field="dc_total" sortable header="Total" v-bind="tbStyle('fg')"></Column>
                                         </Row>
                                     </ColumnGroup>
 
-                                    <Column field="no" v-bind="tbStyle('main')"></Column>
                                     <Column field="item_code" v-bind="tbStyle('main')" :showFilterMenu="false">
                                         <template #filter="{ filterModel, filterCallback }">
                                             <InputText
@@ -1239,16 +1538,23 @@ function closeDialog() {
                                             />
                                         </template>
                                     </Column>
-                                    <Column field="description" v-bind="tbStyle('main')" :showFilterMenu="false">
+
+                                    <Column field="description" :showFilterMenu="false" sortable v-bind="tbStyle('main')">
+                                        <template #body="{ data }">
+                                            <div class="flex w-full">
+                                                {{ data.description ? data.description : 'N/A' }}
+                                            </div>
+                                        </template>
                                         <template #filter="{ filterModel, filterCallback }">
                                             <InputText
                                                 v-model="filterModel.value"
                                                 @input="filterCallback()"
-                                                placeholder="Search Description"
-                                                class="w-full"
+                                                placeholder="Search description"
+                                                class="w-full md:w-60"
                                             />
                                         </template>
                                     </Column>
+
                                     <Column field="period" header="Period" sortable v-bind="tbStyle('main')" :showFilterMenu="false">
                                         <template #filter="{ filterModel, filterCallback }">
                                             <div class="flex justify-center">
@@ -1265,433 +1571,101 @@ function closeDialog() {
                                             </div>
                                         </template>
                                     </Column>
-                                    <Column field="standard_cost.total_raw_material" sortable v-bind="tbStyle('rm')">
-                                        <template #body="{ data }">
-                                            {{ Number(data.standard_cost.total_raw_material).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-                                    <Column field="standard_cost.total_process" sortable v-bind="tbStyle('rm')">
-                                        <template #body="{ data }">
-                                            {{ Number(data.standard_cost.total_process).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-                                    <Column field="standard_cost.total" sortable v-bind="tbStyle('rm')">
-                                        <template #body="{ data }">
-                                            {{ Number(data.standard_cost.total).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-                                    <Column field="actual_cost.total_raw_material" sortable v-bind="tbStyle('pr')">
-                                        <template #body="{ data }">
-                                            {{ Number(data.actual_cost.total_raw_material).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-                                    <Column field="actual_cost.total_process" sortable v-bind="tbStyle('pr')">
-                                        <template #body="{ data }">
-                                            {{ Number(data.actual_cost.total_process).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-                                    <Column field="actual_cost.total" sortable v-bind="tbStyle('pr')">
-                                        <template #body="{ data }">
-                                            {{ Number(data.actual_cost.total).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
 
-                                    <Column field="difference_cost.total_raw_material" sortable v-bind="tbStyle('fg')">
+                                    <Column field="quantity" header="Qty" sortable v-bind="tbStyle('main')" :showFilterMenu="false"> </Column>
+
+                                    <Column field="sc_total_raw_material" :showFilterMenu="false" sortable v-bind="tbStyle('rm')">
                                         <template #body="{ data }">
-                                            <span
-                                                :class="{
-                                                    'text-red-500': data.difference_cost.total_raw_material < 0,
-                                                    'text-green-500': data.difference_cost.total_raw_material > 0,
-                                                }"
-                                            >
-                                                {{ Number(data.difference_cost.total_raw_material).toLocaleString('id-ID') }}
-                                            </span>
-                                        </template>
-                                        <template #footer>
-                                            <span :class="dcTotalRawMaterial.class">
-                                                <strong>{{ dcTotalRawMaterial.value }}</strong>
-                                            </span>
-                                        </template>
-                                    </Column>
-                                    <Column field="difference_cost.total_process" sortable v-bind="tbStyle('fg')">
-                                        <template #body="{ data }">
-                                            <span
-                                                :class="{
-                                                    'text-red-500': data.difference_cost.total_process < 0,
-                                                    'text-green-500': data.difference_cost.total_raw_material > 0,
-                                                }"
-                                            >
-                                                {{ Number(data.difference_cost.total_process).toLocaleString('id-ID') }}
-                                            </span>
-                                        </template>
-                                        <template #footer>
-                                            <span :class="dcTotalProcess.class">
-                                                <strong>{{ dcTotalProcess.value }}</strong>
-                                            </span>
-                                        </template>
-                                    </Column>
-                                    <Column field="difference_cost.total" sortable v-bind="tbStyle('fg')">
-                                        <template #body="{ data }">
-                                            <span
-                                                :class="{
-                                                    'text-red-500': data.difference_cost.total < 0,
-                                                    'text-green-500': data.difference_cost.total_raw_material > 0,
-                                                }"
-                                            >
-                                                {{ Number(data.difference_cost.total).toLocaleString('id-ID') }}
-                                            </span>
-                                        </template>
-                                        <template #footer>
-                                            <span :class="dcTotalofTotal.class">
-                                                <strong>{{ dcTotalofTotal.value }}</strong>
-                                            </span>
-                                        </template>
-                                    </Column>
-                                    <Column field="difference_cost.remark" sortable v-bind="tbStyle('wip')" :showFilterMenu="false"
-                                        ><template #filter="{ filterModel, filterCallback }">
-                                            <div class="flex justify-center">
-                                                <Select
-                                                    v-model="filterModel.value"
-                                                    :options="listDifferenceRemark"
-                                                    optionLabel="name"
-                                                    optionValue="code"
-                                                    placeholder="Difference Remark"
-                                                    class="w-full"
-                                                    :showClear="true"
-                                                    @change="filterCallback()"
-                                                />
-                                            </div> </template
-                                    ></Column>
-                                    <Column header="Action" v-bind="tbStyle('main')">
-                                        <template #body="{ data }">
-                                            <Button type="button" icon="pi pi-search" rounded @click="showDetailDialog(data, 'diffCost')"></Button>
-                                        </template>
-                                    </Column>
-                                </DataTable>
-                            </section>
-                        </TabPanel>
-
-                        <TabPanel value="1">
-                            <section class="p-2">
-                                <div class="mb-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                                    <!-- Title -->
-                                    <h2 class="text-3xl font-semibold text-gray-900 dark:text-white">Difference x Sales Quantity</h2>
-
-                                    <!-- Main Controls Container -->
-                                    <div class="flex flex-col gap-4 lg:flex-row lg:items-center">
-                                        <!-- Export and Update Report Buttons -->
-                                        <div class="flex flex-col gap-2 sm:flex-row sm:gap-4">
-                                            <Button
-                                                icon="pi pi-download"
-                                                label=" Export Report"
-                                                unstyled
-                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-orange-700 sm:w-auto"
-                                                @click="exportCSV('dcXsq')"
-                                            />
-                                            <Button
-                                                v-if="auth?.user?.permissions?.includes('Update_Report')"
-                                                icon="pi pi-sync"
-                                                label=" Calcuate Difference?"
-                                                unstyled
-                                                class="w-full cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-cyan-700 sm:w-auto"
-                                                @click="showUpdateDialog('dcXsq')"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <DataTable
-                                    :value="dcxsq"
-                                    tableStyle="min-width: 50rem"
-                                    paginator
-                                    :rows="10"
-                                    :rowsPerPageOptions="[5, 10, 20, 50]"
-                                    resizableColumns
-                                    columnResizeMode="expand"
-                                    showGridlines
-                                    removableSort
-                                    v-model:filters="filtersDCxSQ"
-                                    filterDisplay="row"
-                                    :loading="loading"
-                                    :globalFilterFields="['item_code', 'description', 'period']"
-                                    class="text-md"
-                                    ref="dtDCxSQ"
-                                >
-                                    <ColumnGroup type="header">
-                                        <Row>
-                                            <Column field="no" header="#" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
-                                            <Column field="item_code" header="Item Code" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
-                                            <Column field="description" header="Description" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
-                                            <Column field="period" header="Period" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
-                                            <Column field="dcxsq.quantity" header="Quantity" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
-
-                                            <Column header="Standard Cost" :colspan="3" v-bind="tbStyle('rm')"></Column>
-                                            <Column header="Actual Cost" :colspan="3" v-bind="tbStyle('pr')"></Column>
-                                            <Column header="Difference Cost" :colspan="3" v-bind="tbStyle('wip')"></Column>
-                                            <Column header="Difference Cost x Sales Quantity" :colspan="3" v-bind="tbStyle('fg')"></Column>
-                                            <Column header="Remark" :rowspan="2" v-bind="tbStyle('main')"></Column>
-                                            <Column header="Action" :rowspan="2" v-bind="tbStyle('main')"></Column>
-                                        </Row>
-                                        <Row>
-                                            <Column
-                                                field="standard_cost.total_raw_material"
-                                                sortable
-                                                header="Total Raw Material"
-                                                v-bind="tbStyle('rm')"
-                                            ></Column>
-                                            <Column
-                                                field="standard_cost.total_process"
-                                                sortable
-                                                header="Total Process"
-                                                v-bind="tbStyle('rm')"
-                                            ></Column>
-                                            <Column field="standard_cost.total" sortable header="Total" v-bind="tbStyle('rm')"></Column>
-                                            <Column
-                                                field="actual_cost.total_raw_material"
-                                                sortable
-                                                header="Total Raw Material"
-                                                v-bind="tbStyle('pr')"
-                                            ></Column>
-                                            <Column field="actual_cost.total_process" sortable header="Total Process" v-bind="tbStyle('pr')"></Column>
-                                            <Column field="actual_cost.total" sortable header="Total" v-bind="tbStyle('pr')"></Column>
-
-                                            <Column
-                                                field="difference_cost.total_raw_material"
-                                                sortable
-                                                header="Total Raw Material"
-                                                v-bind="tbStyle('wip')"
-                                            ></Column>
-                                            <Column
-                                                field="difference_cost.total_process"
-                                                sortable
-                                                header="Total Process"
-                                                v-bind="tbStyle('wip')"
-                                            ></Column>
-                                            <Column field="difference_cost.total" sortable header="Total" v-bind="tbStyle('wip')"></Column>
-
-                                            <Column
-                                                field="dcxsq.total_raw_material"
-                                                sortable
-                                                header="Total Raw Material"
-                                                v-bind="tbStyle('fg')"
-                                            ></Column>
-                                            <Column field="dcxsq.total_process" sortable header="Total Process" v-bind="tbStyle('fg')"></Column>
-                                            <Column field="dcxsq.total" sortable header="Total" v-bind="tbStyle('fg')"></Column>
-                                        </Row>
-                                    </ColumnGroup>
-
-                                    <Column field="no" header="#" v-bind="tbStyle('main')"></Column>
-                                    <Column field="item_code" v-bind="tbStyle('main')" :showFilterMenu="false">
-                                        <template #filter="{ filterModel, filterCallback }">
-                                            <InputText
-                                                v-model="filterModel.value"
-                                                @input="filterCallback()"
-                                                placeholder="Search item code"
-                                                class="w-full"
-                                            />
-                                        </template>
-                                    </Column>
-                                    <Column field="description" v-bind="tbStyle('main')" :showFilterMenu="false">
-                                        <template #filter="{ filterModel, filterCallback }">
-                                            <InputText
-                                                v-model="filterModel.value"
-                                                @input="filterCallback()"
-                                                placeholder="Search Description"
-                                                class="w-full"
-                                            />
-                                        </template>
-                                    </Column>
-                                    <Column field="period" header="Period" sortable v-bind="tbStyle('main')" :showFilterMenu="false">
-                                        <template #filter="{ filterModel, filterCallback }">
-                                            <div class="flex justify-center">
-                                                <Select
-                                                    v-model="filterModel.value"
-                                                    :options="listDCxSQ"
-                                                    optionLabel="name"
-                                                    optionValue="name"
-                                                    placeholder="DCxSQ Period"
-                                                    class="w-full"
-                                                    :showClear="true"
-                                                    @change="filterCallback()"
-                                                />
+                                            <div class="flex w-full md:w-20">
+                                                {{ Number(data.sc_total_raw_material ? data.sc_total_raw_material : '0').toLocaleString('id-ID') }}
                                             </div>
                                         </template>
                                     </Column>
-                                    <Column field="dcxsq.quantity" header="Quantity" v-bind="tbStyle('main')" :showFilterMenu="false">
-                                        <template #filter="{ filterModel, filterCallback }">
+
+                                    <Column field="sc_total_process" :showFilterMenu="false" sortable v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            <div class="flex w-full">
+                                                {{ Number(data.sc_total_process ? data.sc_total_process : '0').toLocaleString('id-ID') }}
+                                            </div>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="sc_total" :showFilterMenu="false" sortable v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            <div class="flex w-full">
+                                                {{ Number(data.sc ? data.sc_total : '0').toLocaleString('id-ID') }}
+                                            </div>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="ac_total_raw_material" :showFilterMenu="false" sortable v-bind="tbStyle('pr')">
+                                        <template #body="{ data }">
+                                            <div class="flex w-full">
+                                                {{ Number(data.ac_total_raw_material ? data.ac_total_raw_material : '0').toLocaleString('id-ID') }}
+                                            </div>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="ac_total_process" :showFilterMenu="false" sortable v-bind="tbStyle('pr')">
+                                        <template #body="{ data }">
+                                            <div class="flex w-full">
+                                                {{ Number(data.ac_total_process ? data.ac_total_process : '0').toLocaleString('id-ID') }}
+                                            </div>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="ac_total" :showFilterMenu="false" sortable v-bind="tbStyle('pr')">
+                                        <template #body="{ data }">
+                                            <div class="flex w-full">
+                                                {{ Number(data.ac_total ? data.ac_total : '0').toLocaleString('id-ID') }}
+                                            </div>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="total_raw_material" :showFilterMenu="false" sortable v-bind="tbStyle('pr')">
+                                        <template #body="{ data }">
+                                            <div class="flex w-full">
+                                                {{ Number(data.total_raw_material ? data.total_raw_material : '0').toLocaleString('id-ID') }}
+                                            </div>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="total_process" :showFilterMenu="false" sortable v-bind="tbStyle('pr')">
+                                        <template #body="{ data }">
+                                            <div class="flex w-full">
+                                                {{ Number(data.total_process ? data.total_process : '0').toLocaleString('id-ID') }}
+                                            </div>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="total" :showFilterMenu="false" sortable v-bind="tbStyle('pr')">
+                                        <template #body="{ data }">
+                                            <div class="flex w-full">
+                                                {{ Number(data.total ? data.total : '0').toLocaleString('id-ID') }}
+                                            </div>
+                                        </template>
+                                    </Column>
+                                    <Column field="remark" header="Remark" sortable v-bind="tbStyle('main')" :showFilterMenu="false"
+                                        ><template #filter="{ filterModel, filterCallback }">
                                             <div class="flex justify-center">
                                                 <MultiSelect
                                                     v-model="filterModel.value"
-                                                    @change="filterCallback()"
-                                                    :options="listQuantity"
-                                                    optionLabel="label"
-                                                    optionValue="value"
-                                                    placeholder="Qty"
-                                                    :maxSelectedLabels="3"
-                                                >
-                                                </MultiSelect>
-                                            </div>
-                                        </template>
-                                    </Column>
-                                    <Column field="standard_cost.total_raw_material" sortable v-bind="tbStyle('rm')">
-                                        <template #body="{ data }">
-                                            {{ Number(data.standard_cost.total_raw_material).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-                                    <Column field="standard_cost.total_process" sortable v-bind="tbStyle('rm')">
-                                        <template #body="{ data }">
-                                            {{ Number(data.standard_cost.total_process).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-                                    <Column field="standard_cost.total" sortable v-bind="tbStyle('rm')">
-                                        <template #body="{ data }">
-                                            {{ Number(data.standard_cost.total).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-
-                                    <Column field="actual_cost.total_raw_material" sortable v-bind="tbStyle('pr')">
-                                        <template #body="{ data }">
-                                            {{ Number(data.actual_cost.total_raw_material).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-                                    <Column field="actual_cost.total_process" sortable v-bind="tbStyle('pr')">
-                                        <template #body="{ data }">
-                                            {{ Number(data.actual_cost.total_process).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-                                    <Column field="actual_cost.total" sortable v-bind="tbStyle('pr')">
-                                        <template #body="{ data }">
-                                            {{ Number(data.actual_cost.total).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-
-                                    <Column field="difference_cost.total_raw_material" sortable v-bind="tbStyle('wip')">
-                                        <template #body="{ data }">
-                                            <span
-                                                :class="{
-                                                    'text-red-500': data.difference_cost.total_raw_material < 0,
-                                                    'text-green-500': data.difference_cost.total_raw_material > 0,
-                                                }"
-                                            >
-                                                {{ Number(data.difference_cost.total_raw_material).toLocaleString('id-ID') }}
-                                            </span>
-                                        </template>
-                                        <template #footer>
-                                            <span :class="dcTotalRawMaterial.class">
-                                                <strong>{{ dcTotalRawMaterial.value }}</strong>
-                                            </span>
-                                        </template>
-                                    </Column>
-
-                                    <Column field="difference_cost.total_process" sortable v-bind="tbStyle('wip')">
-                                        <template #body="{ data }">
-                                            <span
-                                                :class="{
-                                                    'text-red-500': data.difference_cost.total_process < 0,
-                                                    'text-green-500': data.difference_cost.total_raw_material > 0,
-                                                }"
-                                            >
-                                                {{ Number(data.difference_cost.total_process).toLocaleString('id-ID') }}
-                                            </span>
-                                        </template>
-                                        <template #footer>
-                                            <span :class="dcTotalProcess.class">
-                                                <strong>{{ dcTotalProcess.value }}</strong>
-                                            </span>
-                                        </template>
-                                    </Column>
-
-                                    <Column field="difference_cost.total" sortable v-bind="tbStyle('wip')">
-                                        <template #body="{ data }">
-                                            <span
-                                                :class="{
-                                                    'text-red-500': data.difference_cost.total < 0,
-                                                    'text-green-500': data.difference_cost.total_raw_material > 0,
-                                                }"
-                                            >
-                                                {{ Number(data.difference_cost.total).toLocaleString('id-ID') }}
-                                            </span>
-                                        </template>
-                                        <template #footer>
-                                            <span :class="dcTotalofTotal.class">
-                                                <strong>{{ dcTotalofTotal.value }}</strong>
-                                            </span>
-                                        </template>
-                                    </Column>
-
-                                    <Column field="dcxsq.total_raw_material" sortable v-bind="tbStyle('fg')">
-                                        <template #body="{ data }">
-                                            <span
-                                                :class="{
-                                                    'text-red-500': data.dcxsq.total_raw_material < 0,
-                                                    'text-green-500': data.dcxsq.total_raw_material > 0,
-                                                }"
-                                            >
-                                                {{ Number(data.dcxsq.total_raw_material).toLocaleString('id-ID') }}
-                                            </span>
-                                        </template>
-                                        <template #footer>
-                                            <span :class="dcxsqTotalRawMaterial.class">
-                                                <strong>{{ dcxsqTotalRawMaterial.value }}</strong>
-                                            </span>
-                                        </template>
-                                    </Column>
-
-                                    <Column field="dcxsq.total_process" sortable v-bind="tbStyle('fg')">
-                                        <template #body="{ data }">
-                                            <span
-                                                :class="{
-                                                    'text-red-500': data.dcxsq.total_process < 0,
-                                                    'text-green-500': data.dcxsq.total_raw_material > 0,
-                                                }"
-                                            >
-                                                {{ Number(data.dcxsq.total_process).toLocaleString('id-ID') }}
-                                            </span>
-                                        </template>
-                                        <template #footer>
-                                            <span :class="dcxsqTotalProcess.class">
-                                                <strong>{{ dcxsqTotalProcess.value }}</strong>
-                                            </span>
-                                        </template>
-                                    </Column>
-
-                                    <Column field="dcxsq.total" sortable v-bind="tbStyle('fg')">
-                                        <template #body="{ data }">
-                                            <span
-                                                :class="{
-                                                    'text-red-500': data.dcxsq.total < 0,
-                                                    'text-green-500': data.dcxsq.total_raw_material > 0,
-                                                }"
-                                            >
-                                                {{ Number(data.dcxsq.total).toLocaleString('id-ID') }}
-                                            </span>
-                                        </template>
-                                        <template #footer>
-                                            <span :class="dcxsqTotalofTotal.class">
-                                                <strong>{{ dcxsqTotalofTotal.value }}</strong>
-                                            </span>
-                                        </template>
-                                    </Column>
-
-                                    <Column field="difference_cost.remark" header="Remark" sortable v-bind="tbStyle('main')" :showFilterMenu="false"
-                                        ><template #filter="{ filterModel, filterCallback }">
-                                            <div class="flex justify-center">
-                                                <Select
-                                                    v-model="filterModel.value"
+                                                    display="chip"
                                                     :options="listDifferenceRemark"
                                                     optionLabel="name"
-                                                    optionValue="code"
-                                                    placeholder="Difference Remark"
-                                                    class="w-full"
+                                                    optionValue="name"
+                                                    filter
+                                                    placeholder="Remark Type"
+                                                    class="w-full md:w-40"
                                                     :showClear="true"
                                                     @change="filterCallback()"
                                                 />
                                             </div> </template
                                     ></Column>
 
-                                    <Column header="Action" sortable v-bind="tbStyle('main')" :showFilterMenu="false">
+                                    <Column header="Action" v-bind="tbStyle('main')">
                                         <template #body="{ data }">
-                                            <Button type="button" icon="pi pi-search" rounded @click="showDetailDialog(data, 'dcXsq')"></Button>
+                                            <Button type="button" icon="pi pi-search" rounded @click="showDetailDialog(data, 'diffCost')"></Button>
                                         </template>
                                     </Column>
                                 </DataTable>

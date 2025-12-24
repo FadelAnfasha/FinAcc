@@ -6,12 +6,17 @@ import axios from 'axios';
 import dayjs from 'dayjs';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
+import ColumnGroup from 'primevue/columngroup';
 import DataTable from 'primevue/datatable';
 import DatePicker from 'primevue/datepicker';
 import Dialog from 'primevue/dialog';
 import FileUpload, { FileUploadUploaderEvent } from 'primevue/fileupload';
+import IconField from 'primevue/iconfield';
+import InputIcon from 'primevue/inputicon';
 import InputText from 'primevue/inputtext';
 import ProgressBar from 'primevue/progressbar';
+import Row from 'primevue/row';
+import Select from 'primevue/select';
 import Tab from 'primevue/tab';
 import TabList from 'primevue/tablist';
 import TabPanel from 'primevue/tabpanel';
@@ -19,140 +24,162 @@ import TabPanels from 'primevue/tabpanels';
 import Tabs from 'primevue/tabs';
 import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
-import { computed, nextTick, ref, Ref, watch } from 'vue';
+import { computed, nextTick, onMounted, reactive, ref, Ref, watch } from 'vue';
 
-const dtACMAT = ref();
-const dtACSQTY = ref();
+const materialUrl = ref('/finacc/api/actual/get-material');
+const bomUrl = ref('/finacc/api/actual/get-bom');
+const salesUrl = ref('/finacc/api/actual/get-salesqty');
+
+const dtAcmat = ref();
+const dtBom = ref();
+const dtAcsales = ref();
+const paginatedAcmatData = ref<any>(null);
+const paginatedBomData = ref<any>(null);
+const paginatedAcsalesData = ref<any>(null);
+const searchTimeout = ref<number | null>(null);
+const listMaterialGroup = ref<List[]>([]);
+const currentAcmatPage = ref(1);
+const currentBomPage = ref(1);
+const currentAcsalesPage = ref(1);
+const listMaterialPeriod = ref<List[]>([]);
+
+const perPage = ref(10);
+const activeTab = ref<string | null>;
+
+const sortFieldAcmat = ref(null);
+const sortOrderAcmat = ref(null);
+const sortFieldBom = ref(null);
+const sortOrderBom = ref(null);
+const sortFieldAcsales = ref(null);
+const sortOrderAcsales = ref(null);
+
 const toast = useToast();
-const year = ref();
-const maxDate = ref(new Date());
-
 const page = usePage();
-const headerStyle = { backgroundColor: '#758596', color: 'white' };
-const bodyStyle = { backgroundColor: '#c8cccc', color: 'black' };
+const year = ref();
+
 const showDialog = ref(false);
 const dialogWidth = ref('40rem');
-const editType = ref<'acmat' | null>(null);
-const destroyType = ref<'acmat' | null>(null);
+const editType = ref<'acmat' | 'consumable' | null>(null);
+const destroyType = ref<'acmat' | 'consumable' | null>(null);
 const headerType = ref<any>({});
 const editedData = ref<any>({});
 const destroyedData = ref<any>({});
 const showImportDialog: Ref<boolean> = ref(false);
 const importName = ref<any>({});
 const selectedFile = ref<File | null>(null);
-const importType = ref<'acmat' | 'acsqty' | null>(null);
+const importType = ref<'acmat' | 'bom' | 'acsales' | null>(null);
 const notImported = ref(true);
-const fileUploaderACMAT = ref<any>(null);
-const fileUploaderACSQTY = ref<any>(null);
-const uploadProgress = ref(0);
-const activeTabValue = ref('0');
-const selectionModeType = ref('single');
+const fileUploaderBom = ref<any>(null);
+const fileUploaderAcmat = ref<any>(null);
+const fileUploaderAcsales = ref<any>(null);
 
+const uploadProgress = ref(0);
 const isUploading = ref(false);
 const loading = ref(false);
-
-const filterACMAT = ref({
-    item_code: { value: null, matchMode: 'contains' },
-    'bom.description': { value: null, matchMode: 'contains' },
-});
-
-const filterACSQTY = ref({
-    item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    'bom.description': { value: null, matchMode: FilterMatchMode.CONTAINS },
-});
-
-const actualMaterial = computed(() =>
-    ((page.props.actualMaterial as any[]) ?? []).map((actualmat, index) => ({
-        ...actualmat,
-        no: index + 1,
-        created_at_formatted: formatDate(actualmat.created_at),
-        updated_at_formatted: formatDate(actualmat.updated_at),
-    })),
-);
-
-const actualSalesQty = computed(() =>
-    ((page.props.actualSalesQty as any[]) ?? []).map((acsqty, index) => ({
-        ...acsqty,
-        no: index + 1,
-        created_at_formatted: formatDate(acsqty.created_at),
-        updated_at_formatted: formatDate(acsqty.updated_at),
-    })),
-);
-
-const type = computed(() => page.props.type as string | undefined);
-const getDefaultActiveTab = (): string | null => {
-    // Ambil nilai dari computed property 'type'
-    const currentType = type.value;
-
-    switch (currentType) {
-        case 'actualMaterial':
-            return '2';
-
-        default:
-            return '0';
-    }
-};
-
-const activeTab = ref<string | null>(getDefaultActiveTab());
 const userName = computed(() => page.props.auth?.user?.name ?? '');
-
-interface ComponentItem {
-    item_code: string;
-    description: string;
-    // Tambahkan field lain jika diperlukan
-}
-
-const lastUpdate = computed(() => {
-    const acmat_update = ((page.props.actualMaterial as any[]) ?? []).map((acmat) => new Date(acmat.updated_at));
-    const Max_acmatUpdate = acmat_update.length ? new Date(Math.max(...acmat_update.map((d) => d.getTime()))) : null;
-
-    const actualSalesQty_update = ((page.props.actualSalesQty as any[]) ?? []).map((actualSalesQty) => new Date(actualSalesQty.updated_at));
-    const Max_actualSalesQtyUpdate = actualSalesQty_update.length ? new Date(Math.max(...actualSalesQty_update.map((d) => d.getTime()))) : null;
-
-    return [Max_acmatUpdate, Max_actualSalesQtyUpdate];
-});
-
 const dataSource = [
-    'Share Others/Finacc/Bill of Material/Actual Material Price/actualMat_master.csv',
-    'Share Others/Finacc/Bill of Material/Bill of Material (BOM)/actualSalesQty_master.csv',
+    'Share Others/Finacc/Bill of Material/Actual Data/Actual Material Price/actualMat_master.csv',
+    'Share Others/Finacc/Bill of Material/Actual Data/Actual Sales Quantity/actualSalesQty_master.csv',
 ];
 
+const componentDialog = ref(false);
+const componentData = ref([]);
+const selectedFinishGood = ref(null);
+
+const isReady = reactive({
+    acmat: false,
+    bom: false,
+    acsales: false,
+});
+
+const acmatTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
+const bomTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
+const acsalesTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
+
+const isInitialLoading = ref(true);
+
+const maxDate = ref(new Date());
+const selectionModeType = ref('single');
 const currentSelectionMode = computed(() => {
     return selectionModeType.value === 'range' ? 'range' : 'single';
+});
+
+const lastMaster = computed(() => {
+    return page.props.lastUpdate as (string | null)[];
 });
 
 function formatlastUpdate(date: Date | string) {
     return dayjs(date).format('DD MMM YYYY HH:mm:ss');
 }
 
-const componentItems = ref((page.props.component as ComponentItem[]) ?? []);
-const showComponent = ref(componentItems.value.length > 0);
-
-interface FinishGood {
-    item_code?: string;
-    [key: string]: any;
+interface List {
+    name: string;
+    code: string;
 }
 
-const finishGood = ref<FinishGood>(page.props.finish_good ?? {});
+interface ImportResult {
+    addedItems: string[];
+    invalidItems: { item_code: string; price: string; description: string; reason: string }[];
+}
 
-watch(
-    () => page.props.component,
-    (newVal) => {
-        componentItems.value = (newVal as ComponentItem[]) ?? [];
-        showComponent.value = componentItems.value.length > 0;
+function tbStyle(section: 'main' | 'rm' | 'pr' | 'wip' | 'fg') {
+    const styles = {
+        main: { header: '#758596', body: '#c8cccc' },
+        rm: { header: '#2c7a7b', body: '#e6fffa' },
+        pr: { header: '#6b46c1', body: '#faf5ff' },
+        wip: { header: '#d69e2e', body: '#fffaf0' },
+        fg: { header: '#2b6cb0', body: '#ebf8ff' },
+    };
+    const color = styles[section] || styles.main;
+    return {
+        headerStyle: { backgroundColor: color.header, color: 'white' },
+        bodyStyle: { backgroundColor: color.body, color: 'black' },
+    };
+}
 
-        finishGood.value = page.props.finish_good ?? {};
-    },
-    { immediate: true },
-);
+const viewComponents = async (data: any) => {
+    // data adalah object dari baris yang diklik (slotProps.data)
+    const itemId = data.id;
+    const componentUrl = '/finacc/api/actual/get-component';
+
+    if (!itemId) {
+        console.error('ID item tidak ditemukan.');
+        return;
+    }
+
+    selectedFinishGood.value = data; // Simpan data FG yang dipilih
+    loading.value = true; // Gunakan loading indicator
+
+    try {
+        // Tambahkan ID sebagai query parameter
+        const url = `${componentUrl}?id=${itemId}`;
+        // console.log('Fetching components from:', url);
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const components = await response.json();
+
+        componentData.value = components; // Simpan data komponen
+        componentDialog.value = true; // Tampilkan dialog
+    } catch (error) {
+        console.error('Failed to fetch components:', error);
+        // Tampilkan pesan error ke user jika perlu
+    } finally {
+        loading.value = false;
+    }
+};
 
 function closeComponentDialog() {
-    showComponent.value = false;
-    componentItems.value = [];
-    finishGood.value = {}; // ✅ kosongkan dengan objek kosong
+    componentDialog.value = false;
+    componentData.value = [];
+    selectedFinishGood.value = null; // ✅ kosongkan dengan objek kosong
 }
 
-function handleCSVImport(event: FileUploadUploaderEvent, type: 'acmat' | 'acsqty') {
+function handleCSVImport(event: FileUploadUploaderEvent, type: 'acmat' | 'bom' | 'acsales') {
     let file: File | undefined;
 
     if (Array.isArray(event.files)) {
@@ -165,7 +192,8 @@ function handleCSVImport(event: FileUploadUploaderEvent, type: 'acmat' | 'acsqty
 
     const expectedNames = {
         acmat: 'actualMat_master.csv',
-        acsqty: 'actualSalesQty_master.csv',
+        bom: 'bom_master.csv',
+        acsales: 'actualSalesQty_master.csv',
     };
 
     const expectedFileName = expectedNames[type];
@@ -181,8 +209,9 @@ function handleCSVImport(event: FileUploadUploaderEvent, type: 'acmat' | 'acsqty
         selectedFile.value = null;
 
         nextTick(() => {
-            if (type === 'acmat') fileUploaderACMAT.value?.clear();
-            if (type === 'acsqty') fileUploaderACSQTY.value?.clear();
+            if (type === 'acmat') fileUploaderAcmat.value?.clear();
+            if (type === 'bom') fileUploaderBom.value?.clear();
+            if (type === 'acsales') fileUploaderAcsales.value?.clear();
         });
         return;
     }
@@ -196,21 +225,22 @@ function handleCSVImport(event: FileUploadUploaderEvent, type: 'acmat' | 'acsqty
     });
 }
 
-function cancelCSVimport(type: 'acmat' | 'acsqty') {
+function cancelCSVimport(type: 'acmat' | 'bom' | 'acsales') {
     showImportDialog.value = false;
     selectedFile.value = null;
-    year.value = null;
 
     nextTick(() => {
-        if (type === 'acmat') fileUploaderACMAT.value?.clear();
-        if (type === 'acsqty') fileUploaderACSQTY.value?.clear();
+        if (type === 'acmat') fileUploaderAcmat.value?.clear();
+        if (type === 'bom') fileUploaderBom.value?.clear();
+        if (type === 'acsales') fileUploaderAcsales.value?.clear();
     });
 }
 
-function confirmUpload(type: 'acmat' | 'acsqty') {
+function confirmUpload(type: 'acmat' | 'bom' | 'acsales') {
     if (!selectedFile.value || !importType.value) return;
     const importYear = year.value ? new Date(year.value).getFullYear() : null;
-    if (!importYear) {
+
+    if (importType.value === 'acmat' && !importYear) {
         toast.add({
             severity: 'error',
             summary: 'Validation Error',
@@ -220,13 +250,16 @@ function confirmUpload(type: 'acmat' | 'acsqty') {
         });
         return;
     }
+
     const formData = new FormData();
     formData.append('file', selectedFile.value);
-    formData.append('period', importYear.toString());
-
+    if (importYear) {
+        formData.append('period', importYear.toString());
+    }
     const routes = {
-        acmat: 'acmat.import',
-        acsqty: 'acsqty.import',
+        acmat: 'master.actual.import.material',
+        acsales: 'master.actual.import.sales-quantity',
+        bom: 'master.actual.import.bom',
     };
 
     isUploading.value = true;
@@ -239,6 +272,7 @@ function confirmUpload(type: 'acmat' | 'acsqty') {
 
         onSuccess: () => {
             isUploading.value = false;
+            selectedFile.value = null;
             toast.add({
                 severity: 'success',
                 summary: 'Import Success',
@@ -246,11 +280,19 @@ function confirmUpload(type: 'acmat' | 'acsqty') {
                 life: 3000,
                 group: 'br',
             });
-            selectedFile.value = null;
-
+            if (type === 'acmat') {
+                loadLazyData(materialUrl.value, 'acmat');
+                filtersAcmat.value.period.value = importYear.toString();
+                fetchMaterialPeriod();
+            } else if (type === 'bom') {
+                loadLazyData(bomUrl.value, 'bom');
+            } else if (type === 'acsales') {
+                loadLazyData(salesUrl.value, 'acsales');
+            }
             nextTick(() => {
-                if (type === 'acmat') fileUploaderACMAT.value?.clear();
-                if (type === 'acsqty') fileUploaderACSQTY.value?.clear();
+                if (type === 'acmat') fileUploaderAcmat.value?.clear();
+                if (type === 'bom') fileUploaderBom.value?.clear();
+                if (type === 'acsales') fileUploaderAcsales.value?.clear();
             });
         },
 
@@ -268,8 +310,9 @@ function confirmUpload(type: 'acmat' | 'acsqty') {
 
             selectedFile.value = null;
             nextTick(() => {
-                if (type === 'acmat') fileUploaderACMAT.value?.clear();
-                if (type === 'acsqty') fileUploaderACSQTY.value?.clear();
+                if (type === 'acmat') fileUploaderAcmat.value?.clear();
+                if (type === 'bom') fileUploaderBom.value?.clear();
+                if (type === 'acsales') fileUploaderAcsales.value?.clear();
             });
         },
     });
@@ -279,20 +322,15 @@ function resetImportState() {
     uploadProgress.value = 0;
     selectedFile.value = null;
     notImported.value = true;
-    year.value = null;
 }
 
-function startPollingProgress(type: 'acmat' | 'acsqty') {
+function startPollingProgress(type: 'acmat' | 'bom' | 'acsales') {
     uploadProgress.value = 0;
 
     const endpointMap = {
-        stamat: '/finacc/standardMat/import-progress',
-        acmat: '/finacc/actualMat/import-progress',
-        pack: '/finacc/pack/import-progress',
-        proc: '/finacc/proc/import-progress',
-        valve: '/finacc/valve/import-progress',
-        bom: '/finacc/bom/import-progress',
-        acsqty: '/finacc/acsqty/import-progress',
+        acmat: '/finacc/actual/import-material-progress',
+        acsales: '/finacc/actual/import-sales-quantity-progress',
+        bom: '/finacc/actual/import-bom-progress',
     };
 
     const interval = setInterval(async () => {
@@ -311,15 +349,18 @@ function startPollingProgress(type: 'acmat' | 'acsqty') {
     }, 1000);
 }
 
-function exportCSV(type: 'acmat' | 'acsqty') {
+function exportCSV(type: 'acmat' | 'bom' | 'acsales') {
     let $type = null;
     let $filename = null;
     if (type === 'acmat') {
-        $type = dtACMAT.value;
+        $type = dtAcmat.value;
         $filename = 'actual-mat';
-    } else if (type === 'acsqty') {
-        $type = dtACSQTY.value;
-        $filename = 'Actual Sales Quantity';
+    } else if (type === 'bom') {
+        $type = dtBom.value;
+        $filename = 'bom';
+    } else if (type === 'acsales') {
+        $type = dtAcsales.value;
+        $filename = 'acsales';
     }
     if (!$type) return;
 
@@ -331,55 +372,16 @@ function exportCSV(type: 'acmat' | 'acsqty') {
     });
 }
 
-function formatDate(dateStr: string): string {
-    const date = new Date(dateStr);
-    const yy = String(date.getFullYear());
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const dd = String(date.getDate()).padStart(2, '0');
-    return `${yy}-${mm}-${dd}`;
-}
-
-function handleSave() {
-    if (editType.value === 'acmat') {
-        const item_code = editedData.value.item_code;
-        if (!item_code) return;
-
-        router.put(route('acmat.update', item_code), editedData.value, {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => {
-                toast.add({
-                    severity: 'success',
-                    summary: 'Success',
-                    group: 'br',
-                    detail: `Data ${editedData.value.item_code} updated successfully`,
-                    life: 3000,
-                });
-                showDialog.value = false;
-            },
-            onError: () => {
-                toast.add({
-                    severity: 'warn',
-                    summary: 'Error',
-                    group: 'br',
-                    detail: `Failed to delete data with ${editedData.value.item_code}`,
-                    life: 3000,
-                });
-            },
-        });
-    }
-}
-
-interface ImportResult {
-    addedItems: string[];
-    invalidItems: { item_code: string; price: string; description: string; reason: string }[];
-}
+const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+    }).format(value);
+};
 
 const importResult = computed(() => {
-    // Memberikan petunjuk tipe data kepada page.props.importResult
     const result = page.props.importResult as ImportResult;
-
-    // Menambahkan pemeriksaan tipe data untuk memastikan `result` adalah objek
     if (!result || typeof result !== 'object') {
         return {
             addedItems: [],
@@ -387,16 +389,11 @@ const importResult = computed(() => {
         };
     }
 
-    // Perbaikan untuk addedItems:
-    // Mengambil item (yang berupa string bp_code) dari array
     const addedItems = (result.addedItems || []).map((item, index) => ({
         no: index + 1,
-        item_code: item, // Menyimpan nilai string bp_code ke properti bp_code
+        item_code: item,
     }));
 
-    // Perbaikan untuk invalidItems:
-    // Setiap item adalah objek { 'bp_code': '...', 'reason': '...' }
-    // Kita perlu mengambil properti bp_code dan reason dari setiap objek
     const invalidItems = (result.invalidItems || []).map((item, index) => ({
         no: index + 1,
         item_code: item.item_code,
@@ -414,19 +411,307 @@ const importResult = computed(() => {
 const props = defineProps({
     auth: Object,
 });
+
+const fetchDatas = async (url: string) => {
+    try {
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (e: any) {
+        console.error(`Fetch Period Error from ${url}:`, e);
+        throw new Error(`Fail to retrieve data from ${url}: ${e.message}`);
+    }
+};
+
+const fetchMaterialPeriod = async () => {
+    try {
+        const materialPeriod = await fetchDatas('/finacc/api/actual/list-material-period');
+        if (Array.isArray(materialPeriod)) {
+            listMaterialPeriod.value = materialPeriod.map((p: string) => ({ name: p, code: p }));
+        } else {
+            console.error('API /list-period did not return an array:', materialPeriod);
+            listMaterialPeriod.value = [];
+        }
+    } catch (error) {
+        console.error('Failed to fetch material group list:', error);
+        listMaterialPeriod.value = [];
+    }
+};
+
+const filtersAcmat = ref({
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    item_code: { value: null, matchMode: FilterMatchMode.STARTS_WITH },
+    'bom.description': { value: null, matchMode: FilterMatchMode.STARTS_WITH },
+    period: { value: null, matchMode: FilterMatchMode.EQUALS },
+});
+
+const filtersAcsales = ref({
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    item_code: { value: null, matchMode: FilterMatchMode.STARTS_WITH },
+    'bom.description': { value: null, matchMode: FilterMatchMode.STARTS_WITH },
+});
+
+const filtersBom = ref({
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    item_code: { value: null, matchMode: FilterMatchMode.STARTS_WITH },
+    description: { value: null, matchMode: FilterMatchMode.STARTS_WITH },
+});
+
+const initFilters = () => {
+    filtersAcmat.value = {
+        global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+        item_code: { value: null, matchMode: FilterMatchMode.STARTS_WITH },
+        'bom.description': { value: null, matchMode: FilterMatchMode.CONTAINS },
+        period: { value: null, matchMode: FilterMatchMode.EQUALS },
+    };
+
+    filtersAcsales.value = {
+        global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+        item_code: { value: null, matchMode: FilterMatchMode.STARTS_WITH },
+        'bom.description': { value: null, matchMode: FilterMatchMode.CONTAINS },
+    };
+
+    filtersBom.value = {
+        global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+        item_code: { value: null, matchMode: FilterMatchMode.STARTS_WITH },
+        description: { value: null, matchMode: FilterMatchMode.STARTS_WITH },
+    };
+};
+
+const controllers = {
+    acmat: null as AbortController | null,
+    bom: null as AbortController | null,
+    acsales: null as AbortController | null,
+};
+
+const loadingStates = reactive({
+    acmat: false,
+    bom: false,
+    acsales: false,
+});
+
+const loadLazyData = async (url: string, type: 'acmat' | 'bom' | 'acsales') => {
+    if (controllers[type]) controllers[type].abort();
+    controllers[type] = new AbortController();
+    loadingStates[type] = true;
+
+    const configMap = {
+        acmat: {
+            filters: filtersAcmat.value,
+            page: currentAcmatPage.value,
+            descKey: 'bom.description',
+            sortField: sortFieldAcmat.value,
+            sortOrder: sortOrderAcmat.value,
+            dataRef: paginatedAcmatData,
+        },
+        bom: {
+            filters: filtersBom.value,
+            page: currentBomPage.value,
+            descKey: 'description',
+            sortField: sortFieldBom.value,
+            sortOrder: sortOrderBom.value,
+            dataRef: paginatedBomData,
+        },
+        acsales: {
+            filters: filtersAcsales.value,
+            page: currentBomPage.value,
+            descKey: 'bom.description',
+            sortField: sortFieldAcsales.value,
+            sortOrder: sortOrderAcsales.value,
+            dataRef: paginatedAcsalesData,
+        },
+    };
+
+    const config = configMap[type];
+    const currentFilters = config.filters;
+    const params = new URLSearchParams({
+        page: config.page.toString(),
+        per_page: perPage.value.toString(),
+        search: currentFilters.global.value || '',
+        item_code_filter: currentFilters.item_code.value || '',
+        description_filter: (currentFilters as any)[config.descKey]?.value || '',
+    });
+
+    if (config.sortField && config.sortOrder) {
+        params.append('sort_field', config.sortField);
+        params.append('sort_order', config.sortOrder === 1 ? 'asc' : 'desc');
+    }
+
+    if (type === 'acmat') {
+        const materialPeriod = (currentFilters as any).period?.value;
+        if (materialPeriod) params.append('material_period', materialPeriod);
+    }
+
+    try {
+        const response = await fetch(`${url}?${params.toString()}`, {
+            signal: controllers[type].signal,
+        });
+        // console.log(`${url}?${params.toString()}`)
+
+        if (!response.ok) throw new Error('Fetch failed');
+        const data = await response.json();
+        config.dataRef.value = data;
+    } catch (error: any) {
+        if (error.name === 'AbortError') return;
+        console.error(`Failed to fetch ${type} data:`, error);
+    } finally {
+        loadingStates[type] = false;
+    }
+};
+
+const onLazyLoadAcmat = (event: any) => {
+    const { first, rows, sortField, sortOrder } = event;
+
+    const newPage = first / rows + 1;
+    perPage.value = rows;
+
+    if (newPage !== currentAcmatPage.value) {
+        currentAcmatPage.value = newPage;
+    }
+
+    sortFieldAcmat.value = sortField || null;
+    sortOrderAcmat.value = sortOrder || null;
+
+    if (sortField !== null) {
+        currentAcmatPage.value = 1;
+    }
+
+    loadLazyData(materialUrl.value, 'acmat');
+};
+
+const onLazyLoadAcsales = (event: any) => {
+    const { first, rows, sortField, sortOrder } = event;
+
+    const newPage = first / rows + 1;
+    perPage.value = rows;
+
+    if (newPage !== currentAcsalesPage.value) {
+        currentAcsalesPage.value = newPage;
+    }
+
+    sortFieldAcsales.value = sortField || null;
+    sortOrderAcsales.value = sortOrder || null;
+
+    if (sortField !== null) {
+        currentAcsalesPage.value = 1;
+    }
+
+    loadLazyData(materialUrl.value, 'acsales');
+};
+
+const onLazyLoadBom = (event: any) => {
+    const { first, rows, sortField, sortOrder } = event;
+
+    const newPage = first / rows + 1;
+    perPage.value = rows;
+
+    if (newPage !== currentBomPage.value) {
+        currentBomPage.value = newPage;
+    }
+
+    sortFieldBom.value = sortField || null;
+    sortOrderBom.value = sortOrder || null;
+
+    if (sortField !== null) {
+        currentBomPage.value = 1;
+    }
+
+    loadLazyData(bomUrl.value, 'bom');
+};
+
+watch(
+    filtersAcmat,
+    () => {
+        if (!isReady.acmat) {
+            isReady.acmat = true;
+            return;
+        }
+        if (acmatTimeout.value) clearTimeout(acmatTimeout.value);
+        acmatTimeout.value = setTimeout(() => {
+            loadLazyData(materialUrl.value, 'acmat');
+        }, 500);
+    },
+    { deep: true },
+);
+
+watch(
+    filtersAcsales,
+    () => {
+        if (!isReady.acsales) {
+            isReady.acsales = true;
+            return;
+        }
+        if (acsalesTimeout.value) clearTimeout(acsalesTimeout.value);
+        acsalesTimeout.value = setTimeout(() => {
+            loadLazyData(salesUrl.value, 'acsales');
+        }, 500);
+    },
+    { deep: true },
+);
+
+watch(
+    filtersBom,
+    () => {
+        if (!isReady.bom) {
+            isReady.bom = true;
+            return;
+        }
+        if (bomTimeout.value) clearTimeout(bomTimeout.value);
+        bomTimeout.value = setTimeout(() => {
+            loadLazyData(bomUrl.value, 'bom');
+        }, 500);
+    },
+    { deep: true },
+);
+
+onMounted(async () => {
+    initFilters();
+    try {
+        await Promise.all([
+            fetchMaterialPeriod(),
+            loadLazyData(materialUrl.value, 'acmat'),
+            loadLazyData(salesUrl.value, 'acsales'),
+            loadLazyData(bomUrl.value, 'bom'),
+        ]);
+    } finally {
+        isInitialLoading.value = false;
+    }
+});
+
+const clearFilter = (type: 'acmat' | 'bom' | 'acsales') => {
+    if (type === 'acmat') {
+        filtersAcmat.value = {
+            global: { value: null, matchMode: 'contains' },
+            item_code: { value: null, matchMode: 'startsWith' },
+            period: { value: null, matchMode: 'equals' },
+            'bom.description': { value: null, matchMode: 'contains' },
+        };
+        currentAcmatPage.value = 1;
+    }
+    if (type === 'acsales') {
+        filtersAcsales.value = {
+            global: { value: null, matchMode: 'contains' },
+            item_code: { value: null, matchMode: 'startsWith' },
+            // period: { value: null, matchMode: 'equals' },
+            'bom.description': { value: null, matchMode: 'contains' },
+        };
+        currentAcsalesPage.value = 1;
+    }
+};
 </script>
 
 <template>
     <Toast group="br" position="bottom-right" />
+
     <Head title="Actual Master Data" />
 
     <AppLayout>
         <div class="m-6">
-            <div class="flex flex-col gap-1">
-                <h2 class="mb-2 text-start text-3xl font-bold text-gray-900 dark:text-white">Actual Material Price & Sales Quantity</h2>
-                <p class="text-start text-gray-600 dark:text-gray-400">Actual Material Price & Sales Master Data</p>
-            </div>
-
             <!-- Header Section -->
             <div class="mt-4 mb-8">
                 <div class="relative mb-6 text-center">
@@ -456,8 +741,7 @@ const props = defineProps({
                             Hi <span class="text-red-400">{{ userName }}</span
                             >,
                         </p>
-
-                        <div>
+                        <div v-if="importType === 'acmat'">
                             <div class="mt-6 mb-2 font-semibold">Select Actual Material Price Period:</div>
                             <div class="flex space-x-4">
                                 <div class="flex-1">
@@ -511,6 +795,41 @@ const props = defineProps({
                             <strong class="text-green-500">Finish</strong>, it's safe to close window.
                         </p>
 
+                        <div v-if="importResult.invalidItems.length > 0">
+                            <p><span class="text-xl font-semibold text-orange-400">Failed</span> to import:</p>
+                            <table class="w-full border-collapse text-left">
+                                <thead>
+                                    <tr>
+                                        <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Item Code</th>
+                                        <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Description</th>
+
+                                        <th class="border-b border-gray-700 px-4 py-2 font-semibold text-gray-400">Reason</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Menggunakan template v-if dan v-for -->
+                                    <template v-if="importResult.invalidItems.length > 0">
+                                        <tr v-for="item in importResult.invalidItems" :key="item.no">
+                                            <td class="border-b border-gray-800 px-4 py-2">
+                                                {{ item.item_code }}
+                                            </td>
+                                            <td class="border-b border-gray-800 px-4 py-2">
+                                                {{ item.description }}
+                                            </td>
+
+                                            <td class="border-b border-gray-800 px-4 py-2">
+                                                {{ item.reason }}
+                                            </td>
+                                        </tr>
+                                    </template>
+                                    <tr v-else>
+                                        <td colspan="2" class="border-b border-gray-800 px-4 py-2 text-center text-gray-500">
+                                            There are no invalid items.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                         <div class="flex justify-end gap-3 pt-4">
                             <Button
                                 label=" Close"
@@ -529,23 +848,23 @@ const props = defineProps({
                     </div>
                 </Dialog>
 
-                <Dialog v-model:visible="showComponent" :header="`Components of ${finishGood.item_code}`" modal class="w-[60rem]" :closable="false">
-                    <DataTable :value="componentItems" responsiveLayout="scroll">
+                <Dialog v-model:visible="componentDialog" :header="`Components of `" modal class="w-[60rem]" :closable="false">
+                    <DataTable :value="componentData" responsiveLayout="scroll">
                         <div class="mr-2 mb-2 flex justify-end">
                             <Button label="Close" severity="warn" @click="closeComponentDialog" />
                         </div>
-                        <Column header="#" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                        <Column header="#">
                             <template #body="{ index }">
                                 {{ index + 1 }}
                             </template>
                         </Column>
-                        <Column field="item_code" header="Item Code" style="white-space: nowrap" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                        <Column field="description" header="Description" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                        <Column field="uom" header="Unit of Material" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                        <Column field="quantity" header="Quantity" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                        <Column field="warehouse" header="Warehouse" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                        <Column field="depth" header="Depth" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
-                        <Column field="bom_type" header="Bom Type" :headerStyle="headerStyle" :bodyStyle="bodyStyle" />
+                        <Column field="item_code" header="Item Code" style="white-space: nowrap" />
+                        <Column field="description" header="Description" />
+                        <Column field="uom" header="Unit of Material" />
+                        <Column field="quantity" header="Quantity" />
+                        <Column field="warehouse" header="Warehouse" />
+                        <Column field="depth" header="Depth" />
+                        <Column field="bom_type" header="Bom Type" />
                     </DataTable>
                 </Dialog>
             </div>
@@ -554,299 +873,414 @@ const props = defineProps({
                 <Tabs v-model="activeTab">
                     <TabList>
                         <Tab value="0">Actual Material Price</Tab>
-                        <Tab value="1">Sales Quantity</Tab>
+                        <Tab value="1">Actual Sales Quantity</Tab>
+                        <Tab value="2">Actual Bill of Material</Tab>
                     </TabList>
 
                     <TabPanels>
                         <TabPanel value="0">
-                            <section ref="matSection" class="p-2">
+                            <section ref="acmat" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
-                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Actual Material Used</h2>
-
-                                    <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
-                                        <FileUpload
-                                            v-if="auth?.user?.permissions?.includes('Update_MasterData')"
-                                            ref="fileUploaderBP"
-                                            mode="basic"
-                                            name="file"
-                                            :customUpload="true"
-                                            accept=".csv"
-                                            chooseLabel="Import CSV"
-                                            chooseIcon="pi pi-upload"
-                                            @select="(event) => handleCSVImport(event, 'acmat')"
-                                            class="w-full sm:w-auto"
-                                        />
-
-                                        <div class="flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row">
-                                            <Button
-                                                icon="pi pi-download"
-                                                label=" Export"
-                                                unstyled
-                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 sm:w-28"
-                                                @click="exportCSV('acmat')"
-                                            />
-                                        </div>
-                                    </div>
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Actual Material Price</h2>
 
                                     <div class="text-right text-gray-700 dark:text-gray-300">
                                         <div>
-                                            Last Update :
-                                            <span class="text-red-300">{{ lastUpdate[0] ? formatlastUpdate(lastUpdate[0]) : '-' }}</span>
-                                        </div>
-                                        <div>
                                             Data source From :
                                             <span class="text-cyan-400">{{ dataSource[0] }}</span>
+                                        </div>
+                                        <div>
+                                            Last Update :
+                                            <span class="text-red-300">{{ lastMaster[0] ? formatlastUpdate(lastMaster[0]) : '-' }}</span>
                                         </div>
                                     </div>
                                 </div>
 
                                 <DataTable
-                                    :value="actualMaterial"
-                                    tableStyle="min-width: 50rem"
-                                    paginator
-                                    :rows="10"
-                                    :rowsPerPageOptions="[10, 20, 50, 100]"
-                                    resizableColumns
-                                    columnResizeMode="expand"
+                                    :value="paginatedAcmatData?.data || []"
+                                    :lazy="true"
+                                    :totalRecords="paginatedAcmatData?.total || 0"
+                                    :rows="perPage"
+                                    @page="onLazyLoadAcmat"
+                                    @sort="onLazyLoadAcmat"
+                                    :first="(currentAcmatPage - 1) * perPage"
+                                    :paginator="true"
+                                    paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport"
+                                    currentPageReportTemplate="Showing {first} to {last} from {totalRecords} data"
+                                    responsiveLayout="scroll"
+                                    :globalFilterFields="['item_code', 'description.name', 'period']"
                                     showGridlines
-                                    removableSort
-                                    v-model:filters="filterACMAT"
+                                    :removableSort="true"
+                                    v-model:filters="filtersAcmat"
                                     filterDisplay="row"
-                                    :loading="loading"
-                                    :globalFilterFields="['item_code']"
-                                    class="text-md"
-                                    ref="dtACMAT"
+                                    :loading="loadingStates.acmat || isInitialLoading"
+                                    ref="dtAcmat"
                                 >
+                                    <template #header>
+                                        <div class="flex justify-between">
+                                            <div class="flex justify-start space-x-2">
+                                                <Button
+                                                    icon="pi pi-download"
+                                                    label=" Export Report"
+                                                    unstyled
+                                                    class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-orange-700 sm:w-auto"
+                                                    @click="exportCSV('acmat')"
+                                                />
+                                                <FileUpload
+                                                    v-if="auth?.user?.permissions?.includes('Update_MasterData')"
+                                                    ref="fileUploaderBP"
+                                                    mode="basic"
+                                                    name="file"
+                                                    :customUpload="true"
+                                                    accept=".csv"
+                                                    chooseLabel=" Import CSV"
+                                                    chooseIcon="pi pi-upload"
+                                                    @select="(event) => handleCSVImport(event, 'acmat')"
+                                                    class="w-full cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-cyan-700 sm:w-auto"
+                                                />
+                                            </div>
+                                            <div class="justify-end">
+                                                <div class="flex justify-between space-x-2">
+                                                    <Button
+                                                        type="button"
+                                                        icon="pi pi-filter-slash"
+                                                        label=" Clear"
+                                                        unstyled
+                                                        class="w-full cursor-pointer rounded-xl bg-slate-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-slate-700 sm:w-auto"
+                                                        @click="clearFilter('acmat')"
+                                                    />
+
+                                                    <IconField>
+                                                        <InputIcon>
+                                                            <i class="pi pi-search" />
+                                                        </InputIcon>
+                                                        <InputText v-model="filtersAcmat['global'].value" placeholder="Keyword Search" />
+                                                    </IconField>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <template #empty>
+                                        <div v-if="!loading && !isInitialLoading" class="flex justify-center p-4">No data found.</div>
+                                        <div v-else class="flex justify-center p-4">Loading data, please wait...</div>
+                                    </template>
+
+                                    <ColumnGroup type="header">
+                                        <Row>
+                                            <Column header="Item Code" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
+                                            <Column header="Description" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
+                                            <Column header="Period" :rowspan="2" sortable v-bind="tbStyle('main')"></Column>
+                                            <Column header="January" :colspan="3" v-bind="tbStyle('rm')"></Column>
+                                            <Column header="February" :colspan="3" v-bind="tbStyle('pr')"></Column>
+                                            <Column header="March" :colspan="3" v-bind="tbStyle('wip')"></Column>
+                                            <Column header="April" :colspan="3" v-bind="tbStyle('fg')"></Column>
+                                            <Column header="May" :colspan="3" v-bind="tbStyle('rm')"></Column>
+                                            <Column header="June" :colspan="3" v-bind="tbStyle('pr')"></Column>
+                                            <Column header="July" :colspan="3" v-bind="tbStyle('wip')"></Column>
+                                            <Column header="August" :colspan="3" v-bind="tbStyle('fg')"></Column>
+                                            <Column header="September" :colspan="3" v-bind="tbStyle('rm')"></Column>
+                                            <Column header="October" :colspan="3" v-bind="tbStyle('pr')"></Column>
+                                            <Column header="November" :colspan="3" v-bind="tbStyle('wip')"></Column>
+                                            <Column header="December" :colspan="3" v-bind="tbStyle('fg')"></Column>
+                                        </Row>
+
+                                        <Row>
+                                            <Column field="jan_amount" sortable header="Amount" v-bind="tbStyle('rm')"></Column>
+                                            <Column field="jan_qty" sortable header="Qty" v-bind="tbStyle('rm')"></Column>
+                                            <Column field="jan_price" sortable header="Price" v-bind="tbStyle('rm')"></Column>
+
+                                            <Column field="feb_amount" sortable header="Amount" v-bind="tbStyle('pr')"></Column>
+                                            <Column field="feb_qty" sortable header="Qty" v-bind="tbStyle('pr')"></Column>
+                                            <Column field="feb_price" sortable header="Price" v-bind="tbStyle('pr')"></Column>
+
+                                            <Column field="mar_amount" sortable header="Amount" v-bind="tbStyle('wip')"></Column>
+                                            <Column field="mar_qty" sortable header="Qty" v-bind="tbStyle('wip')"></Column>
+                                            <Column field="mar_price" sortable header="Price" v-bind="tbStyle('wip')"></Column>
+
+                                            <Column field="apr_amount" sortable header="Amount" v-bind="tbStyle('fg')"></Column>
+                                            <Column field="apr_qty" sortable header="Qty" v-bind="tbStyle('fg')"></Column>
+                                            <Column field="apr_price" sortable header="Price" v-bind="tbStyle('fg')"></Column>
+
+                                            <Column field="may_amount" sortable header="Amount" v-bind="tbStyle('rm')"></Column>
+                                            <Column field="may_qty" sortable header="Qty" v-bind="tbStyle('rm')"></Column>
+                                            <Column field="may_price" sortable header="Price" v-bind="tbStyle('rm')"></Column>
+
+                                            <Column field="jun_amount" sortable header="Amount" v-bind="tbStyle('pr')"></Column>
+                                            <Column field="jun_qty" sortable header="Qty" v-bind="tbStyle('pr')"></Column>
+                                            <Column field="jun_price" sortable header="Price" v-bind="tbStyle('pr')"></Column>
+
+                                            <Column field="jul_amount" sortable header="Amount" v-bind="tbStyle('wip')"></Column>
+                                            <Column field="jul_qty" sortable header="Qty" v-bind="tbStyle('wip')"></Column>
+                                            <Column field="jul_price" sortable header="Price" v-bind="tbStyle('wip')"></Column>
+
+                                            <Column field="aug_amount" sortable header="Amount" v-bind="tbStyle('fg')"></Column>
+                                            <Column field="aug_qty" sortable header="Qty" v-bind="tbStyle('fg')"></Column>
+                                            <Column field="aug_price" sortable header="Price" v-bind="tbStyle('fg')"></Column>
+
+                                            <Column field="sep_amount" sortable header="Amount" v-bind="tbStyle('rm')"></Column>
+                                            <Column field="sep_qty" sortable header="Qty" v-bind="tbStyle('rm')"></Column>
+                                            <Column field="sep_price" sortable header="Price" v-bind="tbStyle('rm')"></Column>
+
+                                            <Column field="oct_amount" sortable header="Amount" v-bind="tbStyle('pr')"></Column>
+                                            <Column field="oct_qty" sortable header="Qty" v-bind="tbStyle('pr')"></Column>
+                                            <Column field="oct_price" sortable header="Price" v-bind="tbStyle('pr')"></Column>
+
+                                            <Column field="nov_amount" sortable header="Amount" v-bind="tbStyle('wip')"></Column>
+                                            <Column field="nov_qty" sortable header="Qty" v-bind="tbStyle('wip')"></Column>
+                                            <Column field="nov_price" sortable header="Price" v-bind="tbStyle('wip')"></Column>
+
+                                            <Column field="dec_amount" sortable header="Amount" v-bind="tbStyle('fg')"></Column>
+                                            <Column field="dec_qty" sortable header="Qty" v-bind="tbStyle('fg')"></Column>
+                                            <Column field="dec_price" sortable header="Price" v-bind="tbStyle('fg')"></Column>
+                                        </Row>
+                                    </ColumnGroup>
+
                                     <Column
+                                        resizableColumns
+                                        columnResizeMode="fit"
                                         field="item_code"
                                         header="Material Code"
-                                        :showFilterMenu="false"
+                                        filter
                                         sortable
-                                        :headerStyle="headerStyle"
-                                        :bodyStyle="bodyStyle"
-                                        ><template #filter="{ filterModel, filterCallback }">
-                                            <InputText
-                                                v-model="filterModel.value"
-                                                @input="filterCallback()"
-                                                placeholder="Search item code"
-                                                class="w-full"
-                                            /> </template
-                                    ></Column>
-                                    <Column
-                                        field="bom.description"
-                                        header="Name"
                                         :showFilterMenu="false"
-                                        sortable
-                                        :headerStyle="headerStyle"
-                                        :bodyStyle="bodyStyle"
+                                        v-bind="tbStyle('main')"
                                     >
+                                        <template #body="{ data }">
+                                            {{ data.item_code }}
+                                        </template>
                                         <template #filter="{ filterModel, filterCallback }">
                                             <InputText
                                                 v-model="filterModel.value"
                                                 @input="filterCallback()"
-                                                placeholder="Search description"
+                                                type="text"
+                                                placeholder="Search by code"
+                                            />
+                                        </template>
+                                    </Column>
+
+                                    <Column
+                                        resizableColumns
+                                        columnResizeMode="fit"
+                                        field="bom.description"
+                                        header="Description"
+                                        :showFilterMenu="false"
+                                        v-bind="tbStyle('main')"
+                                    >
+                                        <template #body="{ data }">
+                                            {{ data.bom?.description ?? '-' }}
+                                        </template>
+
+                                        <template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search Description"
                                                 class="w-full"
                                             />
                                         </template>
-                                        <template #body="{ data }">
-                                            {{ data.bom ? data.bom.description : '-' }}
-                                        </template>
                                     </Column>
-                                    <Column field="period" header="Period" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
-                                        <template #body="{ data }">
-                                            {{ data.period }}
+
+                                    <Column
+                                        resizableColumns
+                                        columnResizeMode="fit"
+                                        field="period"
+                                        header="Period"
+                                        sortable
+                                        v-bind="tbStyle('main')"
+                                        :showFilterMenu="false"
+                                    >
+                                        <template #filter="{ filterModel, filterCallback }">
+                                            <div class="flex justify-center">
+                                                <Select
+                                                    v-model="filterModel.value"
+                                                    :options="listMaterialPeriod"
+                                                    optionLabel="name"
+                                                    optionValue="name"
+                                                    placeholder="Period"
+                                                    class="w-full"
+                                                    :showClear="true"
+                                                    @change="filterCallback()"
+                                                />
+                                            </div>
                                         </template>
                                     </Column>
 
-                                    <Column field="jan_amount" header="January Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="jan_amount" :exportable="false" v-bind="tbStyle('rm')">
                                         <template #body="{ data }">
-                                            {{ Number(data.jan_amount).toLocaleString('id-ID') }}
+                                            {{ formatCurrency(data.jan_amount) }}
                                         </template>
                                     </Column>
-                                    <Column field="jan_qty" header="January (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="jan_qty" :exportable="false" v-bind="tbStyle('rm')">
                                         <template #body="{ data }">
                                             {{ Number(data.jan_qty).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-                                    <Column field="jan_price" header="January Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        </template> </Column
+                                    ><Column field="jan_price" :exportable="false" v-bind="tbStyle('rm')">
                                         <template #body="{ data }">
-                                            {{ Number(data.jan_price).toLocaleString('id-ID') }}
+                                            {{ formatCurrency(data.jan_price) }}
                                         </template>
                                     </Column>
 
-                                    <Column field="feb_amount" header="February Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="feb_amount" :exportable="false" v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
-                                            {{ Number(data.feb_amount).toLocaleString('id-ID') }}
+                                            {{ formatCurrency(data.feb_amount) }}
                                         </template>
                                     </Column>
-                                    <Column field="feb_qty" header="February (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="feb_qty" :exportable="false" v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
                                             {{ Number(data.feb_qty).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-                                    <Column field="feb_price" header="February Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        </template> </Column
+                                    ><Column field="feb_price" :exportable="false" v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
-                                            {{ Number(data.feb_price).toLocaleString('id-ID') }}
+                                            {{ formatCurrency(data.feb_price) }}
                                         </template>
                                     </Column>
 
-                                    <Column field="mar_amount" header="March Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="mar_amount" :exportable="false" v-bind="tbStyle('wip')">
                                         <template #body="{ data }">
-                                            {{ Number(data.mar_amount).toLocaleString('id-ID') }}
+                                            {{ formatCurrency(data.mar_amount) }}
                                         </template>
                                     </Column>
-                                    <Column field="mar_qty" header="March (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="mar_qty" :exportable="false" v-bind="tbStyle('wip')">
                                         <template #body="{ data }">
                                             {{ Number(data.mar_qty).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-                                    <Column field="mar_price" header="March Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        </template> </Column
+                                    ><Column field="mar_price" :exportable="false" v-bind="tbStyle('wip')">
                                         <template #body="{ data }">
-                                            {{ Number(data.mar_price).toLocaleString('id-ID') }}
+                                            {{ formatCurrency(data.mar_price) }}
                                         </template>
                                     </Column>
 
-                                    <Column field="apr_amount" header="April Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="apr_amount" :exportable="false" v-bind="tbStyle('fg')">
                                         <template #body="{ data }">
-                                            {{ Number(data.apr_amount).toLocaleString('id-ID') }}
+                                            {{ formatCurrency(data.apr_amount) }}
                                         </template>
                                     </Column>
-                                    <Column field="apr_qty" header="April (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="apr_qty" :exportable="false" v-bind="tbStyle('fg')">
                                         <template #body="{ data }">
                                             {{ Number(data.apr_qty).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-                                    <Column field="apr_price" header="April Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        </template> </Column
+                                    ><Column field="apr_price" :exportable="false" v-bind="tbStyle('fg')">
                                         <template #body="{ data }">
-                                            {{ Number(data.apr_price).toLocaleString('id-ID') }}
+                                            {{ formatCurrency(data.apr_price) }}
                                         </template>
                                     </Column>
 
-                                    <Column field="may_amount" header="May Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="may_amount" :exportable="false" v-bind="tbStyle('rm')">
                                         <template #body="{ data }">
-                                            {{ Number(data.may_amount).toLocaleString('id-ID') }}
+                                            {{ formatCurrency(data.may_amount) }}
                                         </template>
                                     </Column>
-                                    <Column field="may_qty" header="May (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="may_qty" :exportable="false" v-bind="tbStyle('rm')">
                                         <template #body="{ data }">
                                             {{ Number(data.may_qty).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-                                    <Column field="may_price" header="May Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        </template> </Column
+                                    ><Column field="may_price" :exportable="false" v-bind="tbStyle('rm')">
                                         <template #body="{ data }">
-                                            {{ Number(data.may_price).toLocaleString('id-ID') }}
+                                            {{ formatCurrency(data.may_price) }}
                                         </template>
                                     </Column>
 
-                                    <Column field="jun_amount" header="June Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="jun_amount" :exportable="false" v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
-                                            {{ Number(data.jun_amount).toLocaleString('id-ID') }}
+                                            {{ formatCurrency(data.jun_amount) }}
                                         </template>
                                     </Column>
-                                    <Column field="jun_qty" header="June (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="jun_qty" :exportable="false" v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
                                             {{ Number(data.jun_qty).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-                                    <Column field="jun_price" header="June Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        </template> </Column
+                                    ><Column field="jun_price" :exportable="false" v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
-                                            {{ Number(data.jun_price).toLocaleString('id-ID') }}
+                                            {{ formatCurrency(data.jun_price) }}
                                         </template>
                                     </Column>
 
-                                    <Column field="jul_amount" header="July Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="jul_amount" :exportable="false" v-bind="tbStyle('wip')">
                                         <template #body="{ data }">
-                                            {{ Number(data.jul_amount).toLocaleString('id-ID') }}
+                                            {{ formatCurrency(data.jul_amount) }}
                                         </template>
                                     </Column>
-                                    <Column field="jul_qty" header="July (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="jul_qty" :exportable="false" v-bind="tbStyle('wip')">
                                         <template #body="{ data }">
                                             {{ Number(data.jul_qty).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-                                    <Column field="jul_price" header="July Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        </template> </Column
+                                    ><Column field="jul_price" :exportable="false" v-bind="tbStyle('wip')">
                                         <template #body="{ data }">
-                                            {{ Number(data.jul_price).toLocaleString('id-ID') }}
+                                            {{ formatCurrency(data.jul_price) }}
                                         </template>
                                     </Column>
 
-                                    <Column field="aug_amount" header="August Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="aug_amount" :exportable="false" v-bind="tbStyle('fg')">
                                         <template #body="{ data }">
-                                            {{ Number(data.aug_amount).toLocaleString('id-ID') }}
+                                            {{ formatCurrency(data.aug_amount) }}
                                         </template>
                                     </Column>
-                                    <Column field="aug_qty" header="August (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="aug_qty" :exportable="false" v-bind="tbStyle('fg')">
                                         <template #body="{ data }">
                                             {{ Number(data.aug_qty).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-                                    <Column field="aug_price" header="August Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        </template> </Column
+                                    ><Column field="aug_price" :exportable="false" v-bind="tbStyle('fg')">
                                         <template #body="{ data }">
-                                            {{ Number(data.aug_price).toLocaleString('id-ID') }}
+                                            {{ formatCurrency(data.aug_price) }}
                                         </template>
                                     </Column>
 
-                                    <Column field="sep_amount" header="September Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="sep_amount" :exportable="false" v-bind="tbStyle('rm')">
                                         <template #body="{ data }">
-                                            {{ Number(data.sep_amount).toLocaleString('id-ID') }}
+                                            {{ formatCurrency(data.sep_amount) }}
                                         </template>
                                     </Column>
-                                    <Column field="sep_qty" header="September (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="sep_qty" :exportable="false" v-bind="tbStyle('rm')">
                                         <template #body="{ data }">
                                             {{ Number(data.sep_qty).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-                                    <Column field="sep_price" header="September Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        </template> </Column
+                                    ><Column field="sep_price" :exportable="false" v-bind="tbStyle('rm')">
                                         <template #body="{ data }">
-                                            {{ Number(data.sep_price).toLocaleString('id-ID') }}
+                                            {{ formatCurrency(data.sep_price) }}
                                         </template>
                                     </Column>
 
-                                    <Column field="oct_amount" header="October Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="oct_amount" :exportable="false" v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
-                                            {{ Number(data.oct_amount).toLocaleString('id-ID') }}
+                                            {{ formatCurrency(data.oct_amount) }}
                                         </template>
                                     </Column>
-                                    <Column field="oct_qty" header="October (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="oct_qty" :exportable="false" v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
                                             {{ Number(data.oct_qty).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-                                    <Column field="oct_price" header="October Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        </template> </Column
+                                    ><Column field="oct_price" :exportable="false" v-bind="tbStyle('pr')">
                                         <template #body="{ data }">
-                                            {{ Number(data.oct_price).toLocaleString('id-ID') }}
+                                            {{ formatCurrency(data.oct_price) }}
                                         </template>
                                     </Column>
 
-                                    <Column field="nov_amount" header="November Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="nov_amount" :exportable="false" v-bind="tbStyle('wip')">
                                         <template #body="{ data }">
-                                            {{ Number(data.nov_amount).toLocaleString('id-ID') }}
+                                            {{ formatCurrency(data.nov_amount) }}
                                         </template>
                                     </Column>
-                                    <Column field="nov_qty" header="November (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="nov_qty" :exportable="false" v-bind="tbStyle('wip')">
                                         <template #body="{ data }">
                                             {{ Number(data.nov_qty).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-                                    <Column field="nov_price" header="November Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        </template> </Column
+                                    ><Column field="nov_price" :exportable="false" v-bind="tbStyle('wip')">
                                         <template #body="{ data }">
-                                            {{ Number(data.nov_price).toLocaleString('id-ID') }}
+                                            {{ formatCurrency(data.nov_price) }}
                                         </template>
                                     </Column>
 
-                                    <Column field="dec_amount" header="December Amount" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="dec_amount" :exportable="false" v-bind="tbStyle('fg')">
                                         <template #body="{ data }">
-                                            {{ Number(data.dec_amount).toLocaleString('id-ID') }}
+                                            {{ formatCurrency(data.dec_amount) }}
                                         </template>
                                     </Column>
-                                    <Column field="dec_qty" header="December (Qty)" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column field="dec_qty" :exportable="false" v-bind="tbStyle('fg')">
                                         <template #body="{ data }">
                                             {{ Number(data.dec_qty).toLocaleString('id-ID') }}
-                                        </template>
-                                    </Column>
-                                    <Column field="dec_price" header="December Price" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                        </template> </Column
+                                    ><Column field="dec_price" :exportable="false" v-bind="tbStyle('fg')">
                                         <template #body="{ data }">
-                                            {{ Number(data.dec_price).toLocaleString('id-ID') }}
+                                            {{ formatCurrency(data.dec_price) }}
                                         </template>
                                     </Column>
                                 </DataTable>
@@ -854,119 +1288,366 @@ const props = defineProps({
                         </TabPanel>
 
                         <TabPanel value="1">
-                            <section ref="matSection" class="p-2">
+                            <section ref="acmat" class="p-2">
                                 <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
-                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Actual Material Quantity</h2>
-
-                                    <div class="mb-4 flex flex-col items-center gap-4 md:mb-0">
-                                        <FileUpload
-                                            v-if="auth?.user?.permissions?.includes('Update_MasterData')"
-                                            ref="fileUploaderBP"
-                                            mode="basic"
-                                            name="file"
-                                            :customUpload="true"
-                                            accept=".csv"
-                                            chooseLabel="Import CSV"
-                                            chooseIcon="pi pi-upload"
-                                            @select="(event) => handleCSVImport(event, 'acsqty')"
-                                            class="w-full sm:w-auto"
-                                        />
-
-                                        <div class="flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row">
-                                            <Button
-                                                icon="pi pi-download"
-                                                label=" Export"
-                                                unstyled
-                                                class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 sm:w-28"
-                                                @click="exportCSV('acsqty')"
-                                            />
-                                        </div>
-                                    </div>
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Sales Quantity / Month</h2>
 
                                     <div class="text-right text-gray-700 dark:text-gray-300">
                                         <div>
-                                            Last Update :
-                                            <span class="text-red-300">{{ lastUpdate[1] ? formatlastUpdate(lastUpdate[1]) : '-' }}</span>
-                                        </div>
-                                        <div>
                                             Data source From :
                                             <span class="text-cyan-400">{{ dataSource[1] }}</span>
+                                        </div>
+                                        <div>
+                                            Last Update :
+                                            <span class="text-red-300">{{ lastMaster[1] ? formatlastUpdate(lastMaster[1]) : '-' }}</span>
                                         </div>
                                     </div>
                                 </div>
 
                                 <DataTable
-                                    :value="actualSalesQty"
-                                    tableStyle="min-width: 50rem"
-                                    paginator
-                                    :rows="10"
-                                    :rowsPerPageOptions="[10, 20, 50, 100]"
-                                    resizableColumns
-                                    columnResizeMode="expand"
+                                    :value="paginatedAcsalesData?.data || []"
+                                    :lazy="true"
+                                    :totalRecords="paginatedAcsalesData?.total || 0"
+                                    :rows="perPage"
+                                    @page="onLazyLoadAcsales"
+                                    @sort="onLazyLoadAcsales"
+                                    :first="(currentAcsalesPage - 1) * perPage"
+                                    :paginator="true"
+                                    paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport"
+                                    currentPageReportTemplate="Showing {first} to {last} from {totalRecords} data"
+                                    responsiveLayout="scroll"
+                                    :globalFilterFields="['item_code', 'description.name', 'period']"
                                     showGridlines
-                                    removableSort
-                                    v-model:filters="filterACSQTY"
+                                    :removableSort="true"
+                                    v-model:filters="filtersAcsales"
                                     filterDisplay="row"
-                                    :loading="loading"
-                                    :globalFilterFields="['item_code']"
-                                    class="text-md"
-                                    ref="dtACSQTY"
+                                    :loading="loadingStates.acsales || isInitialLoading"
+                                    ref="dtAcsales"
                                 >
+                                    <template #header>
+                                        <div class="flex justify-between">
+                                            <div class="flex justify-start space-x-2">
+                                                <Button
+                                                    icon="pi pi-download"
+                                                    label=" Export Report"
+                                                    unstyled
+                                                    class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-orange-700 sm:w-auto"
+                                                    @click="exportCSV('acsales')"
+                                                />
+                                                <FileUpload
+                                                    v-if="auth?.user?.permissions?.includes('Update_MasterData')"
+                                                    ref="fileUploaderBP"
+                                                    mode="basic"
+                                                    name="file"
+                                                    :customUpload="true"
+                                                    accept=".csv"
+                                                    chooseLabel=" Import CSV"
+                                                    chooseIcon="pi pi-upload"
+                                                    @select="(event) => handleCSVImport(event, 'acsales')"
+                                                    class="w-full cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-cyan-700 sm:w-auto"
+                                                />
+                                            </div>
+                                            <div class="justify-end">
+                                                <div class="flex justify-between space-x-2">
+                                                    <Button
+                                                        type="button"
+                                                        icon="pi pi-filter-slash"
+                                                        label=" Clear"
+                                                        unstyled
+                                                        class="w-full cursor-pointer rounded-xl bg-slate-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-slate-700 sm:w-auto"
+                                                        @click="clearFilter('acsales')"
+                                                    />
+
+                                                    <IconField>
+                                                        <InputIcon>
+                                                            <i class="pi pi-search" />
+                                                        </InputIcon>
+                                                        <InputText v-model="filtersAcsales['global'].value" placeholder="Keyword Search" />
+                                                    </IconField>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <template #empty>
+                                        <div v-if="!loading && !isInitialLoading" class="flex justify-center p-4">No data found.</div>
+                                        <div v-else class="flex justify-center p-4">Loading data, please wait...</div>
+                                    </template>
+
                                     <Column
+                                        resizableColumns
+                                        columnResizeMode="fit"
                                         field="item_code"
-                                        header="Item Code"
-                                        :showFilterMenu="false"
+                                        header="Material Code"
+                                        filter
                                         sortable
-                                        :headerStyle="headerStyle"
-                                        :bodyStyle="bodyStyle"
-                                        ><template #filter="{ filterModel, filterCallback }">
-                                            <InputText
-                                                v-model="filterModel.value"
-                                                @input="filterCallback()"
-                                                placeholder="Search item code"
-                                                class="w-full"
-                                            /> </template
-                                    ></Column>
-                                    <Column
-                                        field="bom.description"
-                                        header="Name"
                                         :showFilterMenu="false"
-                                        sortable
-                                        :headerStyle="headerStyle"
-                                        :bodyStyle="bodyStyle"
+                                        v-bind="tbStyle('main')"
                                     >
+                                        <template #body="{ data }">
+                                            {{ data.item_code }}
+                                        </template>
                                         <template #filter="{ filterModel, filterCallback }">
                                             <InputText
                                                 v-model="filterModel.value"
                                                 @input="filterCallback()"
-                                                placeholder="Search description"
-                                                class="w-full"
+                                                type="text"
+                                                placeholder="Search by code"
                                             />
-                                        </template>
-                                        <template #body="{ data }">
-                                            {{ data.bom ? data.bom.description : '-' }}
                                         </template>
                                     </Column>
 
-                                    <Column field="jan_qty" sortable header="January (Qty)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <Column
+                                        resizableColumns
+                                        columnResizeMode="fit"
+                                        field="bom.description"
+                                        header="Description"
+                                        :showFilterMenu="false"
+                                        v-bind="tbStyle('main')"
+                                    >
+                                        <template #body="{ data }">
+                                            {{ data.bom?.description ?? '-' }}
+                                        </template>
+
+                                        <template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                placeholder="Search Description"
+                                                class="w-full"
+                                            />
+                                        </template>
                                     </Column>
-                                    <Column field="feb_qty" sortable header="February (Qty)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+
+                                    <!-- <Column
+                                        resizableColumns
+                                        columnResizeMode="fit"
+                                        field="period"
+                                        header="Period"
+                                        sortable
+                                        v-bind="tbStyle('main')"
+                                        :showFilterMenu="false"
+                                    >
+                                        <template #filter="{ filterModel, filterCallback }">
+                                            <div class="flex justify-center">
+                                                <Select
+                                                    v-model="filterModel.value"
+                                                    :options="listSalesPeriod"
+                                                    optionLabel="name"
+                                                    optionValue="name"
+                                                    placeholder="Period"
+                                                    class="w-full"
+                                                    :showClear="true"
+                                                    @change="filterCallback()"
+                                                />
+                                            </div>
+                                        </template>
+                                    </Column> -->
+                                    <Column field="jan_qty" header="Jan Qty" sortable :exportable="false" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.jan_qty).toLocaleString('id-ID') }}
+                                        </template>
                                     </Column>
-                                    <Column field="mar_qty" sortable header="March (Qty)" :headerStyle="headerStyle" :bodyStyle="bodyStyle"> </Column>
-                                    <Column field="apr_qty" sortable header="April (Qty)" :headerStyle="headerStyle" :bodyStyle="bodyStyle"> </Column>
-                                    <Column field="may_qty" sortable header="May (Qty)" :headerStyle="headerStyle" :bodyStyle="bodyStyle"> </Column>
-                                    <Column field="jun_qty" sortable header="June (Qty)" :headerStyle="headerStyle" :bodyStyle="bodyStyle"> </Column>
-                                    <Column field="jul_qty" sortable header="July (Qty)" :headerStyle="headerStyle" :bodyStyle="bodyStyle"> </Column>
-                                    <Column field="aug_qty" sortable header="August (Qty)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+
+                                    <Column field="feb_qty" header="Feb Qty" sortable :exportable="false" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.feb_qty).toLocaleString('id-ID') }}
+                                        </template>
                                     </Column>
-                                    <Column field="sep_qty" sortable header="September (Qty)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+
+                                    <Column field="mar_qty" header="Mar Qty" sortable :exportable="false" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.mar_qty).toLocaleString('id-ID') }}
+                                        </template>
                                     </Column>
-                                    <Column field="oct_qty" sortable header="October (Qty)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+
+                                    <Column field="apr_qty" header="Apr Qty" sortable :exportable="false" v-bind="tbStyle('pr')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.apr_qty).toLocaleString('id-ID') }}
+                                        </template>
                                     </Column>
-                                    <Column field="nov_qty" sortable header="November (Qty)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+
+                                    <Column field="may_qty" header="May Qty" sortable :exportable="false" v-bind="tbStyle('pr')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.may_qty).toLocaleString('id-ID') }}
+                                        </template>
                                     </Column>
-                                    <Column field="dec_qty" sortable header="December (Qty)" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+
+                                    <Column field="jun_qty" header="Jun Qty" sortable :exportable="false" v-bind="tbStyle('pr')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.jun_qty).toLocaleString('id-ID') }}
+                                        </template>
                                     </Column>
+
+                                    <Column field="jul_qty" header="Jul Qty" sortable :exportable="false" v-bind="tbStyle('wip')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.jul_qty).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="aug_qty" header="Aug Qty" sortable :exportable="false" v-bind="tbStyle('wip')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.aug_qty).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="sep_qty" header="Sep Qty" sortable :exportable="false" v-bind="tbStyle('wip')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.sep_qty).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="oct_qty" header="Oct Qty" sortable :exportable="false" v-bind="tbStyle('fg')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.oct_qty).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="nov_qty" header="Nov Qty" sortable :exportable="false" v-bind="tbStyle('fg')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.nov_qty).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="dec_qty" header="Dec Qty" sortable :exportable="false" v-bind="tbStyle('fg')">
+                                        <template #body="{ data }">
+                                            {{ Number(data.dec_qty).toLocaleString('id-ID') }}
+                                        </template>
+                                    </Column>
+                                </DataTable>
+                            </section>
+                        </TabPanel>
+
+                        <TabPanel value="2">
+                            <section ref="bom" class="p-2">
+                                <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                                    <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Actual Bill of Material</h2>
+
+                                    <div class="text-right text-gray-700 dark:text-gray-300">
+                                        <div>
+                                            Data source From :
+                                            <span class="text-cyan-400">{{ dataSource[1] }}</span>
+                                        </div>
+                                        <div>
+                                            Last Update :
+                                            <span class="text-red-300">{{ lastMaster[2] ? formatlastUpdate(lastMaster[2]) : '-' }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <DataTable
+                                    :value="paginatedBomData?.data || []"
+                                    :lazy="true"
+                                    :totalRecords="paginatedBomData?.total || 0"
+                                    :rows="perPage"
+                                    @page="onLazyLoadBom"
+                                    @sort="onLazyLoadBom"
+                                    :first="(currentBomPage - 1) * perPage"
+                                    :paginator="true"
+                                    paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport"
+                                    currentPageReportTemplate="Showing {first} to {last} from {totalRecords} data"
+                                    responsiveLayout="scroll"
+                                    :globalFilterFields="['item_code', 'description']"
+                                    showGridlines
+                                    :removableSort="true"
+                                    v-model:filters="filtersBom"
+                                    filterDisplay="row"
+                                    :loading="loadingStates.bom || isInitialLoading"
+                                    ref="dtBom"
+                                >
+                                    <template #header>
+                                        <div class="flex justify-between">
+                                            <div class="flex justify-start space-x-2">
+                                                <Button
+                                                    icon="pi pi-download"
+                                                    label=" Export Report"
+                                                    unstyled
+                                                    class="w-full cursor-pointer rounded-xl bg-orange-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-orange-700 sm:w-auto"
+                                                    @click="exportCSV('bom')"
+                                                />
+                                                <FileUpload
+                                                    v-if="auth?.user?.permissions?.includes('Update_MasterData')"
+                                                    ref="fileUploaderBP"
+                                                    mode="basic"
+                                                    name="file"
+                                                    :customUpload="true"
+                                                    accept=".csv"
+                                                    chooseLabel=" Import CSV"
+                                                    chooseIcon="pi pi-upload"
+                                                    @select="(event) => handleCSVImport(event, 'bom')"
+                                                    class="w-full cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-cyan-700 sm:w-auto"
+                                                />
+                                            </div>
+                                            <div class="justify-end">
+                                                <div class="flex justify-between space-x-2">
+                                                    <Button
+                                                        type="button"
+                                                        icon="pi pi-filter-slash"
+                                                        label=" Clear"
+                                                        unstyled
+                                                        class="w-full cursor-pointer rounded-xl bg-slate-400 px-4 py-2 text-center font-bold text-slate-900 hover:bg-slate-700 sm:w-auto"
+                                                        @click="clearFilter('bom')"
+                                                    />
+
+                                                    <IconField>
+                                                        <InputIcon>
+                                                            <i class="pi pi-search" />
+                                                        </InputIcon>
+                                                        <InputText v-model="filtersBom['global'].value" placeholder="Keyword Search" />
+                                                    </IconField>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <template #empty>
+                                        <div v-if="!loading && !isInitialLoading" class="flex justify-center p-4">No data found.</div>
+                                        <div v-else class="flex justify-center p-4">Loading data, please wait...</div>
+                                    </template>
+
+                                    <Column field="item_code" header="Item Code" sortable filter :showFilterMenu="false" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            {{ data.item_code }}
+                                        </template>
+                                        <template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                type="text"
+                                                placeholder="Search by code"
+                                            />
+                                        </template>
+                                    </Column>
+
+                                    <Column field="description" header="Name" sortable filter :showFilterMenu="false" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            {{ data.description ?? '-' }}
+                                        </template>
+                                        <template #filter="{ filterModel, filterCallback }">
+                                            <InputText
+                                                v-model="filterModel.value"
+                                                @input="filterCallback()"
+                                                type="text"
+                                                placeholder="Search by Name"
+                                            />
+                                        </template>
+                                    </Column>
+
+                                    <Column field="depth" header="Depth" filter :showFilterMenu="false" v-bind="tbStyle('rm')">
+                                        <template #body="{ data }">
+                                            {{ data.depth }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="action" header="Action" :exportable="false" v-bind="tbStyle('rm')"
+                                        ><template #body="slotProps">
+                                            <Button
+                                                v-tooltip="'View Component'"
+                                                icon="pi pi-eye"
+                                                severity="info"
+                                                rounded
+                                                text
+                                                @click="viewComponents(slotProps.data)"
+                                            /> </template
+                                    ></Column>
                                 </DataTable>
                             </section>
                         </TabPanel>

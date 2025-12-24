@@ -11,18 +11,16 @@ use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Carbon\Carbon;
 
-
 //Spatie
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 
-
 //Models
 use App\Models\ActualCost;
+use App\Models\ActualBillOfMaterial;
 use App\Models\ActualMaterial;
 use App\Models\ActualSalesQuantity;
 use App\Models\BaseCost;
-use App\Models\BillOfMaterial;
 use App\Models\BusinessPartner;
 use App\Models\costPerProcess;
 use App\Models\CTxSQ;
@@ -33,11 +31,13 @@ use App\Models\ProcessCost;
 use App\Models\RequestForService;
 use App\Models\SalesQuantity;
 use App\Models\StandardCost;
+use App\Models\StandardConsumable;
 use App\Models\StandardMaterial;
+use App\Models\StandardBillOfMaterial;
 use App\Models\User;
-use App\Models\Valve;
 use App\Models\WagesDistribution;
 
+use function Pest\Laravel\json;
 
 class MenuController extends Controller
 {
@@ -169,74 +169,75 @@ class MenuController extends Controller
         ]);
     }
 
-    public function BOM_Master(Request $request)
-    {
-        $bom = BillOfMaterial::where('depth', 1)->get();
-        $valve = Valve::all();
-        $componentItems = collect();
-        $finishGood = null;
+    // public function BOM_Master(Request $request)
+    // {
+    //     $bom = BillOfMaterial::where('depth', 1)->get();
+    //     $valve = Valve::all();
+    //     $componentItems = collect();
+    //     $finishGood = null;
 
-        if ($request->has('component_id')) {
-            $all = BillOfMaterial::orderBy('id')->get();
-            $mainIndex = $all->search(fn($item) => $item->id == $request->component_id);
+    //     if ($request->has('component_id')) {
+    //         $all = BillOfMaterial::orderBy('id')->get();
+    //         $mainIndex = $all->search(fn($item) => $item->id == $request->component_id);
 
-            if ($mainIndex !== false) {
-                for ($i = $mainIndex + 1; $i < count($all); $i++) {
-                    if ($all[$i]->depth == 1) break;
-                    $componentItems->push($all[$i]);
-                }
+    //         if ($mainIndex !== false) {
+    //             for ($i = $mainIndex + 1; $i < count($all); $i++) {
+    //                 if ($all[$i]->depth == 1) break;
+    //                 $componentItems->push($all[$i]);
+    //             }
 
-                $finishGood = $all[$mainIndex];
-            }
-        }
+    //             $finishGood = $all[$mainIndex];
+    //         }
+    //     }
 
-        $addedItems = Session::get('addedItems', []);
-        $invalidItems = Session::get('invalidItems', []);
+    //     $addedItems = Session::get('addedItems', []);
+    //     $invalidItems = Session::get('invalidItems', []);
 
-        return Inertia::render("bom/master", [
-            'billOfMaterials' => $bom,
-            'type' => 'bom',
-            'finish_good' => $finishGood,
-            'valve' => $valve,
-            'component' => $componentItems,
-            'importResult' => [
-                'addedItems' => $addedItems,
-                'invalidItems' => $invalidItems
-            ]
-        ]);
-    }
+    //     return Inertia::render("bom/master", [
+    //         'billOfMaterials' => $bom,
+    //         'type' => 'bom',
+    //         'finish_good' => $finishGood,
+    //         'valve' => $valve,
+    //         'component' => $componentItems,
+    //         'importResult' => [
+    //             'addedItems' => $addedItems,
+    //             'invalidItems' => $invalidItems
+    //         ]
+    //     ]);
+    // }
 
     public function Standard_Master(Request $request)
     {
-        $standardMaterial = StandardMaterial::with('bom')->get();
-        $addedItems = Session::get('addedItems', []);
-        $invalidItems = Session::get('invalidItems', []);
-
-        return Inertia::render("sc/master", [
-            'standardMaterial' => $standardMaterial,
-            'type' => 'standardMaterial',
-            'importResult' => [
-                'addedItems' => $addedItems,
-                'invalidItems' => $invalidItems
-            ]
-        ]);
+        return Inertia::render("sc/master");
     }
 
     public function Actual_Master(Request $request)
     {
-        $actualMaterial = ActualMaterial::with('bom')->get();
-        $addedItems = Session::get('addedItems', []);
-        $invalidItems = Session::get('invalidItems', []);
-        $actualSalesQuantities = ActualSalesQuantity::with('bom')->get();
+        $lastUpdate = [];
+        $latestActualMat = ActualMaterial::latest('updated_at')->first();
+        $latestSalesQty = ActualSalesQuantity::latest('updated_at')->first();
+        $latestBOM = ActualBillOfMaterial::latest('updated_at')->first();
+
+        if ($latestActualMat) {
+            $lastUpdate[] = $latestActualMat->updated_at;
+        } else {
+            $lastUpdate[] = null;
+        }
+
+        if ($latestSalesQty) {
+            $lastUpdate[] = $latestSalesQty->updated_at;
+        } else {
+            $lastUpdate[] = null;
+        }
+
+        if ($latestBOM) {
+            $lastUpdate[] = $latestBOM->updated_at;
+        } else {
+            $lastUpdate[] = null;
+        }
 
         return Inertia::render("ac/master", [
-            'actualMaterial' => $actualMaterial,
-            'actualSalesQty' => $actualSalesQuantities,
-            'type' => 'actualMaterial',
-            'importResult' => [
-                'addedItems' => $addedItems,
-                'invalidItems' => $invalidItems
-            ]
+            'lastUpdate'   => $lastUpdate,
         ]);
     }
 
@@ -259,23 +260,23 @@ class MenuController extends Controller
 
         $latestWagesDistribution = WagesDistribution::latest('updated_at')->first();
 
-        // Tambahkan created_at dari CycleTime ke array $lastUpdate jika ada
+        // Tambahkan updated_at dari CycleTime ke array $lastUpdate jika ada
         if ($latestCycleTime) {
-            $lastUpdate[] = $latestCycleTime->created_at;
+            $lastUpdate[] = $latestCycleTime->updated_at;
         } else {
             $lastUpdate[] = null; // Atau nilai default lain jika tidak ada data
         }
 
-        // Tambahkan created_at dari SalesQuantity ke array $lastUpdate jika ada
+        // Tambahkan updated_at dari SalesQuantity ke array $lastUpdate jika ada
         if ($latestSalesQuantity) {
-            $lastUpdate[] = $latestSalesQuantity->created_at;
+            $lastUpdate[] = $latestSalesQuantity->updated_at;
         } else {
             $lastUpdate[] = null; // Atau nilai default lain jika tidak ada data
         }
 
-        // Tambahkan created_at dari WagesDistribution ke array $lastUpdate jika ada
+        // Tambahkan updated_at dari WagesDistribution ke array $lastUpdate jika ada
         if ($latestWagesDistribution) {
-            $lastUpdate[] = $latestWagesDistribution->created_at;
+            $lastUpdate[] = $latestWagesDistribution->updated_at;
         } else {
             $lastUpdate[] = null; // Atau nilai default lain jika tidak ada data
         }
@@ -355,263 +356,112 @@ class MenuController extends Controller
         ]);
     }
 
-    public function BOM_Report()
+    private function processBOMData($bomData)
     {
-        $sc = StandardCost::with(['bom' => function ($query) {
-            $query->select('item_code', 'description');
-        }])->get();
-
-        $ac = ActualCost::with(['bom' => function ($query) {
-            $query->select('item_code', 'description');
-        }])->get();
-
-        $dc = DifferenceCost::with(['bom' => function ($query) {
-            $query->select('item_code', 'description');
-        }])->get();
-
-        $actual_sales = ActualSalesQuantity::with(['bom' => function ($query) {
-            $query->select('item_code', 'description');
-        }])->get();
-
-        $dcxsq = DiffCostXSalesQty::with(['bom' => function ($query) {
-            $query->select('item_code', 'description');
-        }])->get();
-
-        $lastUpdate = [];
-        $latestBOM = BillOfMaterial::latest('updated_at')->first();
-
-        if ($latestBOM) {
-            $lastUpdate[] = $latestBOM->created_at;
-        } else {
-            $lastUpdate[] = null;
-        }
-
-        $bomData = BillOfMaterial::all();
         $groups = collect();
         $currentGroup = collect();
 
+        // Logika Pengelompokan Berdasarkan Depth
         foreach ($bomData as $row) {
             if ($row->depth == 1) {
-                if ($currentGroup->isNotEmpty()) {
-                    $groups->push($currentGroup);
-                }
+                if ($currentGroup->isNotEmpty()) $groups->push($currentGroup);
                 $currentGroup = collect([$row]);
             } else {
                 $currentGroup->push($row);
             }
         }
+        if ($currentGroup->isNotEmpty()) $groups->push($currentGroup);
 
-        if ($currentGroup->isNotEmpty()) {
-            $groups->push($currentGroup);
-        }
-
-        $finalReportData = collect();
-
-        foreach ($groups as $group) {
+        return $groups->map(function ($group) {
             $main = $group->first();
             $typeChar = substr($main->item_code, 3, 1);
-            $group->description = $main->description ?? '-';
 
-            // Properti raw material
-            $group->disc = $group->first(function ($item) {
-                return substr($item->item_code, 0, 3) === 'RFD';
-            });
-            $group->rim = $group->first(function ($item) {
-                return substr($item->item_code, 0, 3) === 'RFR';
-            });
-            $group->sidering = $group->first(function ($item) {
-                return substr($item->item_code, 0, 3) === 'RFS';
-            });
+            // Filter Helpers (Substr Logic)
+            $find = fn($prefix) => $group->first(fn($item) => str_starts_with($item->item_code, $prefix));
 
-            // Properti process
-            $group->pr_disc = $group->first(function ($item) {
-                return substr($item->item_code, 0, 5) === 'RS-DC';
-            });
-            $group->pr_rim = $group->first(function ($item) {
-                return substr($item->item_code, 0, 5) === 'RS-RB';
-            });
-            $group->pr_sr = $group->first(function ($item) {
-                return substr($item->item_code, 0, 5) === 'RS-SR';
-            });
+            // Logika CED & TC (Multi-items)
+            $cdItems = $group->filter(fn($item) => str_starts_with($item->item_code, 'RS-CD'))->values();
+            $tcItems = $group->filter(fn($item) => str_starts_with($item->item_code, 'RS-TC'))->values();
 
-            $group->pr_assy = $group->first(function ($item) {
-                return substr($item->item_code, 0, 5) === 'RS-AS';
-            });
-
-            // Logika filter process CED
-            $cdItems = $group->filter(function ($item) {
-                return Str::startsWith($item->item_code, 'RS-CD');
-            })->values();
-
-            if ($cdItems->count() >= 2) {
-                $group->cedW = $cdItems[0];
-                $group->cedSR = $cdItems[1];
-            } elseif ($cdItems->count() === 1) {
-                if ($typeChar === 'D') {
-                    $group->cedW = $cdItems[0];
-                    $group->cedSR = null;
-                } elseif ($typeChar === 'N') {
-                    $group->cedW = null;
-                    $group->cedSR = $cdItems[0];
-                } else {
-                    $group->cedW = $cdItems[0];
-                    $group->cedSR = null;
-                }
-            } else {
-                $group->cedW = null;
-                $group->cedSR = null;
-            }
-
-            // Logika filter process TC
-            $tcItems = $group->filter(function ($item) {
-                return Str::startsWith($item->item_code, 'RS-TC');
-            })->values();
-
-            if ($tcItems->count() >= 2) {
-                $group->tcW = $tcItems[0];
-                $group->tcSR = $tcItems[1];
-            } elseif ($tcItems->count() === 1) {
-                if ($typeChar === 'D') {
-                    $group->tcW = $tcItems[0];
-                    $group->tcSR = null;
-                } elseif ($typeChar === 'N') {
-                    $group->tcW = null;
-                    $group->tcSR = $tcItems[0];
-                } else {
-                    $group->tcW = $tcItems[0];
-                    $group->tcSR = null;
-                }
-            } else {
-                $group->tcW = null;
-                $group->tcSR = null;
-            }
-
-            $group->pr_ta = $group->first(function ($item) {
-                return substr($item->item_code, 0, 5) === 'RS-TA';
-            });
-
-            // Logika filter WIP
-            $group->wip_disc = $group->first(function ($item) {
-                return substr($item->item_code, 0, 2) === 'WB' && substr($item->item_code, 3, 2) === 'D-';
-            });
-
-            $group->wip_rim = $group->first(function ($item) {
-                return substr($item->item_code, 0, 2) === 'WA' && substr($item->item_code, 3, 2) === 'R-';
-            });
-
-            $group->wip_sr = $group->first(function ($item) {
-                return substr($item->item_code, 0, 2) === 'WD' && substr($item->item_code, 3, 2) === 'S-';
-            });
-
-            $group->wip_assy = $group->first(function ($item) {
-                return substr($item->item_code, 0, 2) === 'WC' && substr($item->item_code, 3, 2) === 'W-';
-            });
-
-            $group->wip_cedW = $group->first(function ($item) {
-                return substr($item->item_code, 0, 2) === 'WE' && substr($item->item_code, 3, 2) === 'W-';
-            });
-
-            $group->wip_cedSR = $group->first(function ($item) {
-                return substr($item->item_code, 0, 2) === 'WE' && substr($item->item_code, 3, 2) === 'S-';
-            });
-
-            $group->wip_tcW = $group->first(function ($item) {
-                return substr($item->item_code, 0, 2) === 'WF' && substr($item->item_code, 3, 2) === 'W-';
-            });
-
-            $group->wip_tcSR = $group->first(function ($item) {
-                return substr($item->item_code, 0, 2) === 'WF' && substr($item->item_code, 3, 2) === 'S-';
-            });
-
-            $group->wip_valve = $group->first(function ($item) {
-                return substr($item->item_code, 0, 3) === 'CGP'
-                    && (
-                        stripos($item->description, 'valve') !== false
-                        || stripos($item->description, 'VLI') !== false
-                    );
-            });
-
-            $group->wip_tyre = $group->first(function ($item) {
-                return substr($item->item_code, 0, 3) === 'CGP'
-                    && (
-                        stripos($item->description, 'TYRE') !== false
-                        || stripos($item->description, 'tyre') !== false
-                    );
-            });
-
-            $data = [
-                'item_code' => $main->item_code,
-                'description' => $group->description,
+            return [
+                'item_code'   => $main->item_code,
+                'description' => $main->description ?? '-',
 
                 // Raw Material
-                'disc_qty' => $group->disc->quantity ?? 0,
-                'disc_code' => $group->disc->item_code ?? '-',
+                'disc_qty'      => $find('RFD')->quantity ?? 0,
+                'disc_code'     => $find('RFD')->item_code ?? '-',
+                'rim_qty'       => $find('RFR')->quantity ?? 0,
+                'rim_code'      => $find('RFR')->item_code ?? '-',
+                'sidering_qty'  => $find('RFS')->quantity ?? 0,
+                'sidering_code' => $find('RFS')->item_code ?? '-',
 
-                'rim_qty' => $group->rim->quantity ?? 0,
-                'rim_code' => $group->rim->item_code ?? '-',
+                // Process
+                'pr_disc'     => $find('RS-DC')->item_code ?? '-',
+                'pr_rim'      => $find('RS-RB')->item_code ?? '-',
+                'pr_sidering' => $find('RS-SR')->item_code ?? '-',
+                'pr_assy'     => $find('RS-AS')->item_code ?? '-',
+                'pr_cedW'     => ($cdItems->count() >= 2 || $typeChar !== 'N') ? ($cdItems[0]->item_code ?? '-') : '-',
+                'pr_cedSR'    => ($cdItems->count() >= 2) ? $cdItems[1]->item_code : (($typeChar === 'N') ? ($cdItems[0]->item_code ?? '-') : '-'),
+                'pr_tcW'      => ($tcItems->count() >= 2 || $typeChar !== 'N') ? ($tcItems[0]->item_code ?? '-') : '-',
+                'pr_tcSR'     => ($tcItems->count() >= 2) ? $tcItems[1]->item_code : (($typeChar === 'N') ? ($tcItems[0]->item_code ?? '-') : '-'),
+                'pr_TA'       => $find('RS-TA')->item_code ?? '-',
 
-                'sidering_qty' => $group->sidering->quantity ?? 0,
-                'sidering_code' => $group->sidering->item_code ?? '-',
+                // WIP Logic (Contoh Refactoring Substr 0,2 & 3,2)
+                'wip_disc'    => $group->first(fn($i) => str_starts_with($i->item_code, 'WB') && substr($i->item_code, 3, 2) === 'D-')->item_code ?? '-',
+                'wip_rim'     => $group->first(fn($i) => str_starts_with($i->item_code, 'WA') && substr($i->item_code, 3, 2) === 'R-')->item_code ?? '-',
+                'wip_sidering' => $group->first(fn($i) => str_starts_with($i->item_code, 'WD') && substr($i->item_code, 3, 2) === 'S-')->item_code ?? '-',
+                'wip_assy'    => $group->first(fn($i) => str_starts_with($i->item_code, 'WC') && substr($i->item_code, 3, 2) === 'W-')->item_code ?? '-',
+                'wip_cedW'    => $group->first(fn($i) => str_starts_with($i->item_code, 'WE') && substr($i->item_code, 3, 2) === 'W-')->item_code ?? '-',
+                'wip_cedSR'   => $group->first(fn($i) => str_starts_with($i->item_code, 'WE') && substr($i->item_code, 3, 2) === 'S-')->item_code ?? '-',
+                'wip_tcW'     => $group->first(fn($i) => str_starts_with($i->item_code, 'WF') && substr($i->item_code, 3, 2) === 'W-')->item_code ?? '-',
+                'wip_tcSR'    => $group->first(fn($i) => str_starts_with($i->item_code, 'WF') && substr($i->item_code, 3, 2) === 'S-')->item_code ?? '-',
 
-                // Process 
-                'pr_disc' => $group->pr_disc->item_code ?? '-',
-
-                'pr_rim' => $group->pr_rim->item_code ?? '-',
-
-                'pr_sidering' => $group->pr_sr->item_code ?? '-',
-
-                'pr_assy' => $group->pr_assy->item_code ?? '-',
-
-                'pr_cedW' => $group->cedW->item_code ?? '-',
-
-                'pr_cedSR' => $group->cedSR->item_code ?? '-',
-
-                'pr_tcW' => $group->tcW->item_code ?? '-',
-
-                'pr_tcSR' => $group->tcSR->item_code ?? '-',
-
-                'pr_TA' => $group->pr_ta->item_code ?? '-',
-
-                // WIP
-                'wip_disc' => $group->wip_disc->item_code ?? '-',
-
-                'wip_rim' => $group->wip_rim->item_code ?? '-',
-
-                'wip_sidering' => $group->wip_sr->item_code ?? '-',
-
-                'wip_assy' => $group->wip_assy->item_code ?? '-',
-
-                'wip_cedW' => $group->wip_cedW->item_code ?? '-',
-
-                'wip_cedSR' => $group->wip_cedSR->item_code ?? '-',
-
-                'wip_tcW' => $group->wip_tcW->item_code ?? '-',
-
-                'wip_tcSR' => $group->wip_tcSR->item_code ?? '-',
-
-                'wip_valve' => $group->wip_valve->item_code ?? '-',
-
-                'wip_tyre' => $group->wip_tyre->item_code ?? '-',
-
+                // Valve & Tyre
+                'wip_valve'   => $group->first(fn($i) => str_starts_with($i->item_code, 'CGP') && (stripos($i->description, 'valve') !== false || stripos($i->description, 'VLI') !== false))->item_code ?? '-',
+                'wip_tyre'    => $group->first(fn($i) => str_starts_with($i->item_code, 'CGP') && stripos($i->description, 'tyre') !== false)->item_code ?? '-',
             ];
+        });
+    }
 
-            $finalReportData->push($data);
-        }
+    public function BOM_Report()
+    {
+        // 1. Ambil Data Costing & Sales
+        $relations = ['bom' => fn($q) => $q->select('item_code', 'description')];
+        $sc = StandardCost::with($relations)->get();
+        $ac = ActualCost::with($relations)->get();
+        $dc = DifferenceCost::with($relations)->get();
+        $actual_sales = ActualSalesQuantity::with($relations)->get();
+        $dcxsq = DiffCostXSalesQty::with($relations)->get();
+
+        // 2. Ambil Data BOM Mentah
+        $stdBomRaw = StandardBillOfMaterial::all();
+        $actBomRaw = ActualBillOfMaterial::all();
+
+        // 3. Proses Data Menggunakan Helper
+        $processedStdBom = $this->processBOMData($stdBomRaw);
+        $processedActBom = $this->processBOMData($actBomRaw);
+
+        // 4. Ambil Last Update
+        $lastUpdate = [
+            StandardBillOfMaterial::latest('updated_at')->value('updated_at'),
+            ActualBillOfMaterial::latest('updated_at')->value('updated_at'),
+        ];
 
         return Inertia::render("bom/report", [
             'sc' => $sc,
             'ac' => $ac,
             'dc' => $dc,
             'actual_sales' => $actual_sales,
-            'bom' => $finalReportData,
-            'dcxsq' => $dcxsq,
-            'lastUpdate' => $lastUpdate,
-            'auth' => [
+            'stdBom'       => $processedStdBom, // Data Standard
+            'actBom'       => $processedActBom, // Data Actual (Baru)
+            'dcxsq'        => $dcxsq,
+            'lastUpdate'   => $lastUpdate,
+            'auth'         => [
                 'user' => Auth::check() ? [
-                    'name' => Auth::user()->name,
-                    'npk' => Auth::user()->npk,
-                    'roles' => Auth::user()->getRoleNames()->toArray(), // Pastikan ini diubah ke array
-                    'permissions' => Auth::user()->getAllPermissions()->pluck('name')->toArray(), // Juga pastikan ini dikirim
+                    'name'        => Auth::user()->name,
+                    'npk'         => Auth::user()->npk,
+                    'roles'       => Auth::user()->getRoleNames()->toArray(),
+                    'permissions' => Auth::user()->getAllPermissions()->pluck('name')->toArray(),
                 ] : null,
             ],
         ]);
@@ -619,99 +469,107 @@ class MenuController extends Controller
 
     public function Standard_Report()
     {
-        $sc = StandardCost::with(['bom' => function ($query) {
-            $query->select('item_code', 'description');
-        }])->get();
+        // $sc = StandardCost::with(['bom' => function ($query) {
+        //     $query->select('item_code', 'description');
+        // }])->get();
 
         $lastUpdate = [];
         $latestStandardMat = StandardMaterial::latest('updated_at')->first();
-        $latestValve = Valve::latest('updated_at')->first();
+        $latestConsumable = StandardConsumable::latest('updated_at')->first();
         $latestProcessCost = ProcessCost::latest('updated_at')->first();
-        $latestBOM = BillOfMaterial::latest('updated_at')->first();
+        $latestBOM = StandardBillOfMaterial::latest('updated_at')->first();
+        $latestStandardCost = StandardCost::latest('updated_at')->first();
 
 
         if ($latestStandardMat) {
-            $lastUpdate[] = $latestStandardMat->created_at;
+            $lastUpdate[] = $latestStandardMat->updated_at;
         } else {
             $lastUpdate[] = null;
         }
 
-        if ($latestValve) {
-            $lastUpdate[] = $latestValve->created_at;
+        if ($latestConsumable) {
+            $lastUpdate[] = $latestConsumable->updated_at;
         } else {
             $lastUpdate[] = null;
         }
 
         if ($latestProcessCost) {
-            $lastUpdate[] = $latestProcessCost->created_at;
+            $lastUpdate[] = $latestProcessCost->updated_at;
         } else {
             $lastUpdate[] = null;
         }
 
         if ($latestBOM) {
-            $lastUpdate[] = $latestBOM->created_at;
+            $lastUpdate[] = $latestBOM->updated_at;
         } else {
             $lastUpdate[] = null;
         }
 
+        if ($latestStandardCost) {
+            $lastUpdate[] = $latestStandardCost->updated_at;
+        } else {
+            $lastUpdate[] = null;
+        }
+
+        // return Inertia::render("sc/report", [
+        //     'sc' => $sc,
+        // 'lastMaster' => $lastUpdate,
+        //     'auth' => [
+        //         'user' => Auth::check() ? [
+        //             'name' => Auth::user()->name,
+        //             'npk' => Auth::user()->npk,
+        //             'roles' => Auth::user()->getRoleNames()->toArray(), // Pastikan ini diubah ke array
+        //             'permissions' => Auth::user()->getAllPermissions()->pluck('name')->toArray(), // Juga pastikan ini dikirim
+        //         ] : null,
+        //     ],
+        // ]);
         return Inertia::render("sc/report", [
-            'sc' => $sc,
             'lastMaster' => $lastUpdate,
-            'auth' => [
-                'user' => Auth::check() ? [
-                    'name' => Auth::user()->name,
-                    'npk' => Auth::user()->npk,
-                    'roles' => Auth::user()->getRoleNames()->toArray(), // Pastikan ini diubah ke array
-                    'permissions' => Auth::user()->getAllPermissions()->pluck('name')->toArray(), // Juga pastikan ini dikirim
-                ] : null,
-            ],
         ]);
     }
 
-    public function reportActual()
+    public function Actual_Report()
     {
-        $ac = ActualCost::with(['bom' => function ($query) {
-            $query->select('item_code', 'description');
-        }])->get();
+        // $ac = ActualCost::with(['bom' => function ($query) {
+        //     $query->select('item_code', 'description');
+        // }])->get();
 
-        $acPeriod = ActualCost::distinct()->pluck('period');
-        $acPeriod = $this->sortPeriods($acPeriod);
-
-
+        // $acPeriod = ActualCost::distinct()->pluck('period');
+        // $acPeriod = $this->sortPeriods($acPeriod);
 
         $lastUpdate = [];
         $latestActualMat = ActualMaterial::latest('updated_at')->first();
-        $latestValve = Valve::latest('updated_at')->first();
+        $latestConsumable = StandardConsumable::latest('updated_at')->first();
         $latestProcessCost = ProcessCost::latest('updated_at')->first();
-        $latestBOM = BillOfMaterial::latest('updated_at')->first();
+        $latestBOM = ActualBillOfMaterial::latest('updated_at')->first();
 
         if ($latestActualMat) {
-            $lastUpdate[] = $latestActualMat->created_at;
+            $lastUpdate[] = $latestActualMat->updated_at;
         } else {
             $lastUpdate[] = null;
         }
 
-        if ($latestValve) {
-            $lastUpdate[] = $latestValve->created_at;
+        if ($latestConsumable) {
+            $lastUpdate[] = $latestConsumable->updated_at;
         } else {
             $lastUpdate[] = null;
         }
 
         if ($latestBOM) {
-            $lastUpdate[] = $latestBOM->created_at;
+            $lastUpdate[] = $latestBOM->updated_at;
         } else {
             $lastUpdate[] = null;
         }
 
         if ($latestProcessCost) {
-            $lastUpdate[] = $latestProcessCost->created_at;
+            $lastUpdate[] = $latestProcessCost->updated_at;
         } else {
             $lastUpdate[] = null;
         }
 
         return Inertia::render("ac/report", [
-            'ac' => $ac,
-            'acPeriod' => $acPeriod,
+            // 'ac' => $ac,
+            // 'acPeriod' => $acPeriod,
             'lastMaster' => $lastUpdate,
             'auth' => [
                 'user' => Auth::check() ? [
@@ -722,6 +580,8 @@ class MenuController extends Controller
                 ] : null,
             ],
         ]);
+
+        // return Inertia::render("ac/report");
     }
 
     private function getCombinedDiffCost($sc, $ac, $dc)

@@ -184,7 +184,7 @@ const lineDiscTotal = computed(() => calculateTotal(['blanking', 'spinDisc', 'au
 const lineRimTotal = computed(() => calculateTotal(['rim1', 'rim2', 'rim3']));
 const lineSideringTotal = computed(() => calculateTotal(['coiler', 'forming']));
 const lineAssyTotal = computed(() => calculateTotal(['assy1', 'assy2', 'machining', 'shotPeening']));
-const linePaintingTotal = computed(() => calculateTotal(['ced', 'topcoat', 'machining', 'shotPeening']));
+const linePaintingTotal = computed(() => calculateTotal(['ced', 'topcoat']));
 const linePackingTotal = computed(() => calculateTotal(['packing_dom', 'packing_exp']));
 const lineTotals = computed(
     () => lineDiscTotal.value + lineRimTotal.value + lineSideringTotal.value + lineAssyTotal.value + linePaintingTotal.value + linePackingTotal.value,
