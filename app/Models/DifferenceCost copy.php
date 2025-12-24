@@ -4,15 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class DiffCostXSalesQty extends Model
+class DifferenceCost extends Model
 {
-    protected $table = 'diff_cost_x_sales_quantities';
-
+    protected $table = 'difference_cost';
     protected $fillable = [
         'item_code',
         'period',
-        'sales_month',
-        'quantity',
         'total_raw_material',
         'total_process',
         'total'
@@ -25,11 +22,12 @@ class DiffCostXSalesQty extends Model
 
     public function ac()
     {
-        return $this->belongsTo(StandardCost::class, 'item_code', 'item_code');
+        return $this->hasOne(ActualCost::class, 'item_code', 'item_code')
+            ->whereColumn('period', 'period');
     }
 
     public function bom()
     {
-        return $this->hasOne(ActualBillOfMaterial::class, 'item_code', 'item_code');
+        return $this->hasOne(BillOfMaterial::class, 'item_code', 'item_code');
     }
 }

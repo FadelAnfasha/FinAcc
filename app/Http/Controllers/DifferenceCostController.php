@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 use Carbon\Carbon;
@@ -11,22 +12,52 @@ use App\Models\ActualCost;
 use App\Models\StandardCost;
 use App\Models\DifferenceCost;
 use App\Models\DiffCostXSalesQty;
+use App\Models\ActualSalesQuantity;
 use App\Traits\CostAnalysisTrait;
+
 
 class DifferenceCostController extends Controller
 {
     use CostAnalysisTrait;
+    protected function sortPeriods(Collection $periods): Collection
+    {
+        $monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        return $periods->sort(function ($a, $b) use ($monthOrder) {
+            $isYtdA = str_starts_with($a, 'YTD-');
+            $isYtdB = str_starts_with($b, 'YTD-');
+
+            if ($isYtdA && !$isYtdB) return 1;
+            if (!$isYtdA && $isYtdB) return -1;
+
+            $monthA = substr(str_replace('YTD-', '', $a), 0, 3);
+            $monthB = substr(str_replace('YTD-', '', $b), 0, 3);
+
+            $indexA = array_search($monthA, $monthOrder);
+            $indexB = array_search($monthB, $monthOrder);
+
+            return $indexA <=> $indexB;
+        })->values();
+    }
+
     public function updateDifferenceCost(Request $request)
     {
         $validatedData = $request->validate([
             'standard_period' => 'required',
             'actual_period' => 'required',
         ]);
-        $standardCost = StandardCost::where('period', $validatedData['standard_period'])
-            ->get();
 
-        $actualCost = ActualCost::where('period', $validatedData['actual_period'])
-            ->get();
+        $standardCost = StandardCost::where('period', $validatedData['standard_period'])->get();
+        $actualCost = ActualCost::where('period', $validatedData['actual_period'])->get();
+        $actualSalesQuantities = ActualSalesQuantity::all()->keyBy('item_code');
+
+        $isYTD = str_starts_with($validatedData['actual_period'], 'YTD-');
+        $cleanPeriod = str_replace('YTD-', '', $validatedData['actual_period']);
+        $monthKey = substr($cleanPeriod, 0, 3);
+        $displayPeriod = $validatedData['actual_period'] . ' / ' . $monthKey;
+
+        $months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+        $currentMonthIndex = array_search(strtolower($monthKey), $months);
 
         $differenceCosts = [];
         $processedItemCodes = [];
@@ -35,12 +66,24 @@ class DifferenceCostController extends Controller
             ? substr($validatedData['actual_period'], -4)
             : $validatedData['actual_period'];
 
-
         foreach ($standardCost as $sc) {
             $ac = $actualCost->firstWhere('item_code', $sc->item_code);
-            $finalRemark = 'Normal';
+            $salesQtyData = $actualSalesQuantities->get($sc->item_code);
 
-            // Dapatkan harga komponen (menggunakan ?? 0 untuk keamanan)
+            $qty = 0;
+            if ($salesQtyData) {
+                if ($isYTD && $currentMonthIndex !== false) {
+                    for ($i = 0; $i <= $currentMonthIndex; $i++) {
+                        $col = $months[$i] . '_qty';
+                        $qty += (int) ($salesQtyData->{$col} ?? 0);
+                    }
+                } else {
+                    $col = strtolower($monthKey) . '_qty';
+                    $qty = (int) ($salesQtyData->{$col} ?? 0);
+                }
+            }
+
+            $finalRemark = 'Normal';
             $sc_disc_price = $sc->disc_price ?? 0;
             $ac_disc_price = $ac->disc_price ?? 0;
             $sc_rim_price = $sc->rim_price ?? 0;
@@ -80,24 +123,20 @@ class DifferenceCostController extends Controller
                 $diff_process = $sc->total_process - $ac->total_process;
                 $diff_total = $diff_raw_material + $diff_process;
 
-                $diff_disc = $sc_disc_price - $ac_disc_price;
-                $diff_rim = $sc_rim_price - $ac_rim_price;
-                $diff_sidering = $sc_sidering_price - $ac_sidering_price;
-
                 $differenceCosts[] = [
                     'item_code' => $sc->item_code,
-                    'period' => $validatedData['actual_period'],
-
+                    'period' => $displayPeriod,
+                    'quantity' => $qty,
                     'total_raw_material' => $diff_raw_material,
                     'total_process' => $diff_process,
                     'total' => $diff_total,
-
-                    'diff_disc' => $diff_disc,
-                    'diff_rim' => $diff_rim,
-                    'diff_sidering' => $diff_sidering,
-
+                    'qty_x_total_raw_material' => $qty * (float) $diff_raw_material,
+                    'qty_x_total_process' => $qty * (float) $diff_process,
+                    'qty_x_total' => $qty * (float) $diff_total,
+                    'diff_disc' => $sc_disc_price - $ac_disc_price,
+                    'diff_rim' => $sc_rim_price - $ac_rim_price,
+                    'diff_sidering' => $sc_sidering_price - $ac_sidering_price,
                     'remark' => $finalRemark,
-
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
@@ -110,18 +149,23 @@ class DifferenceCostController extends Controller
                     }
                 }
 
+                $diff_raw_material = $sc->total_raw_material;
+                $diff_process = $sc->total_process;
+                $diff_total = $diff_raw_material + $diff_process;
+
                 $differenceCosts[] = [
                     'item_code' => $sc->item_code,
-                    'period' => $validatedData['actual_period'],
-
-                    'total_raw_material' => $sc->total_raw_material,
-                    'total_process' => $sc->total_process,
-                    'total' => $sc->total_raw_material + $sc->total_process,
-
+                    'period' => $displayPeriod,
+                    'quantity' => $qty,
+                    'total_raw_material' => $diff_raw_material,
+                    'total_process' => $diff_process,
+                    'total' => $diff_total,
+                    'qty_x_total_raw_material' => $qty * (float) $diff_raw_material,
+                    'qty_x_total_process' => $qty * (float) $diff_process,
+                    'qty_x_total' => $qty * (float) $diff_total,
                     'diff_disc' => $sc_disc_price,
                     'diff_rim' => $sc_rim_price,
                     'diff_sidering' => $sc_sidering_price,
-
                     'remark' => $finalRemark,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -132,8 +176,22 @@ class DifferenceCostController extends Controller
         $onlyActualCost = $actualCost->whereNotIn('item_code', $processedItemCodes);
 
         foreach ($onlyActualCost as $ac) {
-            $finalRemark = 'Normal';
+            $salesQtyData = $actualSalesQuantities->get($ac->item_code);
 
+            $qty = 0;
+            if ($salesQtyData) {
+                if ($isYTD && $currentMonthIndex !== false) {
+                    for ($i = 0; $i <= $currentMonthIndex; $i++) {
+                        $col = $months[$i] . '_qty';
+                        $qty += (int) ($salesQtyData->{$col} ?? 0);
+                    }
+                } else {
+                    $col = strtolower($monthKey) . '_qty';
+                    $qty = (int) ($salesQtyData->{$col} ?? 0);
+                }
+            }
+
+            $finalRemark = 'Normal';
             $diff_raw_material = 0 - $ac->total_raw_material;
             $diff_process = 0 - $ac->total_process;
             $diff_total = $diff_raw_material + $diff_process;
@@ -142,219 +200,205 @@ class DifferenceCostController extends Controller
             $ac_rim_price = $ac->rim_price ?? 0;
             $ac_sidering_price = $ac->sidering_price ?? 0;
 
-            $componentMapping = [
-                'disc' => ['std' => 0, 'act' => $ac_disc_price],
-                'rim' => ['std' => 0, 'act' => $ac_rim_price],
-                'sidering' => ['std' => 0, 'act' => $ac_sidering_price],
-            ];
-
-            foreach ($componentMapping as $name => $data) {
-                if ($data['std'] == 0 && $data['act'] > 0) {
-                    $previousSCPeriod = $this->getStandardCostHistoryPeriod($ac->item_code, $currentYear);
-                    if ($previousSCPeriod) {
-                        $finalRemark = "Using previous standard cost {$previousSCPeriod}";
-                    } else {
-                        $finalRemark = "New Product";
-                    }
-                    break;
-                }
+            $previousSCPeriod = $this->getStandardCostHistoryPeriod($ac->item_code, $currentYear);
+            if ($previousSCPeriod) {
+                $finalRemark = "Using previous standard cost {$previousSCPeriod}";
+            } else {
+                $finalRemark = "New Product";
             }
 
             $differenceCosts[] = [
                 'item_code' => $ac->item_code,
-                'period' => $validatedData['actual_period'],
-
+                'period' => $displayPeriod,
+                'quantity' => $qty,
                 'total_raw_material' => $diff_raw_material,
                 'total_process' => $diff_process,
                 'total' => $diff_total,
-
+                'qty_x_total_raw_material' => $qty * (float) $diff_raw_material,
+                'qty_x_total_process' => $qty * (float) $diff_process,
+                'qty_x_total' => $qty * (float) $diff_total,
                 'diff_disc' => 0 - $ac_disc_price,
                 'diff_rim' => 0 - $ac_rim_price,
                 'diff_sidering' => 0 - $ac_sidering_price,
-
                 'remark' => $finalRemark,
-
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
         }
 
-        DifferenceCost::upsert($differenceCosts, ['item_code', 'period'], [
-            'total_raw_material',
-            'total_process',
-            'total',
-            'diff_disc',
-            'diff_rim',
-            'diff_sidering',
-            'remark'
-        ]);
+        foreach (array_chunk($differenceCosts, 500) as $chunk) {
+            DifferenceCost::upsert($chunk, ['item_code', 'period'], [
+                'quantity',
+                'total_raw_material',
+                'total_process',
+                'total',
+                'qty_x_total_raw_material',
+                'qty_x_total_process',
+                'qty_x_total',
+                'diff_disc',
+                'diff_rim',
+                'diff_sidering',
+                'remark',
+                'updated_at'
+            ]);
+        }
 
         return redirect()->route('dc.report');
     }
 
-    private $monthMap = [
-        'jan' => 1,
-        'feb' => 2,
-        'mar' => 3,
-        'apr' => 4,
-        'may' => 5,
-        'jun' => 6,
-        'jul' => 7,
-        'aug' => 8,
-        'sep' => 9,
-        'oct' => 10,
-        'nov' => 11,
-        'dec' => 12,
-    ];
-
-    private $qtyColumns = [
-        1 => 'jan_qty',
-        2 => 'feb_qty',
-        3 => 'mar_qty',
-        4 => 'apr_qty',
-        5 => 'may_qty',
-        6 => 'jun_qty',
-        7 => 'jul_qty',
-        8 => 'aug_qty',
-        9 => 'sep_qty',
-        10 => 'oct_qty',
-        11 => 'nov_qty',
-        12 => 'dec_qty',
-    ];
-
-    public function updateDCxSQ(Request $request)
+    protected function getCombinedDiffCost($scCollection, $acCollection, $dcCollection)
     {
-        $now = Carbon::now();
-        $validatedData = $request->validate([
-            'period' => 'required|string',
-            'sales_period' => 'required|string',
-        ]);
+        return $dcCollection->map(function ($dcItem) use ($scCollection, $acCollection) {
+            $sc = $scCollection->firstWhere('item_code', $dcItem->item_code);
+            $ac = $acCollection->firstWhere('item_code', $dcItem->item_code);
+            $dcItem->custom_field = 'SC: ' . ($sc->period ?? 'N/A') . ', AC: ' . ($ac->period ?? 'N/A');
 
-        $periodToMatch = $validatedData['period'];
-        $salesPeriodColumn = $validatedData['sales_period'];
-
-        $endMonthKey = str_replace('_qty', '', strtolower($salesPeriodColumn));
-        $salesMonth = ucfirst($endMonthKey);
-
-        $columnsToSum = [$salesPeriodColumn];
-
-        if (str_starts_with($validatedData['period'], 'YTD-')) {
-            $endMonthNum = $this->monthMap[$endMonthKey] ?? null;
-
-            if ($endMonthNum) {
-                $columnsToSum = [];
-                for ($i = 1; $i <= $endMonthNum; $i++) {
-                    $columnsToSum[] = $this->qtyColumns[$i];
-                }
-            }
-
-            $periodParts = explode(' / ', $validatedData['period']);
-            $periodToMatch = $periodParts[0];
-        }
-
-        $sumExpression = "COALESCE(" . implode(', 0) + COALESCE(', $columnsToSum) . ", 0)";
-
-        $dc = DifferenceCost::select(
-            'difference_cost.item_code',
-            'difference_cost.total_raw_material',
-            'difference_cost.total_process',
-            'difference_cost.total',
-            DB::raw("{$sumExpression} as month_qty")
-        )
-            ->where('difference_cost.period', $periodToMatch)
-            ->leftJoin('actual_salesquantities as acs', 'difference_cost.item_code', '=', 'acs.item_code')
-            ->get();
-
-        $period = $validatedData['period'] . ' / ' . $salesMonth;
-
-        $dataToInsert = $dc->map(function ($item) use ($period, $now) {
-            $itemCode = $item->item_code;
-            $qty = $item->month_qty;
-
-            return [
-                'item_code' => $itemCode,
-                'total_raw_material' => $item->total_raw_material * $qty,
-                'total_process'      => $item->total_process * $qty,
-                'total'              => $item->total * $qty,
-                'period'             => $period,
-                'quantity'           => $qty,
-                'created_at'         => $now,
-                'updated_at'         => $now,
-            ];
-        })->toArray();
-
-        if (!empty($dataToInsert)) {
-            $uniqueKeys = ['item_code', 'period'];
-            $updateColumns = ['total_raw_material', 'total_process', 'total', 'quantity', 'updated_at'];
-
-            DiffCostXSalesQty::upsert(
-                $dataToInsert,
-                $uniqueKeys,
-                $updateColumns
-            );
-        }
-
-        return back()->with('status', 'DCxSQ report updated successfully!');
+            return $dcItem;
+        });
     }
 
-    // public function updateDCxSQ(Request $request)
-    // {
-    //     dd($request->all());
+    public function getPaginated(Request $request)
+    {
+        $searchTerm = $request->input('search');
+        $itemCodeFilter = $request->input('item_code_filter');
+        $descriptionFilter = $request->input('description_filter');
+        $periodFilter = $request->input('period_filter');
+        $remarkFilter = $request->input('remark_filter');
+        $quantityFilter = $request->input('quantity_filter');
 
-    //     $now = Carbon::now();
-    //     $validatedData = $request->validate([
-    //         'period' => 'required',
-    //         'sales_period' => 'required',
-    //     ]);
+        $sortField = $request->input('sort_field');
+        $sortOrder = $request->input('sort_order', 'asc');
+        $perPage = $request->input('per_page', 10);
 
+        $query = DifferenceCost::select('difference_cost.*')
+            ->join('actual_cost AS ac', function ($join) {
+                $join->on('ac.item_code', '=', 'difference_cost.item_code');
+                $join->whereRaw('difference_cost.period LIKE CONCAT(ac.period, "%")');
+            })
+            ->join('standard_cost AS sc', function ($join) {
+                $join->on('sc.item_code', '=', 'difference_cost.item_code');
+            })
+            ->leftJoin('standard_bill_of_materials AS bom', 'bom.item_code', '=', 'difference_cost.item_code')
+            ->when($searchTerm, function ($query, $term) {
+                $query->where(function ($q) use ($term) {
+                    $q->where('difference_cost.item_code', 'LIKE', '%' . $term . '%')
+                        ->orWhere('difference_cost.period', 'LIKE', '%' . $term . '%')
+                        ->orWhere('bom.description', 'LIKE', '%' . $term . '%');
+                });
+            })
+            ->when($itemCodeFilter, function ($query, $term) {
+                $query->where('difference_cost.item_code', 'LIKE', $term . '%');
+            })
+            ->when($descriptionFilter, function ($query, $term) {
+                $query->where('bom.description', 'LIKE', '%' . $term . '%');
+            })
+            ->when($periodFilter, function ($query, $term) {
+                $query->where('difference_cost.period', 'LIKE', '%' . $term . '%');
+            })
+            ->when($quantityFilter, function ($query, $term) {
+                if (is_array($term)) {
+                    $query->whereIn('difference_cost.quantity', $term);
+                } else {
+                    $query->where('difference_cost.quantity', '=', $term);
+                }
+            })
+            ->when($remarkFilter, function ($query, $term) {
+                if (is_array($term)) {
+                    $query->whereIn('difference_cost.remark', $term);
+                } else {
+                    $query->where('difference_cost.remark', '=', $term);
+                }
+            })
+            ->where('difference_cost.quantity', '>', 0)
+            ->selectRaw('
+            difference_cost.*,
+            bom.description AS description,
+            sc.disc_price AS sc_disc_price,
+            sc.rim_price AS sc_rim_price,
+            sc.sidering_price AS sc_sidering_price,
+            sc.total_raw_material AS sc_total_raw_material,
+            sc.total_process AS sc_total_process,
+            sc.total AS sc_total,
+            ac.total_raw_material AS ac_total_raw_material,
+            ac.total_process AS ac_total_process,
+            ac.total AS ac_total,
+            difference_cost.qty_x_total_raw_material,
+            difference_cost.qty_x_total_process,
+            difference_cost.qty_x_total
+        ');
 
+        if ($sortField) {
+            $direction = ($sortOrder === 'desc' || $sortOrder === '-1') ? 'desc' : 'asc';
 
-    //     $salesPeriodColumn = $validatedData['sales_period'];
+            if ($sortField === 'period') {
+                $query->orderByRaw(
+                    '
+                CASE WHEN difference_cost.period LIKE "YTD-%" THEN 1 ELSE 0 END ' . $direction . ',
+                FIELD(SUBSTR(REPLACE(difference_cost.period, "YTD-", ""), 1, 3), 
+                "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec") ' . $direction
+                );
+            } else {
+                $query->orderBy($sortField, $direction);
+            }
+        } else {
+            $query->orderByRaw('
+            CASE WHEN difference_cost.period LIKE "YTD-%" THEN 1 ELSE 0 END ASC,
+            FIELD(SUBSTR(REPLACE(difference_cost.period, "YTD-", ""), 1, 3), 
+            "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec") ASC
+        ');
+        }
 
-    //     $dc = DifferenceCost::select(
-    //         'difference_cost.item_code',
-    //         'difference_cost.total_raw_material',
-    //         'difference_cost.total_process',
-    //         'difference_cost.total',
-    //         DB::raw("COALESCE(acs.{$salesPeriodColumn}, 0) as month_qty")
-    //     )
-    //         ->where('difference_cost.period', $validatedData['period'])
-    //         ->leftJoin('actual_salesquantities as acs', 'difference_cost.item_code', '=', 'acs.item_code')
-    //         ->get();
+        $dcPaginated = $query->paginate($perPage);
 
-    //     $salesPeriodTemp = str_replace('_qty', '', $salesPeriodColumn);
-    //     $salesMonth = ucfirst($salesPeriodTemp);
-    //     $period = $validatedData['period'] . ' / ' . $salesMonth;
+        return response()->json($dcPaginated);
+    }
 
-    //     $dataToInsert = $dc->map(function ($item) use ($validatedData, $salesMonth, $period, $now) {
-    //         $data = $item->toArray();
-    //         $qty = $data['month_qty'];
+    public function getTotal(Request $request)
+    {
+        $periodFilter = $request->input('period_filter');
+        $query = DifferenceCost::query();
+        if ($periodFilter) {
+            $query->where('period', $periodFilter);
+        }
+        $totals = $query->selectRaw('
+        SUM(qty_x_total_raw_material) AS total_raw_material,
+        SUM(qty_x_total_process) AS total_process,
+        SUM(qty_x_total) AS total
+    ')->first();
+        return response()->json($totals);
+    }
 
-    //         $data['total_raw_material'] = $data['total_raw_material'] * $qty;
-    //         $data['total_process']      = $data['total_process'] * $qty;
-    //         $data['total']              = $data['total'] * $qty;
+    public function getQuantity(Request $request)
+    {
+        $dcQuantity = DifferenceCost::distinct()->pluck('quantity');
 
-    //         // Tambahkan kolom KUNCI UNIK dan data lain
-    //         $data['period'] = $period;
-    //         $data['quantity'] = $qty;
-    //         $data['created_at'] = $now;
-    //         $data['updated_at'] = $now;
+        return response()->json($dcQuantity);
+    }
 
-    //         unset($data['month_qty']);
-    //         return $data;
-    //     })->toArray();
+    public function getPeriod()
+    {
+        $dcPeriod = DifferenceCost::distinct()->pluck('period');
+        $dcPeriod = $this->sortPeriods($dcPeriod);
 
-    //     if (!empty($dataToInsert)) {
-    //         $uniqueKeys = ['item_code', 'period', 'sales_month'];
-    //         $updateColumns = ['total_raw_material', 'total_process', 'total', 'quantity', 'updated_at'];
+        return response()->json($dcPeriod);
+    }
 
-    //         DiffCostXSalesQty::upsert(
-    //             $dataToInsert,
-    //             $uniqueKeys,
-    //             $updateColumns
-    //         );
-    //     }
+    public function getRemark()
+    {
+        $dcRemark = DifferenceCost::distinct()->pluck('remark');
 
-    //     return back()->with('status', 'DCxSQ report updated successfully!');
-    // }
+        return response()->json($dcRemark);
+    }
+
+    public function getExport(Request $request)
+    {
+        $periodFilter = $request->input('period_filter');
+        $query = DifferenceCost::query();
+        if ($periodFilter) {
+            $query->where('period', $periodFilter);
+        }
+        $dcExport = $query->get();
+
+        return response()->json($dcExport);
+    }
 }

@@ -5,13 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use PhpParser\PrettyPrinter\Standard;
 
-class BillOfMaterial extends Model
+class StandardBillOfMaterial extends Model
 {
     use HasFactory;
 
-    protected $table = 'bom';
+    protected $table = 'standard_bill_of_materials';
 
     protected $fillable = [
         'item_code',
@@ -32,22 +31,22 @@ class BillOfMaterial extends Model
 
     public function actualMaterial()
     {
-        return $this->hasOne(actualMaterial::class, 'item_code', 'item_code');
+        return $this->hasOne(ActualMaterial::class, 'item_code', 'item_code');
     }
 
-    public function processInfo()
-    {
-        return $this->hasOne(Process::class, 'item_code', 'item_code');
-    }
+    // public function processInfo()
+    // {
+    //     return $this->hasOne(Process::class, 'item_code', 'item_code');
+    // }
 
-    public function packingInfo()
-    {
-        return $this->hasOne(Packing::class, 'item_code', 'item_code');
-    }
+    // public function packingInfo()
+    // {
+    //     return $this->hasOne(Packing::class, 'item_code', 'item_code');
+    // }
 
-    public function valveInfo()
+    public function stdConsumableInfo()
     {
-        return $this->hasOne(Valve::class, 'item_code', 'item_code');
+        return $this->hasOne(StandardConsumable::class, 'item_code', 'item_code');
     }
 
     public function processCost()

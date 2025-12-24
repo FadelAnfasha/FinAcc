@@ -11,72 +11,93 @@ class WagesDistributionController extends Controller
 {
     public function import(Request $request)
     {
+        // 1. Validasi File
         $request->validate([
-            'file' => 'required|file|mimes:csv,txt,xls,xlsx'
+            'file' => 'required|mimes:csv,txt'
         ]);
 
         $file = $request->file('file');
-        $csvData = array_map('str_getcsv', file($file));
+        $csvData = [];
 
-        // Buang header
-        $header = array_shift($csvData);
+        // 2. Baca CSV dengan Delimiter ;
+        if (($handle = fopen($file->getRealPath(), 'r')) !== FALSE) {
+            $delimiter = ';';
+            $header = fgetcsv($handle, 1000, $delimiter); // Lewati header
 
-
-        // Ambil data CSV (asumsi hanya 1 baris)
-        $row = $csvData[0];
-        Cache::put('import-progress-wd', 10, now()->addMinutes(2)); // Simulasi start 10%
-
-
-        if (count($row) < 18) {
-            return back()->withErrors(['file' => 'Format CSV tidak valid. Kolom tidak lengkap.']);
+            while (($row = fgetcsv($handle, 1000, $delimiter)) !== FALSE) {
+                // Validasi minimal kolom (sesuai kebutuhan Anda yaitu 18 kolom)
+                if (count($row) >= 18) {
+                    $csvData[] = $row;
+                }
+            }
+            fclose($handle);
+        } else {
+            return redirect()->route('pc.master')->withErrors(['file' => 'Gagal membuka file CSV.']);
         }
 
+        if (empty($csvData)) {
+            return back()->withErrors(['file' => 'File kosong atau format tidak sesuai.']);
+        }
+
+        // Ambil baris pertama data (asumsi Anda hanya memproses satu baris data sesuai logic awal)
+        $row = $csvData[0];
+        Cache::put('import-progress-wd', 10, now()->addMinutes(2));
+
+        /**
+         * Helper Fungsi untuk membersihkan angka
+         * Menghapus koma (ribuan) agar PHP bisa melakukan operasi matematika dengan titik (desimal)
+         */
+        $cleanNumber = function ($value) {
+            // Hapus koma (ribuan)
+            $clean = str_replace(',', '', $value);
+            // Pastikan menjadi float, lalu gunakan ceil sesuai logic Anda
+            return ceil((float)$clean * 100) / 100;
+        };
+
+        // 3. Mapping Data dengan Pembersihan Angka
         $importedData = [
-            'blanking'      => ceil($row[0] * 100) / 100,
-            'spinDisc'  => ceil($row[1] * 100) / 100,
-            'autoDisc'      => ceil($row[2] * 100) / 100,
-            'manualDisc'    => ceil($row[3] * 100) / 100,
-            'discLathe'     => ceil($row[4] * 100) / 100,
-            'rim1'          => ceil($row[5] * 100) / 100,
-            'rim2'          => ceil($row[6] * 100) / 100,
-            'rim3'          => ceil($row[7] * 100) / 100,
-            'coiler'        => ceil($row[8] * 100) / 100,
-            'forming'       => ceil($row[9] * 100) / 100,
-            'assy1'         => ceil($row[10] * 100) / 100,
-            'assy2'         => ceil($row[11] * 100) / 100,
-            'machining'     => ceil($row[12] * 100) / 100,
-            'shotPeening'   => ceil($row[13] * 100) / 100,
-            'ced'           => ceil($row[14] * 100) / 100,
-            'topcoat'       => ceil($row[15] * 100) / 100,
-            'packing_dom'   => ceil($row[16] * 100) / 100,
-            'packing_exp'   => ceil($row[17] * 100) / 100,
+            'blanking'      => $cleanNumber($row[0]),
+            'spinDisc'      => $cleanNumber($row[1]),
+            'autoDisc'      => $cleanNumber($row[2]),
+            'manualDisc'    => $cleanNumber($row[3]),
+            'discLathe'     => $cleanNumber($row[4]),
+            'rim1'          => $cleanNumber($row[5]),
+            'rim2'          => $cleanNumber($row[6]),
+            'rim3'          => $cleanNumber($row[7]),
+            'coiler'        => $cleanNumber($row[8]),
+            'forming'       => $cleanNumber($row[9]),
+            'assy1'         => $cleanNumber($row[10]),
+            'assy2'         => $cleanNumber($row[11]),
+            'machining'     => $cleanNumber($row[12]),
+            'shotPeening'   => $cleanNumber($row[13]),
+            'ced'           => $cleanNumber($row[14]),
+            'topcoat'       => $cleanNumber($row[15]),
+            'packing_dom'   => $cleanNumber($row[16]),
+            'packing_exp'   => $cleanNumber($row[17]),
         ];
 
         $addedItems = [];
         $updatedItems = [];
-        // Cek data lama
+
+        // 4. Proses Simpan/Update
         $existing = WagesDistribution::first();
 
         if ($existing) {
             foreach ($importedData as $field => $newValue) {
-                if (round($existing->$field, 2) != $newValue) {
-                    $updatedItems[] = $field . ' - ' . $newValue;
+                // Bandingkan dengan round untuk menghindari selisih kecil floating point
+                if (round((float)$existing->$field, 2) != round($newValue, 2)) {
+                    $updatedItems[] = $field . ' : ' . $newValue;
                 }
             }
-
-            // Update saja tanpa truncate
             $existing->update($importedData);
         } else {
-            // Kalau belum ada data, buat baru
             WagesDistribution::create($importedData);
-
-            // Semua field dianggap "added"
-            foreach (array_keys($importedData) as $field) {
-                $addedItems[] = $field . ' - ' . $importedData[$field];
+            foreach ($importedData as $field => $value) {
+                $addedItems[] = $field . ' : ' . $value;
             }
         }
 
-        Cache::put('import-progress-wd', 100, now()->addMinutes(2)); // Final progress
+        Cache::put('import-progress-wd', 100, now()->addMinutes(2));
 
         return redirect()->route('pc.master')
             ->with('addedItems', $addedItems)

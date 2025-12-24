@@ -22,11 +22,11 @@ class DifferenceCost extends Model
 
     public function ac()
     {
-        return $this->belongsTo(StandardCost::class, 'item_code', 'item_code');
+        return $this->belongsTo(ActualCost::class, 'item_code', 'item_code');
     }
 
     public function bom()
     {
-        return $this->hasOne(BillOfMaterial::class, 'item_code', 'item_code');
+        return $this->hasOne(ActualBillOfMaterial::class, 'item_code', 'item_code');
     }
 }

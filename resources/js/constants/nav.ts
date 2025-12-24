@@ -44,13 +44,13 @@ export const mainNavItems: NavItem[] = [
                 href: 'pc.master',
                 status: 'open', // Add the status property here
             },
-            {
-                key: 'bomMaster',
-                title: 'BOM Master Data',
-                icon: 'pi-file-import',
-                href: 'bom.master',
-                status: 'open', // Add the status property here
-            },
+            // {
+            //     key: 'bomMaster',
+            //     title: 'BOM Master Data',
+            //     icon: 'pi-file-import',
+            //     href: 'bom.master',
+            //     status: 'open', // Add the status property here
+            // },
             {
                 key: 'bomMasterStandard',
                 title: 'Standard Master Data',

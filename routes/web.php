@@ -1,16 +1,17 @@
 <?php
 
-use App\Http\Controllers\Auth\RegisteredUserController;
+
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
-use App\Models\SalesQuantity;
+use App\Http\Controllers\ActualBillOfMaterialController;
+use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ActualCostController;
-use App\Http\Controllers\actualMaterialController;
-use App\Http\Controllers\actualSalesQuantityController;
+use App\Http\Controllers\ActualMaterialController;
+use App\Http\Controllers\ActualSalesQuantityController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\BillOfMaterialController;
 use App\Http\Controllers\BusinessPartnerController;
@@ -20,13 +21,12 @@ use App\Http\Controllers\MenuController;
 use App\Http\Controllers\ProcessCostController;
 use App\Http\Controllers\RequestForServiceController;
 use App\Http\Controllers\SalesQuantityController;
-use App\Http\Controllers\standardMaterialController;
+use App\Http\Controllers\StandardBillOfMaterialController;
+use App\Http\Controllers\StandardConsumableController;
 use App\Http\Controllers\StandardCostController;
-use App\Http\Controllers\ValveController;
+use App\Http\Controllers\standardMaterialController;
 use App\Http\Controllers\WagesDistributionController;
-use App\Models\ActualCost;
-use App\Models\ActualSalesQuantity;
-use PhpOffice\PhpSpreadsheet\Calculation\DateTimeExcel\Difference;
+
 
 #===========================
 #======  Main Route  =======
@@ -76,6 +76,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/sc/report', [MenuController::class, 'Standard_Report'])
         ->name('sc.report');
+
+    Route::get('/ac/report', [MenuController::class, 'Actual_Report'])
+        ->name('ac.report');
 
     Route::get('/dc/report', [MenuController::class, 'DiffCost_Report'])
         ->name('dc.report');
@@ -188,7 +191,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/sq/import', [SalesQuantityController::class, 'import'])->middleware('permission:Update_MasterData')->name('sq.import');
     Route::put('/sq/update/{id}', [SalesQuantityController::class, 'update'])->name('sq.update');
-    Route::delete('/sq/destroy/{id}', [SalesQuantity::class, 'destroy'])->name('sq.destroy');
+    Route::delete('/sq/destroy/{id}', [SalesQuantityController::class, 'destroy'])->name('sq.destroy');
     Route::get('/sq/import-progress', function () {
         return response()->json([
             'progress' => Cache::get('import-progress-sq', 0),
@@ -229,20 +232,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 
-#=============================
-#=========> Valves <==========
-#=============================
-
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::post('/valve/import', [ValveController::class, 'import'])->middleware('permission:Update_MasterData')->name('valve.import');
-    Route::put('/valve/update/{id}', [ValveController::class, 'update'])->name('valve.update');
-    Route::delete('/valve/destroy/{id}', [ValveController::class, 'destroy'])->name('valve.destroy');
-    Route::get('/valve/import-progress', function () {
-        return response()->json([
-            'progress' => Cache::get('import-progress-valve', 0),
-        ]);
-    });
-});
 
 #==========================
 #====== Only Standard =====
@@ -251,26 +240,62 @@ Route::middleware(['auth', 'verified'])->group(function () {
     #==========================
     #==== Standard Master =====
     #==========================
-    Route::post('/standardMat/import', [standardMaterialController::class, 'import'])->middleware('permission:Update_MasterData')->name('stamat.import');
-    Route::put('/standardMat/update/{id}', [standardMaterialController::class, 'update'])->name('stamat.update');
-    Route::delete('/standardMat/destroy/{id}', [standardMaterialController::class, 'destroy'])->name('stamat.destroy');
-    Route::get('/standardMat/import-progress', function () {
+    Route::get('/api/standard/get-material', [StandardMaterialController::class, 'getPaginated'])->name('master.standard.paginated.material');
+    Route::get('/api/standard/list-material-group', [StandardMaterialController::class, 'getGroupList'])->name('master.standard.list.material-group');
+    Route::get('/api/standard/get-all-material', [StandardMaterialController::class, 'getAllMaterial'])->name('master.standard.get.all.material');
+
+    Route::post('/standard/import-material', [StandardMaterialController::class, 'import'])->middleware('permission:Update_MasterData')->name('master.standard.import.material');
+    Route::put('/standard/update-material/{id}', [StandardMaterialController::class, 'update'])->name('master.standard.update.material');
+    Route::delete('/standard/destroy-material/{id}', [StandardMaterialController::class, 'destroy'])->name('master.standard.destroy.material');
+    Route::get('/standard/import-material-progress', function () {
         return response()->json([
-            'progress' => Cache::get('import-progress-standardMat', 0),
+            'progress' => Cache::get('import-standard-material-progress', 0),
         ]);
     });
 
+    #==========================
+    #==== Standard BOM =====
+    #==========================
+    Route::get('/api/standard/get-bom', [StandardBillOfMaterialController::class, 'getPaginated'])->name('master.standard.paginated.bom');
+    Route::get('/api/standard/get-component', [StandardBillOfMaterialController::class, 'getComponent'])->name('master.standard.component.bom');
+    Route::get('/api/standard/get-structured-bom', [StandardBillOfMaterialController::class, 'getStructuredBOM'])->name('master.standard.structured.bom');
 
+    Route::post('/standard/import-bom', [StandardBillOfMaterialController::class, 'import'])
+        ->middleware('permission:Update_MasterData')
+        ->name('master.standard.import.bom');
+    Route::get('/standard/import-bom-progress', function () {
+        return response()->json([
+            'progress' => Cache::get('import-standard-bom-progress', 0),
+        ]);
+    });
+
+    #==========================
+    #== Standard Consumables ==
+    #==========================
+
+    Route::get('/api/standard/get-consumable', [StandardConsumableController::class, 'getPaginated'])->name('master.standard.consumables.paginated');
+
+    Route::middleware(['auth', 'verified'])->group(function () {
+        Route::post('/standard/import-consumable', [StandardConsumableController::class, 'import'])->middleware('permission:Update_MasterData')->name('master.standard.import.consumable');
+        Route::put('/standard/update-consumable/{id}', [StandardConsumableController::class, 'update'])->name('master.standard.update.consumable');
+        Route::delete('/consumable/destroy-consumable/{id}', [StandardConsumableController::class, 'destroy'])->name('master.standard.destroy.consumable');
+        Route::get('/standard/import-consumable-progress', function () {
+            return response()->json([
+                'progress' => Cache::get('import-standard-consumable-progress', 0),
+            ]);
+        });
+    });
 
     #==========================
     #==== Standard Report =====
     #==========================
-    Route::post('/sc/update/SC', [StandardCostController::class, 'update'])->middleware('permission:Update_Report')->name('sc.update');
-    Route::get('/sc/previewSC/{item_code}', action: [StandardCostController::class, 'preview'])->name('sc.preview');
-    Route::get('/api/sc/list-period', [StandardCostController::class, 'getStandardPeriod'])->name('report.sc.period');
+    Route::get('/api/standard/get-std-cost', [StandardCostController::class, 'getPaginated'])->name('report.standard.paginatedStandardCost');
+    Route::get('/api/standard/list-period', [StandardCostController::class, 'getPeriod'])->name('report.standard.listPeriod');
+    Route::get('/api/standard/list-type', [StandardCostController::class, 'getType'])->name('report.standard.listType');
+    Route::get('/api/standard/export-report', [StandardCostController::class, 'getExport'])->name('report.standard.export');
 
-    // Route::get('/sc/download/{item_code}', [BOMController::class, 'downloadReport'])->name('sc.download');
-
+    Route::post('/standard/update-report/SC', [StandardCostController::class, 'update'])->middleware('permission:Update_Report')->name('report.standard.update');
+    Route::get('/standard/preview-report/{item_code}', action: [StandardCostController::class, 'preview'])->name('report.standard.preview');
 });
 
 #==========================
@@ -280,57 +305,77 @@ Route::middleware(['auth', 'verified'])->group(function () {
     #==========================
     #===== Actual Master ======
     #==========================
+    Route::get('/api/actual/get-material', [ActualMaterialController::class, 'getPaginated'])->name('master.actual.paginated.material');
+    Route::get('/api/actual/list-material-period', [ActualMaterialController::class, 'getPeriod'])->name('master.actual.list.material-period');
 
-    Route::post('/actualMat/import', [actualMaterialController::class, 'import'])->middleware('permission:Update_MasterData')->name('acmat.import');
-    Route::put('/actualMat/update/{id}', [actualMaterialController::class, 'update'])->name('acmat.update');
-    Route::delete('/actualMat/destroy/{id}', [actualMaterialController::class, 'destroy'])->name('acmat.destroy');
-    Route::get('/actualMat/import-progress', function () {
+    Route::post('/actual/import-material', [ActualMaterialController::class, 'import'])->middleware('permission:Update_MasterData')->name('master.actual.import.material');
+    Route::put('/actual/update-material/{id}', [ActualMaterialController::class, 'update'])->name('master.actual.update.material');
+    Route::delete('/actual/destroy-material/{id}', [ActualMaterialController::class, 'destroy'])->name('master.actual.destroy.material');
+    Route::get('/actual/import-material-progress', function () {
         return response()->json([
-            'progress' => Cache::get('import-progress-actualMat', 0),
+            'progress' => Cache::get('import-actual-material-progress', 0),
+        ]);
+    });
+
+    #=============================
+    #====== Actual SalesQty ======
+    #=============================
+    Route::get('/api/actual/get-salesqty', [ActualSalesQuantityController::class, 'getPaginated'])->name('master.actual.paginated.material');
+    Route::get('/api/actual/list-sales-quantity-month', [actualSalesQuantityController::class, 'getSalesMonth'])->name('master.actual.list.sales-quantity.month');
+
+    Route::post('/actual/import-sales-quantity', [actualSalesQuantityController::class, 'import'])->middleware('permission:Update_MasterData')->name('master.actual.import.sales-quantity');
+    Route::put('/actual/update-sales-quantity/{id}', [actualSalesQuantityController::class, 'update'])->name('master.actaul.update.sales-quantity');
+    Route::delete('/actual/destroy-sales-quantity/{id}', [actualSalesQuantityController::class, 'destroy'])->name('master.actual.destroy.sales-quantity');
+    Route::get('/actual/import-sales-quantity-progress', function () {
+        return response()->json([
+            'progress' => Cache::get('import-actual-sales-quantity-progress', 0),
+        ]);
+    });
+
+    #==========================
+    #==== Actual BOM =====
+    #==========================
+    Route::get('/api/actual/get-bom', [ActualBillOfMaterialController::class, 'getPaginated'])->name('master.actual.paginated.bom');
+    Route::get('/api/actual/get-component', [ActualBillOfMaterialController::class, 'getComponent'])->name('master.actual.component.bom');
+
+    Route::post('/actual-bom/import', [ActualBillOfMaterialController::class, 'import'])
+        ->middleware('permission:Update_MasterData')
+        ->name('master.actual.import.bom');
+    Route::get('/actual/import-bom-progress', function () {
+        return response()->json([
+            'progress' => Cache::get('import-actual-bom-progress', 0),
         ]);
     });
 
     #==========================
     #===== Actual Report ======
     #==========================
-    Route::get('/ac/report', [MenuController::class, 'reportActual'])
-        ->name('ac.report');
-    Route::post('/ac/update/AC', [ActualCostController::class, 'update'])->middleware('permission:Update_Report')->name('ac.update');
-    Route::get('/ac/previewSC/{item_code}', action: [ActualCostController::class, 'preview'])->name('ac.preview');
-    Route::get('/api/ac/list-period', [ActualCostController::class, 'getActualPeriod'])->name('report.ac.period');
+    Route::get('/api/actual/get-act-cost', [ActualCostController::class, 'getPaginated'])->name('report.actual.paginatedStandardCost');
+    Route::get('/api/actual/list-period', [ActualCostController::class, 'getPeriod'])->name('report.actual.listPeriod');
+    Route::get('/api/actual/list-type', [ActualCostController::class, 'getType'])->name('report.actual.listType');
+    Route::get('/api/actual/export-report', [ActualCostController::class, 'getExport'])->name('report.actual.export');
 
-    // Route::post('/sc/update/DC', [BOMController::class, 'updateDifferenceCost'])->middleware('permission:Update_Report')->name('sc.updateDC');
-    // Route::post('/sc/update/DCxSQ', [BOMController::class, 'updateDCxSQ'])->middleware('permission:Update_Report')->name('sc.updateDCxSQ');
 
-    #=============================
-    #====== Actual SalesQty ======
-    #=============================
-    Route::post('/acsqty/import', [actualSalesQuantityController::class, 'import'])->middleware('permission:Update_MasterData')->name('acsqty.import');
-    Route::put('/acsqty/update/{id}', [actualSalesQuantityController::class, 'update'])->name('acsqty.update');
-    Route::delete('/acsqty/destroy/{id}', [actualSalesQuantityController::class, 'destroy'])->name('acsqty.destroy');
-    Route::get('/acsqty/import-progress', function () {
-        return response()->json([
-            'progress' => Cache::get('import-progress-acsqty', 0),
-        ]);
-    });
-    Route::get('/api/sq/list-month', [actualSalesQuantityController::class, 'getSalesMonth'])->name('report.sq.listMonth');
+    Route::post('/actual/update-report/SC', [ActualCostController::class, 'update'])->middleware('permission:Update_Report')->name('report.actual.update');
+    // Route::get('/actual/preview-report/{item_code}', action: [ActualCostController::class, 'preview'])->name('report.actual.preview');
 });
-
 
 #=============================
 #====== Difference Cost ======
 #=============================
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/api/difference/get-difference-cost', [DifferenceCostController::class, 'getPaginated'])->name('report.difference.paginated');
+    Route::get('/api/difference/list-period', [DifferenceCostController::class, 'getPeriod'])->name('report.difference.period');
+    Route::get('/api/difference/list-remark', [DifferenceCostController::class, 'getRemark'])->name('report.difference.remark');
+    Route::get('/api/difference/get-total', [DifferenceCostController::class, 'getTotal'])->name('report.difference.total');
+    Route::get('/api/difference/export-report', [DifferenceCostController::class, 'getExport'])->name('report.difference.export');
+
+
+
     Route::post('/dc/update/DC', [DifferenceCostController::class, 'updateDifferenceCost'])->middleware('permission:Update_Report')->name('dc.updateDC');
     Route::post('/dc/update/DCxSQ', [DifferenceCostController::class, 'updateDCxSQ'])->middleware('permission:Update_Report')->name('dc.updateDCxSQ');
-    Route::get('/api/dc/list', [DifferenceCostController::class, 'getPaginatedDifferenceCost'])->name('report.dc.paginated');
-    Route::get('/api/dc/list-period', [DifferenceCostController::class, 'getDifferencePeriod'])->name('report.dc.period');
-    Route::get('/api/dc/list-remark', [DifferenceCostController::class, 'getDifferenceRemark'])->name('report.dc.remark');
-    Route::get('/api/dc/get-total', [DifferenceCostController::class, 'getTotalDifferenceCost'])->name('report.dc.total');
-    Route::get('api/dc/list-quantity', [DifferenceCostController::class, 'getDifferenceQuantity'])->name('report.dc.quantity');
 });
-
 
 #=============================
 #====== Production Cost ======

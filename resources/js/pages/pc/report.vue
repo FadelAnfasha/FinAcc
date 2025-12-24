@@ -871,11 +871,11 @@ function closeDialog(type: 'pc' | null) {
                                         </template>
                                     </Column>
 
-                                    <Column field="type" header="Type" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <!-- <Column field="type" header="Type" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ data.item.type.length > 20 ? data.item.type.slice(0, 20) + '…' : data.type }}
                                         </template>
-                                    </Column>
+                                    </Column> -->
 
                                     <Column field="blanking" sortable header="Blanking" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
@@ -1201,11 +1201,11 @@ function closeDialog(type: 'pc' | null) {
                                         </template>
                                     </Column>
 
-                                    <Column field="type" header="Type" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
+                                    <!-- <Column field="type" header="Type" sortable :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">
                                             {{ data.item.type.length > 20 ? data.item.type.slice(0, 20) + '…' : data.type }}
                                         </template>
-                                    </Column>
+                                    </Column> -->
 
                                     <Column field="blanking" sortable header="Blanking" :headerStyle="headerStyle" :bodyStyle="bodyStyle">
                                         <template #body="{ data }">

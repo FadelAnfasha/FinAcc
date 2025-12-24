@@ -2,57 +2,53 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\StandardConsumable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use PhpParser\PrettyPrinter\Standard;
 
-use App\Models\ActualSalesQuantity;
-
-class ActualSalesQuantityController extends Controller
+class StandardConsumableController extends Controller
 {
     public function import(Request $request)
     {
-        // --- Langkah 1: Validasi File yang Diunggah ---
         $request->validate([
             'file' => 'required|mimes:csv,txt'
         ]);
 
         $file = $request->file('file');
 
-        // --- Langkah 2: Inisialisasi Variabel untuk Hasil Impor ---
         $addedItems = [];
         $invalidItems = [];
         $codeCounts = [];
-        // Variabel $nameCounts tidak digunakan, jadi dihapus
 
-        // --- Langkah 3: Membaca File CSV ---
         $csvData = [];
         if (($handle = fopen($file->getRealPath(), 'r')) !== FALSE) {
             $delimiter = ';';
 
-            // Lewati header
             $header = fgetcsv($handle, 1000, $delimiter);
 
             while (($row = fgetcsv($handle, 1000, $delimiter)) !== FALSE) {
-                // Asumsi file CSV memiliki 2 kolom data: 'item_code' dan 'description'
-                if (count($row) >= 12) {
+                if (count($row) >= 2) {
                     $csvData[] = $row;
                 } else {
-                    $invalidItems[] = implode(';', $row) . ' (Invalid row format)';
+                    $invalidItems[] = [
+                        'item_code' => isset($row[0]) ? trim($row[0]) : null,
+                        'price' => isset($row[1]) ? trim($row[1]) : null,
+                        'reason' => 'Invalid row format'
+                    ];
                 }
             }
             fclose($handle);
         } else {
-            return redirect()->route('ac.master')->withErrors(['file' => 'Failed to open the CSV file.']);
+            return redirect()->route('sc.master')->withErrors(['file' => 'Failed to open the CSV file.']);
         }
 
-        // --- Langkah 4: Validasi Awal Jumlah Data ---
         $total = count($csvData);
         if ($total === 0) {
-            return redirect()->route('ac.master')->withErrors(['file' => 'The CSV file is empty.']);
+            return redirect()->route('sc.master')->withErrors(['file' => 'The CSV file is empty.']);
         }
 
-        // --- Langkah 5: Mengosongkan tabel Material sebelum impor ---
-        ActualSalesQuantity::truncate();
+        StandardConsumable::truncate();
 
         // --- Langkah 6: Validasi duplikasi dalam file ---
         foreach ($csvData as $row) {
@@ -62,20 +58,23 @@ class ActualSalesQuantityController extends Controller
             }
         }
 
-        // --- Langkah 7: Proses Impor dan Validasi Item Code ---
         foreach ($csvData as $index => $row) {
             $itemCode = trim($row[0]);
+            $price = trim($row[1]);
 
-            // Regex untuk validasi format item_code
-            // Kriteria:
-            // 1. Terdiri dari 6 digit
-            // 2. Dimulai dengan huruf 'F'
-            // 3. Digit ke-2 & ke-3 adalah angka 15-24
-            // 4. Digit ke-4 adalah huruf 'D', 'N', 'W', 'R', atau 'T'
-            // 5. Digit ke-5 & ke-6 adalah angka 00-99 (running number)
-            if (!preg_match('/^F(1[5-9]|2[0-4])[DNWRT]\d{2}$/', $itemCode)) {
+            if (!is_numeric($price)) {
                 $invalidItems[] = [
                     'item_code' => $itemCode,
+                    'price' => $price,
+                    'reason' => 'Price must be number.'
+                ];
+                continue;
+            }
+
+            if (!preg_match('/^CGP\d{3}$/', $itemCode)) {
+                $invalidItems[] = [
+                    'item_code' => $itemCode,
+                    'price' => $price,
                     'reason' => 'Invalid item code format.'
                 ];
                 continue;
@@ -85,43 +84,62 @@ class ActualSalesQuantityController extends Controller
             if (($codeCounts[$itemCode] ?? 0) > 1) {
                 $invalidItems[] = [
                     'item_code' => $itemCode,
+                    'price' => $price,
                     'reason' => 'Duplicate in file.'
                 ];
                 // Lanjutkan ke baris berikutnya, jangan simpan duplikat
                 continue;
             }
-            // --- Langkah 8: Menyimpan data yang valid ke database ---
-            ActualSalesQuantity::create([
-                'item_code' => $itemCode,
-                'jan_qty' => $row[1],
-                'feb_qty' => $row[2],
-                'mar_qty' => $row[3],
-                'apr_qty' => $row[4],
-                'may_qty' => $row[5],
-                'jun_qty' => $row[6],
-                'jul_qty' => $row[7],
-                'aug_qty' => $row[8],
-                'sep_qty' => $row[9],
-                'oct_qty' => $row[10],
-                'nov_qty' => $row[11],
-                'dec_qty' => $row[12],
 
+            // --- Langkah 8: Menyimpan data yang valid ke database ---
+            StandardConsumable::create([
+                'item_code' => $itemCode,
+                'price' => $price,
             ]);
             $addedItems[] = $itemCode;
+
             // --- Langkah 9: Memperbarui progres impor ---
             $progress = intval(($index + 1) / $total * 100);
-            Cache::put('import-actual-sales-quantity-progress', $progress, now()->addMinutes(5));
+            Cache::put('import-standard-consumable-progress', $progress, now()->addMinutes(5));
         }
 
         // Setelah loop selesai, set progres ke 100%.
-        Cache::put('import-actual-sales-quantity-progress', 100, now()->addMinutes(5));
+        Cache::put('import-standard-consumable-progress', 100, now()->addMinutes(5));
 
         // --- Langkah 10: Mengalihkan (Redirect) dengan hasil impor ---
-        return redirect()->route('ac.master')->with([
+        return redirect()->route('sc.master')->with([
             'success' => 'CSV import process completed!',
             'addedItems' => $addedItems,
             'invalidItems' => $invalidItems
         ]);
+    }
+
+    public function destroy($item_code)
+    {
+        $valve = StandardConsumable::findOrFail($item_code);
+        $valve->delete();
+
+        redirect()->route(route: 'sc.master');
+    }
+
+    public function update(Request $request, $item_code)
+    {
+        // Validasi input
+        $request->validate([
+            'price' => 'required'
+        ]);
+
+        // Menghapus pemisah ribuan (titik) pada price
+        $price = $request->input('price');
+
+        // Temukan valve berdasarkan item_code dan perbarui
+        $valve = StandardConsumable::findOrFail($item_code);
+        $valve->update([
+            // 'item_desc' => $request->input('item_desc'),
+            'price' => $price, // Menggunakan nilai price yang sudah diolah
+        ]);
+
+        redirect()->route(route: 'sc.master');
     }
 
     public function getPaginated(Request $request)
@@ -129,38 +147,33 @@ class ActualSalesQuantityController extends Controller
         $perPage = $request->input('per_page', 10);
         $searchTerm = $request->input('search');
         $itemCodeFilter = $request->input('item_code_filter');
-        // $periodFilter = $request->input('material_period'); // Parameter dari frontend
         $descriptionFilter = $request->input('description_filter');
         $sortField = $request->input('sort_field', 'item_code');
         $sortOrder = $request->input('sort_order', 'asc');
 
-        $query = ActualSalesQuantity::with([
+        $query = StandardConsumable::with([
             'bom' => function ($q) {
                 $q->select('id', 'description', 'item_code');
             }
         ]);
 
         $joinNeeded = ($sortField === 'bom.description') || ($sortField === 'bom.item_code');
+
         if ($joinNeeded) {
-            $query->leftJoin('standard_bill_of_materials as bom_table', 'actual_salesquantities.item_code', '=', 'bom_table.item_code');
+            $query->leftJoin('standard_bill_of_materials as bom_table', 'standard_consumables.item_code', '=', 'bom_table.item_code');
         }
 
         $query->when($searchTerm, function ($query, $term) {
             $query->where(function ($q) use ($term) {
-                $q->where('actual_salesquantities.item_code', 'LIKE', '%' . $term . '%')
-                    // ->orWhere('actual_salesquantities.period', 'LIKE', '%' . $term . '%') // Tambahkan period ke search global jika perlu
+                $q->where('standard_consumables.item_code', 'LIKE', '%' . $term . '%')
                     ->orWhereHas('bom', function ($qBom) use ($term) {
                         $qBom->where('description', 'LIKE', '%' . $term . '%');
                     });
             });
         })
             ->when($itemCodeFilter, function ($query, $term) {
-                $query->where('actual_salesquantities.item_code', 'LIKE', '%' . $term . '%');
+                $query->where('standard_consumables.item_code', 'LIKE', $term . '%');
             })
-            // // TAMBAHKAN BLOK INI UNTUK FILTER PERIOD
-            // ->when($periodFilter, function ($query, $period) {
-            //     return $query->where('actual_salesquantities.period', $period);
-            // })
             ->when($descriptionFilter, function ($query, $term) {
                 $query->whereHas('bom', function ($q) use ($term) {
                     $q->where('description', 'LIKE', '%' . $term . '%');
@@ -171,16 +184,16 @@ class ActualSalesQuantityController extends Controller
             $column = $sortField === 'bom.description' ? 'bom_table.description' : 'bom_table.item_code';
             $query->orderBy($column, $sortOrder);
         } else {
-            $query->orderBy('actual_salesquantities.' . $sortField, $sortOrder);
+            $query->orderBy('standard_consumables.' . $sortField, $sortOrder);
         }
 
         if ($joinNeeded) {
-            $selects = ['actual_salesquantities.*'];
-            $materialPaginated = $query->select($selects)->paginate($perPage);
+            $selects = ['standard_consumables.*'];
+            $consumablePaginated = $query->select($selects)->paginate($perPage);
         } else {
-            $materialPaginated = $query->paginate($perPage);
+            $consumablePaginated = $query->paginate($perPage);
         }
 
-        return response()->json($materialPaginated);
+        return response()->json($consumablePaginated);
     }
 }

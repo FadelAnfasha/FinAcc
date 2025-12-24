@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 use App\Models\ActualMaterial;
 
-class actualMaterialController extends Controller
+class ActualMaterialController extends Controller
 {
     private function cleanValue($value)
     {
@@ -87,12 +87,12 @@ class actualMaterialController extends Controller
             }
             fclose($handle);
         } else {
-            return redirect()->route('bom.masterActual')->withErrors(['file' => 'Failed to open the CSV file.']);
+            return redirect()->route('sc.master')->withErrors(['file' => 'Failed to open the CSV file.']);
         }
 
         $total = count($csvData);
         if ($total === 0) {
-            return redirect()->route('bom.masterActual')->withErrors(['file' => 'The CSV file is empty.']);
+            return redirect()->route('sc.master')->withErrors(['file' => 'The CSV file is empty.']);
         }
 
         foreach ($csvData as $row) {
@@ -184,7 +184,7 @@ class actualMaterialController extends Controller
             ], $combinedData);
 
             $progress = intval(($index + 1) / $total * 100);
-            Cache::put('import-progress-actualMat', $progress, now()->addMinutes(5));
+            Cache::put('import-actual-material-progress', $progress, now()->addMinutes(5));
         }
 
         if (!empty($itemsToUpsert)) {
@@ -197,7 +197,7 @@ class actualMaterialController extends Controller
             $addedItems = array_column($itemsToUpsert, 'item_code');
         }
 
-        Cache::put('import-progress-actualMat', 100, now()->addMinutes(5));
+        Cache::put('import-actual-material-progress', 100, now()->addMinutes(5));
 
         return redirect()->route('ac.master')->with([
             'success' => 'CSV import process completed! ' . count($addedItems) . ' records processed.',
@@ -276,5 +276,70 @@ class actualMaterialController extends Controller
         ]);
 
         return redirect()->route('materials.index')->with('success', 'Material added successfully with code : ' . $item_code);
+    }
+
+    public function getPaginated(Request $request)
+    {
+        $perPage = $request->input('per_page', 10);
+        $searchTerm = $request->input('search');
+        $itemCodeFilter = $request->input('item_code_filter');
+        $periodFilter = $request->input('material_period'); // Parameter dari frontend
+        $descriptionFilter = $request->input('description_filter');
+        $sortField = $request->input('sort_field', 'item_code');
+        $sortOrder = $request->input('sort_order', 'asc');
+
+        $query = ActualMaterial::with([
+            'bom' => function ($q) {
+                $q->select('id', 'description', 'item_code');
+            }
+        ]);
+
+        $joinNeeded = ($sortField === 'bom.description') || ($sortField === 'bom.item_code');
+        if ($joinNeeded) {
+            $query->leftJoin('standard_bill_of_materials as bom_table', 'actual_materials.item_code', '=', 'bom_table.item_code');
+        }
+
+        $query->when($searchTerm, function ($query, $term) {
+            $query->where(function ($q) use ($term) {
+                $q->where('actual_materials.item_code', 'LIKE', '%' . $term . '%')
+                    ->orWhere('actual_materials.period', 'LIKE', '%' . $term . '%') // Tambahkan period ke search global jika perlu
+                    ->orWhereHas('bom', function ($qBom) use ($term) {
+                        $qBom->where('description', 'LIKE', '%' . $term . '%');
+                    });
+            });
+        })
+            ->when($itemCodeFilter, function ($query, $term) {
+                $query->where('actual_materials.item_code', 'LIKE', '%' . $term . '%');
+            })
+            // TAMBAHKAN BLOK INI UNTUK FILTER PERIOD
+            ->when($periodFilter, function ($query, $period) {
+                return $query->where('actual_materials.period', $period);
+            })
+            ->when($descriptionFilter, function ($query, $term) {
+                $query->whereHas('bom', function ($q) use ($term) {
+                    $q->where('description', 'LIKE', '%' . $term . '%');
+                });
+            });
+
+        if ($sortField === 'bom.description' || $sortField === 'bom.item_code') {
+            $column = $sortField === 'bom.description' ? 'bom_table.description' : 'bom_table.item_code';
+            $query->orderBy($column, $sortOrder);
+        } else {
+            $query->orderBy('actual_materials.' . $sortField, $sortOrder);
+        }
+
+        if ($joinNeeded) {
+            $selects = ['actual_materials.*'];
+            $materialPaginated = $query->select($selects)->paginate($perPage);
+        } else {
+            $materialPaginated = $query->paginate($perPage);
+        }
+
+        return response()->json($materialPaginated);
+    }
+    public function getPeriod(Request $request)
+    {
+        $period = ActualMaterial::distinct()->pluck('period');
+        return response()->json($period);
     }
 }

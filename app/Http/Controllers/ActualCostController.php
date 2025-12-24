@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActualBillOfMaterial;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -106,7 +107,7 @@ class ActualCostController extends Controller
             $period = ucfirst($startMonth) . "'" . $year;
         }
 
-        $bomData = BillOfMaterial::all();
+        $bomData = ActualBillOfMaterial::all();
 
         $groups = collect();
         $currentGroup = collect();
@@ -243,21 +244,16 @@ class ActualCostController extends Controller
             $main->load('processCost');
 
             $disc_item_code = $group->disc?->item_code;
-            // Panggil fungsi yang sudah disesuaikan
             $disc_avg_price = $disc_item_code ? $this->getPriceFromActualMaterialPrice($disc_item_code, $endMonthNumber, $year) : 0;
             $disc_price = ceil(($disc_avg_price * ($group->disc?->quantity ?? 0)) * 100) / 100;
 
             $rim_item_code = $group->rim?->item_code;
-            // Panggil fungsi yang sudah disesuaikan
             $rim_avg_price = $rim_item_code ? $this->getPriceFromActualMaterialPrice($rim_item_code, $endMonthNumber, $year) : 0;
             $rim_price = ceil(($rim_avg_price * ($group->rim?->quantity ?? 0)) * 100) / 100;
 
             $sidering_item_code = $group->sidering?->item_code;
-            // Panggil fungsi yang sudah disesuaikan
             $sidering_avg_price = $sidering_item_code ? $this->getPriceFromActualMaterialPrice($sidering_item_code, $endMonthNumber, $year) : 0;
             $sidering_price = ceil(($sidering_avg_price * ($group->sidering?->quantity ?? 0)) * 100) / 100;
-
-            // ... (Kode perhitungan harga proses dan WIP lainnya)
 
             $pr_cedW_price = 0;
             if ($group->cedW && ($group->cedW->item_code !== '-' && !empty($group->cedW->item_code))) {
@@ -308,8 +304,6 @@ class ActualCostController extends Controller
             } else {
                 $wip_valve_price = $group->wip_valve?->valveInfo?->price ?? 0;
             }
-
-            // ... (Pembentukan array $data)
 
             $data = [
                 'item_code' => $main->item_code,
@@ -1248,5 +1242,121 @@ class ActualCostController extends Controller
             'opex' => $opex,
             'progin' => $progin
         ]);
+    }
+
+    public function getPaginated(Request $request)
+    {
+        $perPage = $request->input('per_page', 10);
+        $searchTerm = $request->input('search');
+        $itemCodeFilter = $request->input('item_code_filter');
+        $periodFilter = $request->input('period_filter');
+        $descriptionFilter = $request->input('description_filter');
+        $typeFilter = $request->input('type_filter');
+        $sortField = $request->input('sort_field', 'period');
+        $sortOrder = $request->input('sort_order', 'desc');
+
+        $query = ActualCost::with([
+            'bom' => function ($q) {
+                $q->select('id', 'description', 'item_code');
+            }
+        ]);
+
+        $query->select('*')->addSelect(ActualCost::raw("
+        CASE SUBSTRING(item_code, 4, 1)
+            WHEN 'W' THEN 'Wheel'
+            WHEN 'D' THEN 'Disc'
+            WHEN 'N' THEN 'Sidering'
+            WHEN 'T' THEN 'Assy Tyre'
+            WHEN 'R' THEN 'Rim'
+            WHEN 'M' THEN 'Material'
+            ELSE '-'
+        END AS type
+    "));
+
+        $joinNeeded = ($sortField === 'bom.description') || ($sortField === 'bom.item_code');
+        if ($joinNeeded) {
+            $query->leftJoin('actual_bill_of_materials as bom_table', 'actual_cost.item_code', '=', 'bom_table.item_code');
+        }
+
+        $query->when($searchTerm, function ($query, $term) {
+            $query->where(function ($q) use ($term) {
+                $q->where('actual_cost.item_code', 'LIKE', '%' . $term . '%')
+                    ->orWhere('actual_cost.period', $term)
+                    ->orWhereHas('bom', function ($qBom) use ($term) {
+                        $qBom->where('description', 'LIKE', '%' . $term . '%');
+                    });
+            });
+        })
+            ->when($typeFilter, function ($query, $term) {
+                $terms = is_array($term) ? $term : [$term];
+                $placeholders = implode(',', array_fill(0, count($terms), '?'));
+                $query->havingRaw("type IN ($placeholders)", $terms);
+            })
+            ->when($itemCodeFilter, function ($query, $term) {
+                $query->where('actual_cost.item_code', 'LIKE', '%' . $term . '%');
+            })
+            ->when($periodFilter, function ($query, $term) {
+                // Ganti LIKE dengan '=' untuk exact match
+                $query->where('actual_cost.period', $term);
+            })
+            ->when($descriptionFilter, function ($query, $term) {
+                $query->whereHas('bom', function ($q) use ($term) {
+                    $q->where('description', 'LIKE', '%' . $term . '%');
+                });
+            });
+
+        if ($sortField === 'bom.description' || $sortField === 'description') {
+            $query->orderBy('bom_table.description', $sortOrder);
+        } elseif ($sortField === 'type') {
+            $query->orderBy('type', $sortOrder);
+        } else {
+            $query->orderBy('actual_cost.' . $sortField, $sortOrder);
+        }
+
+        if ($joinNeeded) {
+            $actCostPaginated = $query->select('actual_cost.*')->paginate($perPage);
+        } else {
+            $actCostPaginated = $query->paginate($perPage);
+        }
+
+        return response()->json($actCostPaginated);
+    }
+
+    public function getPeriod(Request $request)
+    {
+        $period = ActualCost::distinct()->pluck('period');
+        return response()->json($period);
+    }
+
+    public function getType()
+    {
+        $types = ActualCost::selectRaw("
+        DISTINCT CASE SUBSTRING(item_code, 4, 1)
+            WHEN 'W' THEN 'Wheel'
+            WHEN 'D' THEN 'Disc'
+            WHEN 'N' THEN 'Sidering'
+            WHEN 'T' THEN 'Assy Tyre'
+            WHEN 'R' THEN 'Rim'
+            WHEN 'M' THEN 'Material'
+            ELSE '-'
+        END AS name
+    ")
+            ->whereRaw("SUBSTRING(item_code, 4, 1) IN ('W', 'D', 'N', 'T', 'R', 'M')")
+            ->orderBy('name', 'asc')
+            ->pluck('name'); // Mengembalikan array sederhana
+
+        return response()->json($types);
+    }
+
+    public function getExport(Request $request)
+    {
+        $periodFilter = $request->input('period_filter');
+        $query = ActualCost::query();
+        if ($periodFilter) {
+            $query->where('period', $periodFilter);
+        }
+        $acExport = $query->get();
+
+        return response()->json($acExport);
     }
 }
