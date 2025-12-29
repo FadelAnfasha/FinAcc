@@ -26,7 +26,7 @@ use App\Http\Controllers\StandardConsumableController;
 use App\Http\Controllers\StandardCostController;
 use App\Http\Controllers\standardMaterialController;
 use App\Http\Controllers\WagesDistributionController;
-
+use App\Models\ActualCost;
 
 #===========================
 #======  Main Route  =======
@@ -279,6 +279,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/standard/import-consumable', [StandardConsumableController::class, 'import'])->middleware('permission:Update_MasterData')->name('master.standard.import.consumable');
         Route::put('/standard/update-consumable/{id}', [StandardConsumableController::class, 'update'])->name('master.standard.update.consumable');
         Route::delete('/consumable/destroy-consumable/{id}', [StandardConsumableController::class, 'destroy'])->name('master.standard.destroy.consumable');
+
         Route::get('/standard/import-consumable-progress', function () {
             return response()->json([
                 'progress' => Cache::get('import-standard-consumable-progress', 0),
@@ -291,8 +292,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     #==========================
     Route::get('/api/standard/get-std-cost', [StandardCostController::class, 'getPaginated'])->name('report.standard.paginatedStandardCost');
     Route::get('/api/standard/list-period', [StandardCostController::class, 'getPeriod'])->name('report.standard.listPeriod');
+    Route::get('/api/standard/latest-period', [StandardCostController::class, 'getLatestPeriod'])->name('report.standard.latestPeriod');
     Route::get('/api/standard/list-type', [StandardCostController::class, 'getType'])->name('report.standard.listType');
     Route::get('/api/standard/export-report', [StandardCostController::class, 'getExport'])->name('report.standard.export');
+
 
     Route::post('/standard/update-report/SC', [StandardCostController::class, 'update'])->middleware('permission:Update_Report')->name('report.standard.update');
     Route::get('/standard/preview-report/{item_code}', action: [StandardCostController::class, 'preview'])->name('report.standard.preview');
@@ -352,6 +355,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     #==========================
     Route::get('/api/actual/get-act-cost', [ActualCostController::class, 'getPaginated'])->name('report.actual.paginatedStandardCost');
     Route::get('/api/actual/list-period', [ActualCostController::class, 'getPeriod'])->name('report.actual.listPeriod');
+    Route::get('/api/actual/latest-period', [ActualCostController::class, 'getLatestPeriod'])->name('report.actual.latestPeriod');
     Route::get('/api/actual/list-type', [ActualCostController::class, 'getType'])->name('report.actual.listType');
     Route::get('/api/actual/export-report', [ActualCostController::class, 'getExport'])->name('report.actual.export');
 
@@ -363,10 +367,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 #=============================
 #====== Difference Cost ======
 #=============================
-
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/api/difference/get-difference-cost', [DifferenceCostController::class, 'getPaginated'])->name('report.difference.paginated');
     Route::get('/api/difference/list-period', [DifferenceCostController::class, 'getPeriod'])->name('report.difference.period');
+    Route::get('/api/difference/latest-period', [DifferenceCostController::class, 'getLatestPeriod'])->name('report.difference.latestPeriod');
+
     Route::get('/api/difference/list-remark', [DifferenceCostController::class, 'getRemark'])->name('report.difference.remark');
     Route::get('/api/difference/get-total', [DifferenceCostController::class, 'getTotal'])->name('report.difference.total');
     Route::get('/api/difference/export-report', [DifferenceCostController::class, 'getExport'])->name('report.difference.export');

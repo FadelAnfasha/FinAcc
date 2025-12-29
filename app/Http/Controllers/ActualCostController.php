@@ -1322,10 +1322,93 @@ class ActualCostController extends Controller
         return response()->json($actCostPaginated);
     }
 
+    public function getLatestPeriod()
+    {
+        $periods = ActualCost::distinct('period')
+            ->where('period', 'NOT LIKE', 'YTD-%')
+            ->pluck('period');
+
+        if ($periods->isEmpty()) return response()->json(null);
+
+        $months = [
+            'Jan' => 1,
+            'Feb' => 2,
+            'Mar' => 3,
+            'Apr' => 4,
+            'May' => 5,
+            'Jun' => 6,
+            'Jul' => 7,
+            'Aug' => 8,
+            'Sep' => 9,
+            'Oct' => 10,
+            'Nov' => 11,
+            'Dec' => 12
+        ];
+
+        $latest = $periods->map(function ($p) use ($months) {
+            $monthStr = substr($p, 0, 3);
+            $year = (int) substr($p, -4);
+            return [
+                'original' => $p,
+                'year' => $year,
+                'month_val' => $months[$monthStr] ?? 0
+            ];
+        })
+            ->sort(function ($a, $b) {
+                if ($a['year'] === $b['year']) {
+                    return $b['month_val'] <=> $a['month_val'];
+                }
+                return $b['year'] <=> $a['year'];
+            })
+            ->first();
+
+        return response()->json($latest['original']);
+    }
+
     public function getPeriod(Request $request)
     {
         $period = ActualCost::distinct()->pluck('period');
-        return response()->json($period);
+
+        $sorted = $period->sort(function ($a, $b) {
+            $isYtdA = str_starts_with($a, 'YTD-');
+            $isYtdB = str_starts_with($b, 'YTD-');
+
+            if ($isYtdA !== $isYtdB) {
+                return $isYtdA ? 1 : -1;
+            }
+
+            $months = [
+                'Jan' => 1,
+                'Feb' => 2,
+                'Mar' => 3,
+                'Apr' => 4,
+                'May' => 5,
+                'Jun' => 6,
+                'Jul' => 7,
+                'Aug' => 8,
+                'Sep' => 9,
+                'Oct' => 10,
+                'Nov' => 11,
+                'Dec' => 12
+            ];
+
+            $cleanA = str_replace('YTD-', '', $a);
+            $cleanB = str_replace('YTD-', '', $b);
+
+            $monthA = substr($cleanA, 0, 3);
+            $monthB = substr($cleanB, 0, 3);
+
+            $yearA = (int) substr($cleanA, -4);
+            $yearB = (int) substr($cleanB, -4);
+
+            if ($yearA !== $yearB) {
+                return $yearA <=> $yearB;
+            }
+
+            return ($months[$monthA] ?? 0) <=> ($months[$monthB] ?? 0);
+        })->values();
+
+        return response()->json($sorted);
     }
 
     public function getType()

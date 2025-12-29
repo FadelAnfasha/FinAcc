@@ -3,6 +3,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { FilterMatchMode } from '@primevue/core/api';
 import axios from 'axios';
+import dayjs from 'dayjs';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
@@ -33,7 +34,6 @@ const dtConsumable = ref();
 const paginatedStamatData = ref<any>(null);
 const paginatedBomData = ref<any>(null);
 const paginatedConsumableData = ref<any>(null);
-const currentPage = ref(1);
 const listMaterialGroup = ref<List[]>([]);
 const currentStamatPage = ref(1);
 const currentBomPage = ref(1);
@@ -89,6 +89,7 @@ const stamatTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
 const bomTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
 const consumableTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
 const isInitialLoading = ref(true);
+const lastUpdate = computed(() => page.props.lastUpdate as any);
 
 interface List {
     name: string;
@@ -113,6 +114,10 @@ function tbStyle(section: 'main' | 'rm' | 'pr' | 'wip' | 'fg') {
         headerStyle: { backgroundColor: color.header, color: 'white' },
         bodyStyle: { backgroundColor: color.body, color: 'black' },
     };
+}
+
+function formatlastUpdate(date: Date | string) {
+    return dayjs(date).format('DD MMM YYYY HH:mm:ss');
 }
 
 function editData(data: any, type: 'stamat' | 'consumable') {
@@ -1098,6 +1103,10 @@ const clearFilter = (type: 'stamat' | 'bom' | 'consumable') => {
                                             Data source From :
                                             <span class="text-cyan-400">{{ dataSource[0] }}</span>
                                         </div>
+                                        <div>
+                                            Last Update :
+                                            <span class="text-red-300">{{ lastUpdate[0] ? formatlastUpdate(lastUpdate[0]) : '-' }}</span>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -1320,6 +1329,10 @@ const clearFilter = (type: 'stamat' | 'bom' | 'consumable') => {
                                         <div>
                                             Data source From :
                                             <span class="text-cyan-400">{{ dataSource[1] }}</span>
+                                            <div>
+                                                Last Update :
+                                                <span class="text-red-300">{{ lastUpdate[1] ? formatlastUpdate(lastUpdate[1]) : '-' }}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1448,13 +1461,13 @@ const clearFilter = (type: 'stamat' | 'bom' | 'consumable') => {
                                     <h2 class="mb-4 text-3xl font-semibold text-gray-900 md:mb-0 dark:text-white">Standard Consumable Price</h2>
 
                                     <div class="text-right text-gray-700 dark:text-gray-300">
-                                        <!-- <div>
-                                            Last Update :
-                                            <span class="text-red-300">{{ lastUpdate[0] ? formatlastUpdate(lastUpdate[0]) : '-' }}</span>
-                                        </div> -->
                                         <div>
                                             Data source From :
                                             <span class="text-cyan-400">{{ dataSource[2] }}</span>
+                                        </div>
+                                        <div>
+                                            Last Update :
+                                            <span class="text-red-300">{{ lastUpdate[2] ? formatlastUpdate(lastUpdate[2]) : '-' }}</span>
                                         </div>
                                     </div>
                                 </div>

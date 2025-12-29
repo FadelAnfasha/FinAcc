@@ -169,46 +169,32 @@ class MenuController extends Controller
         ]);
     }
 
-    // public function BOM_Master(Request $request)
-    // {
-    //     $bom = BillOfMaterial::where('depth', 1)->get();
-    //     $valve = Valve::all();
-    //     $componentItems = collect();
-    //     $finishGood = null;
-
-    //     if ($request->has('component_id')) {
-    //         $all = BillOfMaterial::orderBy('id')->get();
-    //         $mainIndex = $all->search(fn($item) => $item->id == $request->component_id);
-
-    //         if ($mainIndex !== false) {
-    //             for ($i = $mainIndex + 1; $i < count($all); $i++) {
-    //                 if ($all[$i]->depth == 1) break;
-    //                 $componentItems->push($all[$i]);
-    //             }
-
-    //             $finishGood = $all[$mainIndex];
-    //         }
-    //     }
-
-    //     $addedItems = Session::get('addedItems', []);
-    //     $invalidItems = Session::get('invalidItems', []);
-
-    //     return Inertia::render("bom/master", [
-    //         'billOfMaterials' => $bom,
-    //         'type' => 'bom',
-    //         'finish_good' => $finishGood,
-    //         'valve' => $valve,
-    //         'component' => $componentItems,
-    //         'importResult' => [
-    //             'addedItems' => $addedItems,
-    //             'invalidItems' => $invalidItems
-    //         ]
-    //     ]);
-    // }
-
     public function Standard_Master(Request $request)
     {
-        return Inertia::render("sc/master");
+        $lastUpdate = [];
+        $latestStandardMat = StandardMaterial::latest('updated_at')->first();
+        $latestBOM = StandardBillOfMaterial::latest('updated_at')->first();
+        $latestConsumable = StandardConsumable::latest('updated_at')->first();
+
+
+        if ($latestStandardMat) {
+            $lastUpdate[] = $latestStandardMat->updated_at;
+        } else {
+            $lastUpdate[] = null;
+        }
+
+        if ($latestConsumable) {
+            $lastUpdate[] = $latestConsumable->updated_at;
+        } else {
+            $lastUpdate[] = null;
+        }
+
+        if ($latestBOM) {
+            $lastUpdate[] = $latestBOM->updated_at;
+        } else {
+            $lastUpdate[] = null;
+        }
+        return Inertia::render("sc/master", ['lastUpdate' => $lastUpdate]);
     }
 
     public function Actual_Master(Request $request)
@@ -469,10 +455,6 @@ class MenuController extends Controller
 
     public function Standard_Report()
     {
-        // $sc = StandardCost::with(['bom' => function ($query) {
-        //     $query->select('item_code', 'description');
-        // }])->get();
-
         $lastUpdate = [];
         $latestStandardMat = StandardMaterial::latest('updated_at')->first();
         $latestConsumable = StandardConsumable::latest('updated_at')->first();
@@ -511,18 +493,6 @@ class MenuController extends Controller
             $lastUpdate[] = null;
         }
 
-        // return Inertia::render("sc/report", [
-        //     'sc' => $sc,
-        // 'lastMaster' => $lastUpdate,
-        //     'auth' => [
-        //         'user' => Auth::check() ? [
-        //             'name' => Auth::user()->name,
-        //             'npk' => Auth::user()->npk,
-        //             'roles' => Auth::user()->getRoleNames()->toArray(), // Pastikan ini diubah ke array
-        //             'permissions' => Auth::user()->getAllPermissions()->pluck('name')->toArray(), // Juga pastikan ini dikirim
-        //         ] : null,
-        //     ],
-        // ]);
         return Inertia::render("sc/report", [
             'lastMaster' => $lastUpdate,
         ]);
@@ -530,13 +500,6 @@ class MenuController extends Controller
 
     public function Actual_Report()
     {
-        // $ac = ActualCost::with(['bom' => function ($query) {
-        //     $query->select('item_code', 'description');
-        // }])->get();
-
-        // $acPeriod = ActualCost::distinct()->pluck('period');
-        // $acPeriod = $this->sortPeriods($acPeriod);
-
         $lastUpdate = [];
         $latestActualMat = ActualMaterial::latest('updated_at')->first();
         $latestConsumable = StandardConsumable::latest('updated_at')->first();

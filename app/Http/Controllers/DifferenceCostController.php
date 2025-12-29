@@ -14,7 +14,7 @@ use App\Models\DifferenceCost;
 use App\Models\DiffCostXSalesQty;
 use App\Models\ActualSalesQuantity;
 use App\Traits\CostAnalysisTrait;
-
+use PhpOffice\PhpSpreadsheet\Calculation\DateTimeExcel\Difference;
 
 class DifferenceCostController extends Controller
 {
@@ -366,6 +366,53 @@ class DifferenceCostController extends Controller
         SUM(qty_x_total) AS total
     ')->first();
         return response()->json($totals);
+    }
+
+    public function getLatestPeriod()
+    {
+        $periods = DifferenceCost::distinct('period')
+            ->where('period', 'NOT LIKE', 'YTD-%')
+            ->pluck('period');
+
+        if ($periods->isEmpty()) return response()->json(null);
+
+        $months = [
+            'Jan' => 1,
+            'Feb' => 2,
+            'Mar' => 3,
+            'Apr' => 4,
+            'May' => 5,
+            'Jun' => 6,
+            'Jul' => 7,
+            'Aug' => 8,
+            'Sep' => 9,
+            'Oct' => 10,
+            'Nov' => 11,
+            'Dec' => 12
+        ];
+
+        $latest = $periods->map(function ($p) use ($months) {
+            $monthStr = substr($p, 0, 3);
+
+            $parts = explode('/', $p);
+            $firstPart = trim($parts[0]);
+            $year = (int) substr($firstPart, -4);
+
+            return [
+                'original' => $p,
+                'year' => $year,
+                'month_val' => $months[$monthStr] ?? 0
+            ];
+        })
+            ->sort(function ($a, $b) {
+                if ($a['year'] === $b['year']) {
+                    return $b['month_val'] <=> $a['month_val'];
+                }
+                return $b['year'] <=> $a['year'];
+            })
+            ->first();
+
+        return response()->json($latest['original'], 200, [], JSON_UNESCAPED_SLASHES);
     }
 
     public function getQuantity(Request $request)

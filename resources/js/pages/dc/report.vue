@@ -26,7 +26,6 @@ import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 const toast = useToast();
 const page = usePage();
 const dtDIFF = ref();
-const dtDCxSQ = ref();
 const loading = ref(false);
 const year = ref();
 const month = ref();
@@ -914,6 +913,17 @@ const fetchDiffPeriod = async () => {
     }
 };
 
+const fetchLatestPeriod = async () => {
+    try {
+        const latest = await fetchDatas('/finacc/api/difference/latest-period');
+        if (latest) {
+            filtersDiffCost.value.period.value = latest;
+        }
+    } catch (error) {
+        console.error('Failed to fetch latest period:', error);
+    }
+};
+
 const fetchDiffRemark = async () => {
     try {
         const differenceRemark = await fetchDatas('/finacc/api/difference/list-remark');
@@ -1065,7 +1075,10 @@ watch(
 onMounted(async () => {
     initFilters();
     try {
-        await Promise.all([fetchDiffPeriod(), fetchDiffRemark(), loadLazyData(differenceCostUrl.value, 'diffCost')]);
+        await fetchDiffPeriod();
+        await fetchDiffRemark();
+        await fetchLatestPeriod();
+        await loadLazyData(differenceCostUrl.value, 'diffCost');
     } finally {
         isInitialLoading.value = false;
     }
@@ -1429,7 +1442,7 @@ const clearFilter = (type: 'diffCost') => {
                                     v-model:filters="filtersDiffCost"
                                     filterDisplay="row"
                                     :loading="loadingStates.diffCost || isInitialLoading"
-                                    ref="dtStdCost"
+                                    ref="dtDIFF"
                                 >
                                     <template #header>
                                         <div class="flex justify-between">
@@ -1495,12 +1508,13 @@ const clearFilter = (type: 'diffCost') => {
                                             <Column header="Standard Cost" :colspan="3" v-bind="tbStyle('rm')"></Column>
                                             <Column header="Actual Cost" :colspan="3" v-bind="tbStyle('pr')"></Column>
                                             <Column header="Difference Cost" :colspan="3" v-bind="tbStyle('fg')"></Column>
+                                            <Column header="x Quantity" :colspan="3" v-bind="tbStyle('wip')"> </Column>
                                             <Column
                                                 field="difference_cost.remark"
                                                 header="Remark"
                                                 sortable
                                                 :rowspan="2"
-                                                v-bind="tbStyle('wip')"
+                                                v-bind="tbStyle('main')"
                                             ></Column>
                                             <Column header="Action" :rowspan="2" v-bind="tbStyle('main')"></Column>
                                         </Row>
@@ -1522,9 +1536,22 @@ const clearFilter = (type: 'diffCost') => {
                                             ></Column>
                                             <Column field="ac_total_process" sortable header="Total Process" v-bind="tbStyle('pr')"></Column>
                                             <Column field="ac_total" sortable header="Total" v-bind="tbStyle('pr')"></Column>
-                                            <Column field="total_raw_material" sortable header="Total Raw Material" v-bind="tbStyle('fg')"></Column>
+                                            <Column
+                                                field="dc_total_raw_material"
+                                                sortable
+                                                header="Total Raw Material"
+                                                v-bind="tbStyle('fg')"
+                                            ></Column>
                                             <Column field="dc_total_process" sortable header="Total Process" v-bind="tbStyle('fg')"></Column>
                                             <Column field="dc_total" sortable header="Total" v-bind="tbStyle('fg')"></Column>
+                                            <Column
+                                                field="dcxsq_total_raw_material"
+                                                sortable
+                                                header="Total Raw Material"
+                                                v-bind="tbStyle('wip')"
+                                            ></Column>
+                                            <Column field="dcxsq_total_process" sortable header="Total Process" v-bind="tbStyle('wip')"></Column>
+                                            <Column field="dcxsq_total" sortable header="Total" v-bind="tbStyle('wip')"></Column>
                                         </Row>
                                     </ColumnGroup>
 
@@ -1622,7 +1649,7 @@ const clearFilter = (type: 'diffCost') => {
                                         </template>
                                     </Column>
 
-                                    <Column field="total_raw_material" :showFilterMenu="false" sortable v-bind="tbStyle('pr')">
+                                    <Column field="total_raw_material" :showFilterMenu="false" sortable v-bind="tbStyle('fg')">
                                         <template #body="{ data }">
                                             <div class="flex w-full">
                                                 {{ Number(data.total_raw_material ? data.total_raw_material : '0').toLocaleString('id-ID') }}
@@ -1630,7 +1657,7 @@ const clearFilter = (type: 'diffCost') => {
                                         </template>
                                     </Column>
 
-                                    <Column field="total_process" :showFilterMenu="false" sortable v-bind="tbStyle('pr')">
+                                    <Column field="total_process" :showFilterMenu="false" sortable v-bind="tbStyle('fg')">
                                         <template #body="{ data }">
                                             <div class="flex w-full">
                                                 {{ Number(data.total_process ? data.total_process : '0').toLocaleString('id-ID') }}
@@ -1638,13 +1665,42 @@ const clearFilter = (type: 'diffCost') => {
                                         </template>
                                     </Column>
 
-                                    <Column field="total" :showFilterMenu="false" sortable v-bind="tbStyle('pr')">
+                                    <Column field="total" :showFilterMenu="false" sortable v-bind="tbStyle('fg')">
                                         <template #body="{ data }">
                                             <div class="flex w-full">
                                                 {{ Number(data.total ? data.total : '0').toLocaleString('id-ID') }}
                                             </div>
                                         </template>
                                     </Column>
+
+                                    <Column field="qty_x_total_raw_material" :showFilterMenu="false" sortable v-bind="tbStyle('wip')">
+                                        <template #body="{ data }">
+                                            <div class="flex w-full">
+                                                {{
+                                                    Number(data.qty_x_total_raw_material ? data.qty_x_total_raw_material : '0').toLocaleString(
+                                                        'id-ID',
+                                                    )
+                                                }}
+                                            </div>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="qty_x_total_process" :showFilterMenu="false" sortable v-bind="tbStyle('wip')">
+                                        <template #body="{ data }">
+                                            <div class="flex w-full">
+                                                {{ Number(data.qty_x_total_process ? data.qty_x_total_process : '0').toLocaleString('id-ID') }}
+                                            </div>
+                                        </template>
+                                    </Column>
+
+                                    <Column field="qty_x_total" :showFilterMenu="false" sortable v-bind="tbStyle('wip')">
+                                        <template #body="{ data }">
+                                            <div class="flex w-full">
+                                                {{ Number(data.qty_x_total ? data.qty_x_total : '0').toLocaleString('id-ID') }}
+                                            </div>
+                                        </template>
+                                    </Column>
+
                                     <Column field="remark" header="Remark" sortable v-bind="tbStyle('main')" :showFilterMenu="false"
                                         ><template #filter="{ filterModel, filterCallback }">
                                             <div class="flex justify-center">

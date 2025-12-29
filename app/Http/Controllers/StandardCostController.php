@@ -1290,6 +1290,12 @@ class StandardCostController extends Controller
         return response()->json($query->paginate($perPage));
     }
 
+    public function getLatestPeriod(Request $request)
+    {
+        $latestPeriod = StandardCost::max('period');
+        return response()->json($latestPeriod);
+    }
+
     public function getPeriod(Request $request)
     {
         $period = StandardCost::distinct()->pluck('period');
@@ -1315,6 +1321,7 @@ class StandardCostController extends Controller
 
         return response()->json($types);
     }
+
     public function getExport(Request $request)
     {
         $periodFilter = $request->input('period_filter');
