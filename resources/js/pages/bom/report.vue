@@ -169,7 +169,7 @@ function formatlastUpdate(date: Date | string) {
                                 <div class="mb-4 text-right text-gray-700 dark:text-gray-300">
                                     <div>
                                         Last Update :
-                                        <span class="text-red-300">{{ lastMaster ? formatlastUpdate(lastMaster[0]) : '-' }}</span>
+                                        <span class="text-red-300">{{ lastMaster[0] ? formatlastUpdate(lastMaster[0]) : '-' }}</span>
                                     </div>
                                 </div>
 
@@ -435,7 +435,7 @@ function formatlastUpdate(date: Date | string) {
                                 <div class="mb-4 text-right text-gray-700 dark:text-gray-300">
                                     <div>
                                         Last Update :
-                                        <span class="text-red-300">{{ lastMaster ? formatlastUpdate(lastMaster[1]) : '-' }}</span>
+                                        <span class="text-red-300">{{ lastMaster[1] ? formatlastUpdate(lastMaster[1]) : '-' }}</span>
                                     </div>
                                 </div>
 

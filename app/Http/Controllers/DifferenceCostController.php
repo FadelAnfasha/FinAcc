@@ -456,7 +456,7 @@ class DifferenceCostController extends Controller
         if ($periodFilter) {
             $query->where('period', $periodFilter);
         }
-        $dcExport = $query->get();
+        $dcExport = $query->get()->makeHidden(['id']);
 
         return response()->json($dcExport);
     }
