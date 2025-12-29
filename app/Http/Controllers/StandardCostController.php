@@ -1329,7 +1329,7 @@ class StandardCostController extends Controller
         if ($periodFilter) {
             $query->where('period', $periodFilter);
         }
-        $scExport = $query->get();
+        $scExport = $query->get()->makeHidden(['id']);
 
         return response()->json($scExport);
     }

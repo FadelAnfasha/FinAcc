@@ -1438,7 +1438,7 @@ class ActualCostController extends Controller
         if ($periodFilter) {
             $query->where('period', $periodFilter);
         }
-        $acExport = $query->get();
+        $acExport = $query->get()->makeHidden(['id']);
 
         return response()->json($acExport);
     }

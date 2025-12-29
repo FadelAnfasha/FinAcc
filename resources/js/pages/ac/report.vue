@@ -115,7 +115,7 @@ const props = defineProps({
 });
 
 const lastMaster = computed(() => page.props.lastMaster as any);
-console.log('Last Master Data Update:', lastMaster.value);
+// console.log('Last Master Data Update:', lastMaster.value);
 
 interface ActualPeriod {
     name: string;

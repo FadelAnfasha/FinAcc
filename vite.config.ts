@@ -1,15 +1,15 @@
+import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
 import laravel from 'laravel-vite-plugin';
 import path from 'path';
-import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
     base: '/finacc/',
     server: {
         cors: true,
-        host: 'localhost',
-        port: 5173
+        host: 'true',
+        port: 5173,
     },
     plugins: [
         laravel({
