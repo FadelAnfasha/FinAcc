@@ -22,7 +22,7 @@ const loading = ref(false);
 const activeTabValue = ref('0');
 const type = ['Disc', 'Sidering', 'Wheel'];
 const lastMaster = computed(() => page.props.lastUpdate as any);
-console.log('Last Master Update:', lastMaster.value);
+// console.log('Last Master Update:', lastMaster.value);
 
 function tbStyle(section: 'main' | 'rm' | 'pr' | 'wip' | 'fg') {
     const styles = {
