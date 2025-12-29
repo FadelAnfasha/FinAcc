@@ -626,27 +626,27 @@ const listQuantity = computed(() => {
 const componentDetails = computed(() => [
     {
         name: 'DISC',
-        std_code: dataDetail.value.standard_cost?.disc_code,
-        std_price: dataDetail.value.standard_cost?.disc_price,
-        act_code: dataDetail.value.actual_cost?.disc_code,
-        act_price: dataDetail.value.actual_cost?.disc_price,
-        diff: dataDetail.value.difference_cost?.diff_disc,
+        std_code: dataDetail.value.sc_disc_code,
+        std_price: dataDetail.value.sc_disc_price,
+        act_code: dataDetail.value.ac_disc_code,
+        act_price: dataDetail.value.ac_disc_price,
+        diff: dataDetail.value.diff_disc,
     },
     {
         name: 'RIM',
-        std_code: dataDetail.value.standard_cost?.rim_code,
-        std_price: dataDetail.value.standard_cost?.rim_price,
-        act_code: dataDetail.value.actual_cost?.rim_code,
-        act_price: dataDetail.value.actual_cost?.rim_price,
-        diff: dataDetail.value.difference_cost?.diff_rim,
+        std_code: dataDetail.value.sc_rim_code,
+        std_price: dataDetail.value.sc_rim_price,
+        act_code: dataDetail.value.ac_rim_code,
+        act_price: dataDetail.value.ac_rim_price,
+        diff: dataDetail.value.diff_rim,
     },
     {
         name: 'SIDERING',
-        std_code: dataDetail.value.standard_cost?.sidering_code,
-        std_price: dataDetail.value.standard_cost?.sidering_price,
-        act_code: dataDetail.value.actual_cost?.sidering_code,
-        act_price: dataDetail.value.actual_cost?.sidering_price,
-        diff: dataDetail.value.difference_cost?.diff_sidering,
+        std_code: dataDetail.value.sc_sidering_code,
+        std_price: dataDetail.value.sc_sidering_price,
+        act_code: dataDetail.value.ac_sidering_code,
+        act_price: dataDetail.value.ac_sidering_price,
+        diff: dataDetail.value.diff_sidering,
     },
 ]);
 
@@ -760,6 +760,7 @@ function showDetailDialog(data: any, type: 'dcXsq' | 'diffCost') {
     detailDialog.value = true;
     detailType.value = type;
     dataDetail.value = data;
+    console.log(data);
     headerName.value = 'Detail of : ' + data.item_code;
 }
 
@@ -1255,24 +1256,24 @@ const clearFilter = (type: 'diffCost') => {
                         </p>
 
                         <p class="text-lg text-gray-600">
-                            Remark : <span class="font-medium text-gray-700">{{ dataDetail.difference_cost.remark }}</span>
+                            Remark : <span class="font-medium text-gray-700">{{ dataDetail.remark }}</span>
                         </p>
 
                         <p class="text-lg text-gray-600">
-                            Period : <span class="font-medium text-gray-700">{{ dataDetail.difference_cost.period }}</span>
+                            Period : <span class="font-medium text-gray-700">{{ dataDetail.period }}</span>
                         </p>
                     </div>
 
                     <div class="grid grid-cols-4 gap-x-4 overflow-hidden rounded-lg border border-gray-200">
                         <div class="col-span-1 bg-gray-300 p-3 font-extrabold text-slate-700">Material</div>
                         <div class="col-span-1 border-l border-gray-200 bg-gray-300 p-3 text-center font-extrabold text-slate-700">
-                            Standard (SC) <span class="text-sm text-orange-600">({{ dataDetail.standard_cost.period }})</span>
+                            Standard (SC) <span class="text-sm text-orange-600">({{ dataDetail.sc_period }})</span>
                         </div>
                         <div class="col-span-1 border-l border-gray-200 bg-gray-300 p-3 text-center font-extrabold text-slate-700">
-                            Actual (AC) <span class="text-sm text-orange-600">({{ dataDetail.actual_cost.period }})</span>
+                            Actual (AC) <span class="text-sm text-orange-600">({{ dataDetail.ac_period }})</span>
                         </div>
                         <div class="col-span-1 border-l border-gray-200 bg-gray-300 p-3 text-center font-extrabold text-slate-700">
-                            Difference <span class="text-sm text-orange-600">({{ dataDetail.difference_cost.period }})</span>
+                            Difference <span class="text-sm text-orange-600">({{ dataDetail.period }})</span>
                         </div>
 
                         <template v-for="(item, index) in componentDetails" :key="index">
@@ -1310,96 +1311,63 @@ const clearFilter = (type: 'diffCost') => {
 
                         <div class="col-span-1 border-t border-gray-300 bg-yellow-200 p-3 font-extrabold text-slate-900">TOTAL RAW MATERIAL</div>
                         <div class="border-t border-l border-gray-300 bg-yellow-200 p-3 text-right font-extrabold">
-                            {{
-                                dataDetail.standard_cost?.total_raw_material
-                                    ? Number(dataDetail.standard_cost?.total_raw_material).toLocaleString('id-ID')
-                                    : '-'
-                            }}
+                            {{ dataDetail.sc_total_raw_material ? Number(dataDetail.sc_total_raw_material).toLocaleString('id-ID') : '-' }}
                         </div>
                         <div class="border-t border-l border-gray-300 bg-yellow-200 p-3 text-right font-extrabold">
-                            {{
-                                dataDetail.actual_cost?.total_raw_material
-                                    ? Number(dataDetail.actual_cost?.total_raw_material).toLocaleString('id-ID')
-                                    : '-'
-                            }}
+                            {{ dataDetail.ac_total_raw_material ? Number(dataDetail.ac_total_raw_material).toLocaleString('id-ID') : '-' }}
                         </div>
                         <div
                             class="border-t border-l border-gray-300 bg-yellow-200 p-3 text-right font-extrabold"
-                            :class="dataDetail.difference_cost.total_raw_material < 0 ? 'text-red-700' : 'text-green-700'"
+                            :class="dataDetail.total_raw_material < 0 ? 'text-red-700' : 'text-green-700'"
                         >
-                            {{
-                                dataDetail.difference_cost?.total_raw_material
-                                    ? Number(dataDetail.difference_cost?.total_raw_material).toLocaleString('id-ID')
-                                    : '-'
-                            }}
+                            {{ dataDetail.total_raw_material ? Number(dataDetail.total_raw_material).toLocaleString('id-ID') : '-' }}
                         </div>
 
                         <div class="col-span-1 border-t border-gray-300 bg-green-200 p-3 font-extrabold text-slate-900">TOTAL PROCESS</div>
                         <div class="border-t border-l border-gray-300 bg-green-200 p-3 text-right font-extrabold">
-                            {{
-                                dataDetail.standard_cost?.total_process
-                                    ? Number(dataDetail.standard_cost?.total_process).toLocaleString('id-ID')
-                                    : '-'
-                            }}
+                            {{ dataDetail.sc_total_process ? Number(dataDetail.sc_total_process).toLocaleString('id-ID') : '-' }}
                         </div>
 
                         <div class="border-t border-l border-gray-300 bg-green-200 p-3 text-right font-extrabold">
-                            {{ dataDetail.actual_cost?.total_process ? Number(dataDetail.actual_cost?.total_process).toLocaleString('id-ID') : '-' }}
+                            {{ dataDetail.ac_total_process ? Number(dataDetail.ac_total_process).toLocaleString('id-ID') : '-' }}
                         </div>
 
                         <div
                             class="border-t border-l border-gray-300 bg-green-200 p-3 text-right font-extrabold"
-                            :class="dataDetail.difference_cost.total_process < 0 ? 'text-red-700' : 'text-green-700'"
+                            :class="dataDetail.total_process < 0 ? 'text-red-700' : 'text-green-700'"
                         >
-                            {{
-                                dataDetail.difference_cost?.total_process
-                                    ? Number(dataDetail.difference_cost?.total_process).toLocaleString('id-ID')
-                                    : '-'
-                            }}
+                            {{ dataDetail.total_process ? Number(dataDetail.total_process).toLocaleString('id-ID') : '-' }}
                         </div>
 
                         <div class="col-span-1 border-t border-gray-300 bg-blue-200 p-3 font-extrabold text-slate-900">TOTAL</div>
 
                         <div class="border-t border-l border-gray-300 bg-blue-200 p-3 text-right font-extrabold">
-                            {{ dataDetail.standard_cost?.total ? Number(dataDetail.standard_cost?.total).toLocaleString('id-ID') : '-' }}
+                            {{ dataDetail.sc_total ? Number(dataDetail.sc_total).toLocaleString('id-ID') : '-' }}
                         </div>
 
                         <div class="border-t border-l border-gray-300 bg-blue-200 p-3 text-right font-extrabold">
-                            {{ dataDetail.actual_cost?.total ? Number(dataDetail.actual_cost?.total).toLocaleString('id-ID') : '-' }}
+                            {{ dataDetail.ac_total ? Number(dataDetail.ac_total).toLocaleString('id-ID') : '-' }}
                         </div>
 
                         <div
                             class="border-t border-l border-gray-300 bg-blue-200 p-3 text-right font-extrabold"
-                            :class="dataDetail.difference_cost.total < 0 ? 'text-red-700' : 'text-green-700'"
+                            :class="dataDetail.total < 0 ? 'text-red-700' : 'text-green-700'"
                         >
-                            {{ dataDetail.difference_cost?.total ? Number(dataDetail.difference_cost?.total).toLocaleString('id-ID') : '-' }}
+                            {{ dataDetail.total ? Number(dataDetail.total).toLocaleString('id-ID') : '-' }}
                         </div>
 
-                        <div v-if="detailType === 'dcXsq'" class="col-span-3 border-t border-gray-300 bg-lime-200 p-3 font-extrabold text-slate-900">
-                            QUANTITY
+                        <div class="col-span-3 border-t border-gray-300 bg-lime-200 p-3 font-extrabold text-slate-900">QUANTITY</div>
+                        <div class="border-t border-l border-gray-300 bg-lime-200 p-3 text-right font-extrabold">
+                            {{ dataDetail.quantity ? Number(dataDetail.quantity).toLocaleString('id-ID') : '-' }}
                         </div>
+
+                        <div class="col-span-3 border-t border-gray-300 bg-orange-200 p-3 font-extrabold text-slate-900">TOTAL * QUANTITY</div>
 
                         <div
-                            v-if="detailType === 'dcXsq'"
-                            class="border-t border-l border-gray-300 bg-lime-200 p-3 text-right font-extrabold"
-                            :class="dataDetail.difference_cost.total < 0 ? 'text-red-700' : 'text-green-700'"
-                        >
-                            {{ dataDetail.dcxsq?.quantity ? Number(dataDetail.dcxsq?.quantity).toLocaleString('id-ID') : '-' }}
-                        </div>
-
-                        <div
-                            v-if="detailType === 'dcXsq'"
-                            class="col-span-3 border-t border-gray-300 bg-orange-200 p-3 font-extrabold text-slate-900"
-                        >
-                            TOTAL * QUANTITY
-                        </div>
-
-                        <div
-                            v-if="detailType === 'dcXsq'"
                             class="border-t border-l border-gray-300 bg-orange-200 p-3 text-right font-extrabold"
-                            :class="dataDetail.dcxsq.total < 0 ? 'text-red-700' : 'text-green-700'"
+                            :class="dataDetail.qty_x_total_raw_material < 0 ? 'text-red-700' : 'text-green-700'"
                         >
-                            {{ dataDetail.dcxsq?.total ? Number(dataDetail.dcxsq?.total).toLocaleString('id-ID') : '-' }}
+                            {{ dataDetail.qty_x_total_raw_material ? Number(dataDetail.qty_x_total_raw_material).toLocaleString('id-ID') : '-' }}
                         </div>
                     </div>
 

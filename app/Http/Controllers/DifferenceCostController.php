@@ -277,6 +277,7 @@ class DifferenceCostController extends Controller
             })
             ->join('standard_cost AS sc', function ($join) {
                 $join->on('sc.item_code', '=', 'difference_cost.item_code');
+                $join->whereRaw('sc.period = SUBSTRING_INDEX(SUBSTRING_INDEX(difference_cost.period, " /", 1), "\'", -1)');
             })
             ->leftJoin('standard_bill_of_materials AS bom', 'bom.item_code', '=', 'difference_cost.item_code')
             ->when($searchTerm, function ($query, $term) {
@@ -313,12 +314,23 @@ class DifferenceCostController extends Controller
             ->selectRaw('
             difference_cost.*,
             bom.description AS description,
+            sc.period AS sc_period,
+            sc.disc_code AS sc_disc_code,
             sc.disc_price AS sc_disc_price,
+            sc.rim_code AS sc_rim_code,
             sc.rim_price AS sc_rim_price,
+            sc.sidering_code AS sc_sidering_code,
             sc.sidering_price AS sc_sidering_price,
             sc.total_raw_material AS sc_total_raw_material,
             sc.total_process AS sc_total_process,
             sc.total AS sc_total,
+            ac.period AS ac_period,
+            ac.disc_code AS ac_disc_code,
+            ac.disc_price AS ac_disc_price,
+            ac.rim_code AS ac_rim_code,
+            ac.rim_price AS ac_rim_price,
+            ac.sidering_code AS ac_sidering_code,
+            ac.sidering_price AS ac_sidering_price,
             ac.total_raw_material AS ac_total_raw_material,
             ac.total_process AS ac_total_process,
             ac.total AS ac_total,
