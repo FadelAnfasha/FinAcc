@@ -172,13 +172,13 @@ class StandardCostController extends Controller
             $main = $group->first(); // FG
             $main->load(['processCost', 'standardMaterial']);
 
-            // $disc_price = ceil((($group->disc->materialInfo->standardPrice ?? 0) * $group->disc?->quantity ?? 0) * 100) / 100;
-            // $rim_price = ceil((($group->rim->materialInfo->standardPrice ?? 0) * $group->rim?->quantity ?? 0) * 100) / 100;
-            // $sidering_price = ceil((($group->sidering->materialInfo->standardPrice ?? 0) * $group->sidering?->quantity ?? 0) * 100) / 100;
+            $disc_price = ceil((($group->disc->materialInfo->standardPrice ?? 0) * $group->disc?->quantity ?? 0) * 100) / 100;
+            $rim_price = ceil((($group->rim->materialInfo->standardPrice ?? 0) * $group->rim?->quantity ?? 0) * 100) / 100;
+            $sidering_price = ceil((($group->sidering->materialInfo->standardPrice ?? 0) * $group->sidering?->quantity ?? 0) * 100) / 100;
 
-            $disc_price = $group->disc->standardMaterial->price ?? 0;
-            $rim_price = $group->rim->standardMaterial->price ?? 0;
-            $sidering_price = $group->sidering->standardMaterial->price ?? 0;
+            // $disc_price = $group->disc->standardMaterial->price ?? 0;
+            // $rim_price = $group->rim->standardMaterial->price ?? 0;
+            // $sidering_price = $group->sidering->standardMaterial->price ?? 0;
 
             // Perbaikan untuk pr_cedW_price
             $pr_cedW_price = 0;
