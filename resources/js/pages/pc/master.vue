@@ -29,21 +29,17 @@ const filterBP = ref({
     bp_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
     bp_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
 });
-
 const filterCT = ref({
     item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
     type: { value: null, matchMode: FilterMatchMode.CONTAINS },
 });
-
 const filterSQ = ref({
     bp_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
     'bp.bp_name': { value: null, matchMode: FilterMatchMode.CONTAINS },
     item_code: { value: null, matchMode: FilterMatchMode.CONTAINS },
     'item.type': { value: null, matchMode: FilterMatchMode.CONTAINS },
 });
-
 const loading = ref(false);
-
 const dtBP = ref();
 const dtCT = ref();
 const dtSQ = ref();
