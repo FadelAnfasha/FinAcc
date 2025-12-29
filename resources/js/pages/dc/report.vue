@@ -760,7 +760,7 @@ function showDetailDialog(data: any, type: 'dcXsq' | 'diffCost') {
     detailDialog.value = true;
     detailType.value = type;
     dataDetail.value = data;
-    console.log(data);
+    // console.log(data);
     headerName.value = 'Detail of : ' + data.item_code;
 }
 
@@ -1026,7 +1026,7 @@ const loadLazyData = async (url: string, type: 'diffCost') => {
         const response = await fetch(`${url}?${params.toString()}`, {
             signal: controllers[type].signal,
         });
-        console.log(`${url}?${params.toString()}`);
+        // console.log(`${url}?${params.toString()}`);
 
         if (!response.ok) throw new Error('Fetch failed');
         const data = await response.json();
