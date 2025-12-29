@@ -113,6 +113,7 @@ class BusinessPartnerController extends Controller
             'invalidItems' => $invalidItems
         ]);
     }
+
     public function destroy($bp_code)
     {
         $bp = BusinessPartner::findOrFail($bp_code);
@@ -120,6 +121,7 @@ class BusinessPartnerController extends Controller
 
         return redirect()->route('pc.master')->with('deleted', 'Business Partner ' . $bp_code . ' deleted successfully');
     }
+
     public function store(Request $request)
     {
         $companyName = strtoupper(trim($request->input('bp_name')));
