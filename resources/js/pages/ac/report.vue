@@ -364,22 +364,6 @@ function closeDialog() {
     monthRange.value = null;
 }
 
-// function openPreviewTab(item_code: string, opex: number, progin: number, previewType: string) {
-//     let previewUrl;
-
-//     // Memeriksa nilai `previewType` untuk menentukan route yang benar
-//     if (previewType === 'actualCost') {
-//         previewUrl = route('report.actual.preview', {
-//             item_code: item_code,
-//             opex: opex,
-//             progin: progin,
-//         });
-//     }
-
-//     // Buka URL di tab baru
-//     window.open(previewUrl, '_blank');
-// }
-
 const fetchDatas = async (url: string) => {
     try {
         const response = await fetch(url);
@@ -409,6 +393,17 @@ const fetchActualPeriod = async () => {
     } catch (error) {
         console.error('Failed to fetch material group list:', error);
         listActualPeriod.value = [];
+    }
+};
+
+const fetchLatestPeriod = async () => {
+    try {
+        const latest = await fetchDatas('/finacc/api/actual/latest-period');
+        if (latest) {
+            filtersActCost.value.period.value = latest;
+        }
+    } catch (error) {
+        console.error('Failed to fetch latest period:', error);
     }
 };
 
@@ -556,7 +551,10 @@ watch(
 onMounted(async () => {
     initFilters();
     try {
-        await Promise.all([fetchActualPeriod(), fetchActualType(), loadLazyData(actualCostUrl.value, 'actualCost')]);
+        await fetchActualType();
+        await fetchActualPeriod();
+        await fetchLatestPeriod();
+        await loadLazyData(actualCostUrl.value, 'actualCost');
     } finally {
         isInitialLoading.value = false;
     }

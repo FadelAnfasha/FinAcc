@@ -361,6 +361,17 @@ const fetchStandardPeriod = async () => {
     }
 };
 
+const fetchLatestPeriod = async () => {
+    try {
+        const latest = await fetchDatas('/finacc/api/standard/latest-period');
+        if (latest) {
+            filtersStdCost.value.period.value = latest;
+        }
+    } catch (error) {
+        console.error('Failed to fetch latest period:', error);
+    }
+};
+
 const fetchStandardType = async () => {
     try {
         const standardType = await fetchDatas('/finacc/api/standard/list-type');
@@ -506,7 +517,10 @@ watch(
 onMounted(async () => {
     initFilters();
     try {
-        await Promise.all([fetchStandardPeriod(), fetchStandardType(), loadLazyData(standardCostUrl.value, 'standardCost')]);
+        await fetchStandardType();
+        await fetchStandardPeriod();
+        await fetchLatestPeriod();
+        await loadLazyData(standardCostUrl.value, 'standardCost');
     } finally {
         isInitialLoading.value = false;
     }
